@@ -1,2 +1,5 @@
 import { redirect } from "next/navigation";
-export default function Home() { redirect("/revenue-command-center"); }
+
+export default function Home() {
+  redirect("/crm");
+}
