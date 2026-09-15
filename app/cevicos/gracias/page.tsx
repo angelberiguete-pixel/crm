@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Download, ArrowLeft, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function GraciasPage(){
+  return <Suspense fallback={<main style={shell}><section style={card}><div style={eyebrow}>PROYECTO 812 · CEVICOS</div><h1 style={{fontSize:"clamp(32px,6vw,52px)",margin:"10px 0 8px",letterSpacing:"-.04em"}}>Preparando tu información…</h1></section></main>}><GraciasContent/></Suspense>;
+}
+
+function GraciasContent(){
   const params=useSearchParams();
   const leadId=params.get("lead");
 
@@ -33,7 +38,7 @@ export default function GraciasPage(){
         <a href="/Ficha_812_Tareas_Cevicos.pdf" target="_blank" rel="noreferrer" onClick={()=>void markDownload()} style={primary}><Download size={18}/> Abrir / descargar ficha PDF</a>
       </div>
 
-      <div style={notice}><ShieldCheck size={18}/><div><strong>Próximo paso</strong><br/><span>Si solicitaste información con correo electrónico, también podremos enviarte la ficha por email cuando el canal de correo automático esté habilitado. Para visitas, ubicación exacta o documentación ampliada, el equipo validará primero el interés y la identidad del comprador.</span></div></div>
+      <div style={notice}><ShieldCheck size={18}/><div><strong>También la recibirás por correo</strong><br/><span>Si indicaste un correo electrónico válido, recibirás un mensaje con acceso a esta ficha. Para visitas, ubicación exacta o documentación ampliada, el equipo validará primero el interés y la identidad del comprador.</span></div></div>
 
       <Link href="/cevicos" style={back}><ArrowLeft size={16}/> Volver a la propiedad</Link>
       <p style={legal}>Información preliminar sujeta a verificación documental, catastral, registral, técnica y legal antes de cualquier cierre.</p>
