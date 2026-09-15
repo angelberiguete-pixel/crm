@@ -12,10 +12,18 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
+  async function routeAuthenticatedUser() {
+    const access = await supabase.rpc("platform_current_access");
+    const value = (access.data ?? {}) as { is_platform_admin?: boolean };
+    router.replace(value.is_platform_admin ? "/platform-admin" : "/crm");
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace("/crm");
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) await routeAuthenticatedUser();
     });
+    // routeAuthenticatedUser intentionally depends only on router/supabase singleton.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   async function submit(e: FormEvent) {
@@ -27,15 +35,15 @@ export default function LoginPage() {
       : await supabase.auth.signUp({ email, password });
     setBusy(false);
     if (result.error) return setMessage(result.error.message);
-    if (result.data.session) router.replace("/crm");
+    if (result.data.session) await routeAuthenticatedUser();
     else setMessage("Cuenta creada. Revisa tu correo si la confirmación está habilitada.");
   }
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <div className="eyebrow">CRM · Revenue Operations</div>
-      <h1>CRM Revenue OS</h1>
-      <p className="muted">Empresas, contactos, pipeline, inbox, cotizaciones, calendario, automatizaciones e inteligencia comercial en un solo workspace.</p>
+      <div className="eyebrow">Eurevector · CRM Revenue OS</div>
+      <h1>Iniciar sesión</h1>
+      <p className="muted">Una sola plataforma para Super Admin, dueños de negocio, administradores, gerentes, vendedores y usuarios autorizados.</p>
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
