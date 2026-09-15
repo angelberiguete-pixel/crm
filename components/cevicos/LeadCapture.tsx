@@ -5,8 +5,6 @@ import { Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-const MAKE_HOOK = "https://hook.us2.make.com/6eii88v3svujk6rbss9hihxxdjsjbesq";
-
 export default function LeadCapture({ referralCode }: { referralCode?: string }) {
   const router = useRouter();
   const ref = useMemo(() => (referralCode || "").trim().toUpperCase(), [referralCode]);
@@ -57,20 +55,9 @@ export default function LeadCapture({ referralCode }: { referralCode?: string })
     }
 
     const leadId = typeof data === "string" ? data : String(data || "");
-    const payload = new URLSearchParams({
-      event: "buyer_lead",
-      lead_id: leadId,
-      name,
-      phone,
-      email,
-      company,
-      use,
-      budget,
-      referral_code: ref,
-      ficha_url: `${window.location.origin}/Ficha_812_Tareas_Cevicos.pdf`,
-      source_url: window.location.href,
-    });
-    fetch(MAKE_HOOK, { method: "POST", mode: "no-cors", body: payload }).catch(() => undefined);
+    if (leadId) {
+      supabase.functions.invoke("land-sales-notify", { body: { lead_id: leadId } }).catch(() => undefined);
+    }
 
     currentForm.reset();
     setBusy(false);
