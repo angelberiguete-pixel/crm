@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,10 @@ import { supabase } from "@/lib/supabase";
 const ADMIN_EMAIL="angeljavierberiguetelazala@gmail.com";
 
 export default function PropertySalesLoginPage(){
+  return <Suspense fallback={<main className="auth-shell"><section className="auth-panel"><div className="eyebrow">Proyecto 812 · Cevicos</div><h1>Cargando acceso…</h1><p className="muted">Preparando el portal privado.</p></section></main>}><LoginContent/></Suspense>;
+}
+
+function LoginContent(){
   const router=useRouter();
   const search=useSearchParams();
   const adminMode=search.get("admin")==="1";
