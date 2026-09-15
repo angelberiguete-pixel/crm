@@ -1,0 +1,33 @@
+"use client";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+type Row = { id:string; name?:string; display_name?:string; email:string|null; phone:string|null; city?:string|null; sector?:string|null; website?:string|null; company_id?:string|null; job_title?:string|null; status?:string; whatsapp_phone?:string|null };
+const statuses:Record<string,string>={lead:"Lead",prospect:"Prospecto",customer:"Cliente",inactive:"Inactivo"};
+const empty = { name:"",email:"",phone:"",city:"",sector:"",website:"",company_id:"",job_title:"",status:"lead",whatsapp_phone:"" };
+export function Directory({tenantId,kind}:{tenantId:string;kind:"contacts"|"companies"}) {
+ const [rows,setRows]=useState<Row[]>([]),[companies,setCompanies]=useState<Row[]>([]),[query,setQuery]=useState(""),[page,setPage]=useState(0),[total,setTotal]=useState(0),[editing,setEditing]=useState<string|null>(null),[form,setForm]=useState(empty),[open,setOpen]=useState(false),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ const isContact=kind==="contacts";
+ const load=useCallback(async()=>{setLoading(true);setError("");try{
+  let q=supabase.from(kind).select(isContact?"id,display_name,email,phone,company_id,job_title,status,whatsapp_phone":"id,name,email,phone,city,sector,website,whatsapp_phone",{count:"exact"}).eq("tenant_id",tenantId);
+  if(query.trim()) q=q.ilike(isContact?"display_name":"name",`%${query.trim().replace(/[%_]/g,"\\$&")}%`);
+  const r=await q.order(isContact?"display_name":"name").range(page*25,page*25+24);if(r.error)throw r.error;
+  setRows((r.data??[]) as unknown as Row[]);setTotal(r.count??0);
+ }catch(e){setError(e instanceof Error?e.message:(e as {message?:string}).message??"No se pudo cargar el directorio.");}finally{setLoading(false)}},[tenantId,kind,isContact,page,query]);
+ useEffect(()=>{const timer=setTimeout(load,200);return()=>clearTimeout(timer)},[load]);
+ useEffect(()=>{let alive=true;if(isContact)supabase.from("companies").select("id,name").eq("tenant_id",tenantId).order("name").limit(1000).then(r=>{if(alive){if(r.error)setError(r.error.message);else setCompanies(r.data as Row[])}});return()=>{alive=false}},[tenantId,isContact]);
+ function edit(row?:Row){setEditing(row?.id??null);setForm(row?{...empty,...Object.fromEntries(Object.entries(row).map(([k,v])=>[k,v??""])),name:row.display_name??row.name??""}:empty);setOpen(true);setError("")}
+ async function save(e:FormEvent){e.preventDefault();if(busy)return;setBusy(true);setError("");try{
+  const common={email:form.email.trim()||null,phone:form.phone.trim()||null,whatsapp_phone:form.whatsapp_phone.trim()||null};
+  const payload=isContact?{...common,display_name:form.name.trim(),company_id:form.company_id||null,job_title:form.job_title.trim()||null,status:form.status}:{...common,name:form.name.trim(),city:form.city.trim()||null,sector:form.sector.trim()||null,website:form.website.trim()||null};
+  if(!form.name.trim())throw new Error("Escribe un nombre.");
+  const result=editing?await supabase.from(kind).update(payload).eq("tenant_id",tenantId).eq("id",editing).select("id").single():await supabase.from(kind).insert({tenant_id:tenantId,...payload}).select("id").single();
+  if(result.error)throw result.error;setOpen(false);await load();
+ }catch(e){setError((e as {message?:string}).message??"No se pudo guardar.")}finally{setBusy(false)}}
+ function field(key:keyof typeof empty,label:string,type="text"){return <label>{label}<input type={type} value={form[key]} required={key==="name"} maxLength={300} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>}
+ return <div className="stack gap-16"><div className="toolbar"><label className="search"><input aria-label="Buscar por nombre" placeholder="Buscar por nombre…" value={query} onChange={e=>{setQuery(e.target.value);setPage(0)}}/></label><button className="button primary" onClick={()=>edit()}>+ {isContact?"Nuevo contacto":"Nueva empresa"}</button><span className="muted">{total} registros</span></div>
+ {error&&<div role="alert" className="notice">{error}</div>}
+ {open&&<form className="card stack gap-16" onSubmit={save}><h2>{editing?"Editar":"Crear"} {isContact?"contacto":"empresa"}</h2><div className="form-grid">{field("name",isContact?"Nombre completo":"Nombre de empresa")}{field("email","Correo","email")}{field("phone","Teléfono","tel")}{field("whatsapp_phone","WhatsApp","tel")}{isContact?<><label>Empresa<select value={form.company_id} onChange={e=>setForm({...form,company_id:e.target.value})}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>{field("job_title","Cargo")}<label>Estado<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{Object.entries(statuses).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label></>:<>{field("city","Ciudad")}{field("sector","Sector")}{field("website","Sitio web","url")}</>}</div><div className="top-actions"><button disabled={busy} className="button primary">{busy?"Guardando…":"Guardar"}</button><button disabled={busy} type="button" className="button" onClick={()=>setOpen(false)}>Cancelar</button></div></form>}
+ {loading?<p role="status">Cargando…</p>:rows.length?<div className="table-wrap"><table className="data-table directory-table"><thead><tr><th>Nombre</th><th>{isContact?"Empresa / Cargo":"Ciudad / Sector"}</th><th>Contacto</th><th>{isContact?"Estado":"Web"}</th><th>Acciones</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><strong>{row.display_name??row.name}</strong></td><td>{isContact?(companies.find(c=>c.id===row.company_id)?.name??"Sin empresa"):(row.city??"—")}<div className="muted">{isContact?row.job_title:row.sector}</div></td><td>{row.email??"Sin correo"}<div className="muted">{row.phone??"Sin teléfono"}</div></td><td>{isContact?<span className="pill">{statuses[row.status??""]??row.status}</span>:row.website??"—"}</td><td><button className="button small" onClick={()=>edit(row)}>Editar</button></td></tr>)}</tbody></table></div>:<div className="empty"><strong>{query?"Sin coincidencias":"Tu directorio está listo"}</strong>{query?"Prueba otro nombre.":"Añade tu primer registro para empezar."}</div>}
+ <div className="top-actions"><button className="button" disabled={page===0||loading} onClick={()=>setPage(page-1)}>Anterior</button><span className="muted">Página {page+1} de {Math.max(1,Math.ceil(total/25))}</span><button className="button" disabled={(page+1)*25>=total||loading} onClick={()=>setPage(page+1)}>Siguiente</button></div></div>
+}
