@@ -1,0 +1,91 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { BarChart3, Boxes, Building2, CheckCircle2, ChevronRight, ContactRound, Database, ExternalLink, Layers3, LogOut, RefreshCw, Settings2, ShieldCheck, Users } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+type Tenant = { tenant_id:string; tenant_name:string; tenant_slug:string; owner_user_id:string|null; plan_code:string|null; subscription_status:string|null; member_count:number; created_at:string };
+type Plan = { id:string; code:string; name:string; monthly_price_cents:number; is_active:boolean };
+type Module = { module_key:string; module_name:string; enabled:boolean; source:string; config:Record<string,unknown> };
+type Member = { user_id:string; email:string|null; membership_role:string; membership_status:string; role_key:string|null; role_name:string|null };
+type Snapshot = {
+  tenant?: {id:string;name:string;slug:string};
+  metrics?: {companies:number;contacts:number;open_opportunities:number;won_opportunities:number;won_mrr:number;open_mrr:number;conversations:number;products:number};
+  settings?: {brand_name?:string|null;support_email?:string|null;primary_color?:string|null;hide_platform_branding?:boolean}|null;
+  agency_account?: {status:string;onboarding_status:string;monthly_recurring_cents:number;setup_fee_cents:number;vertical:string|null;template_key:string|null;customizations:Record<string,unknown>}|null;
+  odoo?: Array<{id:string;provider:string;name:string;base_url:string;database_name:string|null;status:string;sync_direction:string;last_healthcheck_at:string|null;last_error:string|null}>;
+  channels?: Array<{provider:string;name:string;status:string}>;
+  lead_pages?: number;
+};
+
+const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format((Number(cents)||0)/100);
+const dop=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format(Number(value)||0);
+
+export default function EurevectorConsole(){
+  const router=useRouter();
+  const[loading,setLoading]=useState(true); const[notice,setNotice]=useState("");
+  const[tenants,setTenants]=useState<Tenant[]>([]); const[plans,setPlans]=useState<Plan[]>([]); const[selectedId,setSelectedId]=useState<string|null>(null);
+  const[modules,setModules]=useState<Module[]>([]); const[members,setMembers]=useState<Member[]>([]); const[snapshot,setSnapshot]=useState<Snapshot|null>(null);
+  const[brand,setBrand]=useState(""); const[support,setSupport]=useState(""); const[color,setColor]=useState("#0f766e"); const[whiteLabel,setWhiteLabel]=useState(false);
+  const[odooUrl,setOdooUrl]=useState(""); const[odooDb,setOdooDb]=useState(""); const[odooDirection,setOdooDirection]=useState("bidirectional");
+
+  const selected=useMemo(()=>tenants.find(t=>t.tenant_id===selectedId)??null,[tenants,selectedId]);
+
+  const loadPlatform=useCallback(async()=>{
+    setLoading(true); setNotice("");
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session){router.replace('/login');return}
+    const access=await supabase.rpc('platform_current_access');
+    if(access.error){setNotice(access.error.message);setLoading(false);return}
+    if(!(access.data as any)?.is_platform_admin){setNotice('Tu usuario no tiene acceso de Platform Admin.');setLoading(false);return}
+    const [t,p]=await Promise.all([
+      supabase.rpc('platform_admin_tenants'),
+      supabase.from('plans').select('id,code,name,monthly_price_cents,is_active').eq('is_active',true).order('monthly_price_cents')
+    ]);
+    if(t.error||p.error){setNotice((t.error??p.error)?.message??'No se pudo cargar la plataforma');setLoading(false);return}
+    const rows=(t.data??[]) as Tenant[]; setTenants(rows); setPlans((p.data??[]) as Plan[]);
+    setSelectedId(cur=>cur&&rows.some(x=>x.tenant_id===cur)?cur:rows[0]?.tenant_id??null); setLoading(false);
+  },[router]);
+
+  const loadTenant=useCallback(async(id:string)=>{
+    setNotice("");
+    const [s,m,u]=await Promise.all([
+      supabase.rpc('platform_admin_tenant_snapshot',{p_tenant_id:id}),
+      supabase.rpc('tenant_effective_modules',{p_tenant_id:id}),
+      supabase.rpc('platform_admin_members',{p_tenant_id:id}),
+    ]);
+    const err=s.error??m.error??u.error; if(err){setNotice(err.message);return}
+    const snap=(s.data??{}) as Snapshot; setSnapshot(snap); setModules((m.data??[]) as Module[]); setMembers((u.data??[]) as Member[]);
+    setBrand(snap.settings?.brand_name??snap.tenant?.name??''); setSupport(snap.settings?.support_email??''); setColor(snap.settings?.primary_color??'#0f766e'); setWhiteLabel(Boolean(snap.settings?.hide_platform_branding));
+    const o=snap.odoo?.[0]; setOdooUrl(o?.base_url??''); setOdooDb(o?.database_name??''); setOdooDirection(o?.sync_direction??'bidirectional');
+  },[]);
+
+  useEffect(()=>{loadPlatform()},[loadPlatform]);
+  useEffect(()=>{if(selectedId)loadTenant(selectedId)},[selectedId,loadTenant]);
+
+  async function assignPlan(code:string){if(!selectedId)return;const r=await supabase.rpc('platform_assign_plan',{p_tenant_id:selectedId,p_plan_code:code});if(r.error)return setNotice(r.error.message);await loadPlatform();await loadTenant(selectedId);setNotice('Plan actualizado.');}
+  async function toggleModule(mod:Module){if(!selectedId)return;const r=await supabase.rpc('platform_set_tenant_module',{p_tenant_id:selectedId,p_module_key:mod.module_key,p_enabled:!mod.enabled,p_config:mod.config??{}});if(r.error)return setNotice(r.error.message);await loadTenant(selectedId);}
+  async function enter(path:'/crm'|'/ventas'){if(!selectedId)return;const r=await supabase.rpc('platform_join_tenant_as_admin',{p_tenant_id:selectedId});if(r.error)return setNotice(r.error.message);localStorage.setItem('crm_active_tenant_id',selectedId);window.location.href=path;}
+  async function saveBrand(e:FormEvent){e.preventDefault();if(!selectedId)return;const r=await supabase.rpc('platform_update_tenant_settings',{p_tenant_id:selectedId,p_brand_name:brand,p_support_email:support,p_primary_color:color,p_hide_platform_branding:whiteLabel});if(r.error)return setNotice(r.error.message);await loadTenant(selectedId);setNotice('Personalización del cliente guardada.');}
+  async function saveOdoo(e:FormEvent){e.preventDefault();if(!selectedId)return;const r=await supabase.rpc('platform_configure_odoo',{p_tenant_id:selectedId,p_base_url:odooUrl,p_database_name:odooDb||null,p_sync_direction:odooDirection});if(r.error)return setNotice(r.error.message);await loadTenant(selectedId);setNotice('Odoo configurado. Las credenciales se gestionan fuera del navegador.');}
+
+  if(loading)return <div className="loading">Cargando Consola Eurevector…</div>;
+  const metrics=snapshot?.metrics??{companies:0,contacts:0,open_opportunities:0,won_opportunities:0,won_mrr:0,open_mrr:0,conversations:0,products:0};
+  return <div className="shell">
+    <aside className="sidebar"><div className="brand"><strong>Consola Eurevector</strong><span>Clientes · Producto · Resultados</span></div><nav className="nav"><a className="active" href="#clientes"><Building2 size={17}/>Clientes</a><a href="#resultado"><BarChart3 size={17}/>Resultados</a><a href="#personalizacion"><Settings2 size={17}/>Personalización</a><a href="#modulos"><Layers3 size={17}/>Módulos</a><a href="#odoo"><Database size={17}/>Odoo / ERP</a><Link href="/ventas"><ChevronRight size={17}/>Ventas Eurevector</Link></nav><div className="sidebar-footer"><div className="muted">Platform Owner</div><button className="text-button" onClick={async()=>{await supabase.auth.signOut();router.replace('/login')}}><LogOut size={14}/> Salir</button></div></aside>
+    <main className="content"><header className="topbar"><div><div className="eyebrow">Control global de la agencia y SaaS</div><h1>Clientes y plataforma</h1></div><button className="button" onClick={loadPlatform}><RefreshCw size={14}/> Actualizar</button></header>{notice&&<div className="notice" style={{marginBottom:16}}>{notice}</div>}
+      <section className="grid metrics" style={{marginBottom:16}}><Metric label="Clientes / tenants" value={String(tenants.length)} sub="Workspaces provisionados"/><Metric label="Usuarios" value={String(tenants.reduce((n,t)=>n+Number(t.member_count||0),0))} sub="Miembros activos"/><Metric label="Planes" value={String(plans.length)} sub="Essential · Growth · Scale"/><Metric label="Control" value="Activo" sub="Platform Admin"/></section>
+      <section className="grid two-col" id="clientes"><div className="card"><h2>Clientes / tenants</h2><div className="table-wrap"><table className="data-table"><thead><tr><th>Cliente</th><th>Plan</th><th>Usuarios</th><th></th></tr></thead><tbody>{tenants.map(t=><tr key={t.tenant_id}><td><strong>{t.tenant_name}</strong><div className="muted">{t.tenant_slug}</div></td><td>{t.plan_code??'—'}</td><td>{t.member_count}</td><td><button className="button small" onClick={()=>setSelectedId(t.tenant_id)}>Gestionar</button></td></tr>)}</tbody></table></div></div><div className="card">{selected?<><div className="eyebrow">Cliente seleccionado</div><h2>{selected.tenant_name}</h2><p className="muted">Desde aquí entras al mismo tenant en el que trabaja su equipo.</p><div className="stack gap-12"><label>Plan<select value={selected.plan_code??''} onChange={e=>e.target.value&&assignPlan(e.target.value)}><option value="">Sin plan</option>{plans.map(p=><option value={p.code} key={p.id}>{p.name} · {usd(p.monthly_price_cents)}/mes</option>)}</select></label><div className="top-actions"><button className="button primary" onClick={()=>enter('/crm')}>Abrir CRM <ExternalLink size={13}/></button><button className="button" onClick={()=>enter('/ventas')}>Abrir Ventas</button></div></div></>:<p className="muted">Selecciona un cliente.</p>}</div></section>
+      {selected&&<div className="stack gap-16 section-gap">
+        <section id="resultado"><div className="grid metrics"><Metric label="Empresas" value={String(metrics.companies)} sub="Cuentas del cliente"/><Metric label="Contactos" value={String(metrics.contacts)} sub="Personas / leads"/><Metric label="Pipeline" value={String(metrics.open_opportunities)} sub={dop(metrics.open_mrr)+" MRR abierto"}/><Metric label="Ganadas" value={String(metrics.won_opportunities)} sub={dop(metrics.won_mrr)+" MRR"}/><Metric label="Conversaciones" value={String(metrics.conversations)} sub="Inbox"/><Metric label="Productos" value={String(metrics.products)} sub="Catálogo / inventario CRM"/></div></section>
+        <section className="grid two-col" id="personalizacion"><form className="card" onSubmit={saveBrand}><h2>Vista del cliente</h2><p className="muted">Personaliza su marca sin crear otro CRM.</p><div className="stack gap-12"><label>Marca<input value={brand} onChange={e=>setBrand(e.target.value)}/></label><label>Email de soporte<input type="email" value={support} onChange={e=>setSupport(e.target.value)}/></label><label>Color principal<input type="color" value={color} onChange={e=>setColor(e.target.value)}/></label><label style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={whiteLabel} onChange={e=>setWhiteLabel(e.target.checked)}/> Ocultar marca de plataforma</label><button className="button primary">Guardar personalización</button></div></form><div className="card"><h2>Equipo del cliente</h2>{members.map(m=><div className="priority-item" key={m.user_id}><div><strong>{m.email??m.user_id.slice(0,8)}</strong><div className="muted">{m.role_name??m.membership_role}</div></div><span className="pill">{m.membership_status}</span></div>)}{!members.length&&<p className="muted">Sin usuarios.</p>}</div></section>
+        <section className="card" id="modulos"><h2>Módulos y soluciones</h2><p className="muted">El plan define la base; puedes activar o desactivar módulos específicos para cada empresa.</p><div className="grid two-col">{modules.map(m=><div className="priority-item" key={m.module_key}><div><strong>{m.module_name}</strong><div className="muted">{m.source}</div></div><button className={`button small ${m.enabled?'':'danger'}`} onClick={()=>toggleModule(m)}>{m.enabled?<><CheckCircle2 size={13}/> Activo</>:'Desactivado'}</button></div>)}</div></section>
+        <section className="grid two-col" id="odoo"><form className="card" onSubmit={saveOdoo}><h2>Odoo / ERP</h2><p className="muted">Inventario, productos, ventas, facturación y operaciones se conectan por cliente. Las credenciales no se guardan en esta pantalla.</p><div className="stack gap-12"><label>URL Odoo<input placeholder="https://empresa.odoo.com" value={odooUrl} onChange={e=>setOdooUrl(e.target.value)} required/></label><label>Base de datos<input value={odooDb} onChange={e=>setOdooDb(e.target.value)}/></label><label>Sincronización<select value={odooDirection} onChange={e=>setOdooDirection(e.target.value)}><option value="bidirectional">Bidireccional</option><option value="erp_to_crm">Odoo → CRM</option><option value="crm_to_erp">CRM → Odoo</option></select></label><button className="button primary">Guardar configuración Odoo</button></div></form><div className="card"><h2>Integraciones</h2><div className="priority-item"><strong>Landing / Leads</strong><span>{Number(snapshot?.lead_pages??0)} activa(s)</span></div>{(snapshot?.odoo??[]).map(o=><div className="priority-item" key={o.id}><div><strong>{o.name}</strong><div className="muted">{o.base_url} · {o.sync_direction}</div></div><span className="pill">{o.status}</span></div>)}{(snapshot?.channels??[]).map((c,i)=><div className="priority-item" key={`${c.provider}-${i}`}><div><strong>{c.name}</strong><div className="muted">{c.provider}</div></div><span className="pill">{c.status}</span></div>)}{!(snapshot?.odoo?.length||snapshot?.channels?.length)&&<p className="muted">Aún no hay canales o ERP conectados.</p>}</div></section>
+      </div>}
+    </main>
+  </div>
+}
+
+function Metric({label,value,sub}:{label:string;value:string;sub:string}){return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>}
