@@ -18,7 +18,13 @@ const sectionPermission: Record<string, string> = {
   settings: "settings",
 };
 
-type TenantAccess = { tenant_id: string; role: string };
+type TenantAccess = {
+  tenant_id: string;
+  tenant_name: string;
+  tenant_slug: string;
+  membership_role: string;
+  is_active: boolean;
+};
 
 export default function TenantPermissionGate({ section, children }: { section: string; children: ReactNode }) {
   const [state, setState] = useState<"loading" | "allow" | "deny">("loading");
@@ -30,6 +36,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
       if (!session?.user) {
+        // CrmWorkspace owns the redirect to /login. Keep onboarding/login behavior intact.
         setState("allow");
         return;
       }
@@ -43,11 +50,26 @@ export default function TenantPermissionGate({ section, children }: { section: s
       }
 
       const memberships = (tenants.data ?? []) as TenantAccess[];
-      const activeTenant = memberships[0];
-      if (!activeTenant?.tenant_id) {
+      if (memberships.length === 0) {
         // New users must be allowed through so onboarding can create their first tenant.
         setState("allow");
         return;
+      }
+
+      // list_my_tenants orders the explicit active tenant first. If this account has
+      // never selected one, establish that deterministic first tenant before the CRM
+      // workspace performs any membership/data reads. RLS then scopes those reads to
+      // the exact same tenant used by this permission gate.
+      let activeTenant = memberships.find((membership) => membership.is_active) ?? memberships[0];
+      if (!memberships.some((membership) => membership.is_active)) {
+        const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
+        if (!alive) return;
+        if (selected.error) {
+          setReason("No pudimos establecer de forma segura el workspace activo. No se concedió acceso.");
+          setState("deny");
+          return;
+        }
+        activeTenant = { ...activeTenant, is_active: true };
       }
 
       const tenantId = activeTenant.tenant_id;
