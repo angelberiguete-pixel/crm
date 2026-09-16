@@ -1,0 +1,1 @@
+window.PRODUCTS=(window.KP||[]).map(function(p){var m=(window.KIMG||{})[p.sku]||{};return Object.assign({},p,{orig:m.orig||[],edit:m.edit||'',search:[p.sku,p.category,p.sub,p.name,p.brand,p.size,p.color].filter(Boolean).join(' ').toLowerCase()})});
