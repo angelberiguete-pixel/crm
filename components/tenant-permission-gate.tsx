@@ -18,6 +18,8 @@ const sectionPermission: Record<string, string> = {
   settings: "settings",
 };
 
+type TenantAccess = { tenant_id: string; role: string };
+
 export default function TenantPermissionGate({ section, children }: { section: string; children: ReactNode }) {
   const [state, setState] = useState<"loading" | "allow" | "deny">("loading");
   const [reason, setReason] = useState("");
@@ -32,31 +34,33 @@ export default function TenantPermissionGate({ section, children }: { section: s
         return;
       }
 
-      const membership = await supabase
-        .from("memberships")
-        .select("tenant_id")
-        .eq("user_id", session.user.id)
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
-
+      const tenants = await supabase.rpc("list_my_tenants");
       if (!alive) return;
-      if (!membership.data?.tenant_id) {
-        // New users must be allowed through so the existing onboarding can create a tenant.
+      if (tenants.error) {
+        setReason("No pudimos comprobar el workspace activo. Actualiza la página o vuelve a iniciar sesión.");
+        setState("deny");
+        return;
+      }
+
+      const memberships = (tenants.data ?? []) as TenantAccess[];
+      const activeTenant = memberships[0];
+      if (!activeTenant?.tenant_id) {
+        // New users must be allowed through so onboarding can create their first tenant.
         setState("allow");
         return;
       }
 
-      const tenantId = membership.data.tenant_id as string;
+      const tenantId = activeTenant.tenant_id;
       const permissionKey = sectionPermission[section] ?? section;
       const [permissionsResult, modulesResult] = await Promise.all([
         supabase.rpc("tenant_current_permissions", { p_tenant_id: tenantId }),
         supabase.rpc("tenant_effective_modules", { p_tenant_id: tenantId }),
       ]);
 
-      // During a schema rollout, preserve the existing CRM rather than locking users out.
+      if (!alive) return;
       if (permissionsResult.error || modulesResult.error) {
-        setState("allow");
+        setReason("No pudimos validar tus permisos para este workspace. No se concedió acceso por defecto.");
+        setState("deny");
         return;
       }
 
