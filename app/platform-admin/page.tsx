@@ -1,5 +1,5 @@
-import PlatformAdmin from "@/components/platform-admin";
+import EurevectorConsole from "@/components/eurevector-console";
 
 export default function PlatformAdminPage() {
-  return <PlatformAdmin />;
+  return <EurevectorConsole />;
 }
