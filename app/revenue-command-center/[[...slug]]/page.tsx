@@ -1,7 +1,6 @@
-import SalesHub from "@/components/sales-hub";
+import Cita24CommandCenter from "@/components/cita24-command-center";
 
 export default async function RevenuePage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug = [] } = await params;
-  const mapped = slug.map((value) => value === "prospects" ? "prospectos" : value);
-  return <SalesHub slug={mapped} />;
+  return <Cita24CommandCenter slug={slug} />;
 }
