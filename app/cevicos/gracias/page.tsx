@@ -24,7 +24,7 @@ function GraciasContent(){
       <div style={icon}><CheckCircle2 size={34}/></div>
       <div style={eyebrow}>PROYECTO 812 · CEVICOS</div>
       <h1 style={{fontSize:"clamp(32px,6vw,52px)",margin:"10px 0 8px",letterSpacing:"-.04em"}}>Solicitud recibida.</h1>
-      <p style={lead}>Tu información quedó registrada en nuestro CRM comercial. Ya puedes abrir la ficha de la propiedad y nuestro equipo podrá continuar el seguimiento desde una sola plataforma.</p>
+      <p style={lead}>Tu información quedó registrada en nuestro CRM comercial para atención directa. Ya puedes abrir la ficha de la propiedad y, si tu perfil encaja con la operación, continuaremos con calificación, visita y eventual oferta.</p>
 
       <div style={summary}>
         <div><span>Extensión informada</span><strong>812 tareas aprox.</strong></div>
@@ -38,7 +38,9 @@ function GraciasContent(){
         <a href="/Ficha_812_Tareas_Cevicos.pdf" target="_blank" rel="noreferrer" onClick={()=>void markDownload()} style={primary}><Download size={18}/> Abrir / descargar ficha PDF</a>
       </div>
 
-      <div style={notice}><ShieldCheck size={18}/><div><strong>También la recibirás por correo</strong><br/><span>Si indicaste un correo electrónico válido, recibirás un mensaje con acceso a esta ficha. Para visitas, ubicación exacta o documentación ampliada, el equipo validará primero el interés y la identidad del comprador.</span></div></div>
+      <div style={notice}><ShieldCheck size={18}/><div><strong>También la recibirás por correo</strong><br/><span>Si indicaste un correo electrónico válido, recibirás un mensaje con acceso a esta ficha. Para visitas, ubicación exacta o documentación ampliada, primero validaremos el interés y la identidad del comprador.</span></div></div>
+
+      <div style={{...notice,background:"#fff7df",color:"#5f5227"}}><ShieldCheck size={18}/><div><strong>Seguridad de la operación</strong><br/><span>Esta web no recibe reservas, depósitos ni pagos y no publica cuentas bancarias. Cualquier pago eventual se coordina únicamente después de la revisión correspondiente, un acuerdo formal y por el canal autorizado.</span></div></div>
 
       <Link href="/cevicos" style={back}><ArrowLeft size={16}/> Volver a la propiedad</Link>
       <p style={legal}>Información preliminar sujeta a verificación documental, catastral, registral, técnica y legal antes de cualquier cierre.</p>
