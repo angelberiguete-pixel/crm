@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, LockKeyhole, MapPin, Scale, ShieldCheck, Trees } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, LockKeyhole, MapPin, MessageCircle, Scale, ShieldCheck, Trees } from "lucide-react";
 import { money, property } from "@/data/cevicos";
+import { cevicosContact, cevicosWhatsappUrl } from "@/data/cevicos-contact";
 import LeadCapture from "@/components/cevicos/LeadCapture";
 import PriceCalculator from "@/components/cevicos/PriceCalculator";
 import styles from "./cevicos.module.css";
@@ -11,6 +12,8 @@ export const metadata = {
 };
 
 export default function CevicosLandingPage() {
+  const whatsappUrl = cevicosWhatsappUrl();
+
   return <main className={styles.page}>
     <header className={styles.navWrap}>
       <nav className={styles.nav}>
@@ -18,7 +21,7 @@ export default function CevicosLandingPage() {
         <div className={styles.navActions}>
           <Link href="#informacion" className={styles.textLink}>Información</Link>
           <Link href="#calculator" className={styles.textLink}>Calculadora</Link>
-          <Link href="#contacto" className={styles.adminLink}>Solicitar ficha</Link>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.adminLink}>WhatsApp oficial</a>
         </div>
       </nav>
     </header>
@@ -32,9 +35,9 @@ export default function CevicosLandingPage() {
           <p className={styles.lead}>Una propiedad de gran escala para compradores que buscan tierra, patrimonio y visión de proyecto en República Dominicana.</p>
           <div className={styles.heroActions}>
             <Link href="#contacto" className={styles.primaryButton}>Solicitar ficha PDF <ArrowRight size={18}/></Link>
-            <Link href="#proceso" className={styles.secondaryButton}>Ver proceso de compra</Link>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.secondaryButton}><MessageCircle size={18}/> Hablar por WhatsApp</a>
           </div>
-          <div className={styles.trustLine}><ShieldCheck size={17}/> Atención directa a compradores · Información sujeta a verificación documental y técnica</div>
+          <div className={styles.trustLine}><ShieldCheck size={17}/> Atención directa a compradores · WhatsApp oficial: {cevicosContact.whatsappDisplay}</div>
         </div>
         <div className={styles.heroCard}>
           <div className={styles.cardEyebrow}>Oferta principal</div>
@@ -74,7 +77,7 @@ export default function CevicosLandingPage() {
         <div className={styles.statsGrid}>
           <div><strong>1</strong><span>propiedad</span></div>
           <div><strong>1</strong><span>precio oficial</span></div>
-          <div><strong>1</strong><span>CRM de compradores</span></div>
+          <div><strong>1</strong><span>WhatsApp oficial</span></div>
           <div><strong>0</strong><span>pagos en la web</span></div>
         </div>
       </div>
@@ -84,15 +87,16 @@ export default function CevicosLandingPage() {
       <div>
         <span className={styles.eyebrow}>Siguiente paso</span>
         <h2>Solicita la ficha comercial.</h2>
-        <p>Completa tus datos y cuatro criterios de calificación. Tu solicitud quedará registrada en nuestro CRM y pasarás a una página de confirmación con acceso inmediato al PDF.</p>
-        <div className={styles.trustLine} style={{marginTop:16}}><ShieldCheck size={17}/> Esta web no procesa reservas, depósitos ni pagos. Cualquier operación económica se coordina únicamente después de la verificación correspondiente y por el canal autorizado.</div>
+        <p>Completa tus datos y criterios de calificación. Tu solicitud quedará registrada en nuestro CRM y pasarás a una página de confirmación con acceso inmediato al PDF.</p>
+        <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.secondaryButton} style={{display:"inline-flex",marginTop:14}}><MessageCircle size={18}/> WhatsApp oficial · {cevicosContact.whatsappDisplay}</a>
+        <div className={styles.trustLine} style={{marginTop:16}}><ShieldCheck size={17}/> Este es el único WhatsApp público autorizado para coordinar esta venta. No se aceptan pagos a terceros ni depósitos desde esta web.</div>
       </div>
       <LeadCapture/>
     </section>
 
     <footer className={styles.footer}>
       <div>Proyecto 812 · Cevicos, Sánchez Ramírez</div>
-      <div>Venta completa · Atención directa · Ficha preliminar sujeta a verificación documental, técnica y legal.</div>
+      <div>WhatsApp oficial: {cevicosContact.whatsappDisplay} · Venta completa · Atención directa · Ficha preliminar sujeta a verificación documental, técnica y legal.</div>
     </footer>
   </main>;
 }
