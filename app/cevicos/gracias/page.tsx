@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Download, ArrowLeft, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Download, ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { cevicosContact, cevicosWhatsappUrl } from "@/data/cevicos-contact";
 
 export default function GraciasPage(){
   return <Suspense fallback={<main style={shell}><section style={card}><div style={eyebrow}>PROYECTO 812 · CEVICOS</div><h1 style={{fontSize:"clamp(32px,6vw,52px)",margin:"10px 0 8px",letterSpacing:"-.04em"}}>Preparando tu información…</h1></section></main>}><GraciasContent/></Suspense>;
@@ -13,6 +14,7 @@ export default function GraciasPage(){
 function GraciasContent(){
   const params=useSearchParams();
   const leadId=params.get("lead");
+  const whatsappUrl=cevicosWhatsappUrl("Hola, ya completé el formulario del Proyecto 812 en Cevicos y quiero continuar con la evaluación de compra de la propiedad completa.");
 
   async function markDownload(){
     if(!leadId) return;
@@ -24,7 +26,7 @@ function GraciasContent(){
       <div style={icon}><CheckCircle2 size={34}/></div>
       <div style={eyebrow}>PROYECTO 812 · CEVICOS</div>
       <h1 style={{fontSize:"clamp(32px,6vw,52px)",margin:"10px 0 8px",letterSpacing:"-.04em"}}>Solicitud recibida.</h1>
-      <p style={lead}>Tu información quedó registrada en nuestro CRM comercial para atención directa. Ya puedes abrir la ficha de la propiedad y, si tu perfil encaja con la operación, continuaremos con calificación, visita y eventual oferta.</p>
+      <p style={lead}>Tu información quedó registrada en nuestro CRM comercial para atención directa. Ya puedes abrir la ficha de la propiedad y continuar por el único WhatsApp oficial del proyecto.</p>
 
       <div style={summary}>
         <div><span>Extensión informada</span><strong>812 tareas aprox.</strong></div>
@@ -35,12 +37,15 @@ function GraciasContent(){
       <div style={delivery}>
         <h2 style={{marginTop:0}}>Tu ficha comercial</h2>
         <p style={{color:"#60736c",lineHeight:1.65}}>La ficha se entrega en PDF. Contiene el resumen comercial de la oportunidad, extensión y precio de referencia. No incluye documentos personales, expediente judicial ni información sensible; esos documentos se revisan más adelante con interesados calificados.</p>
-        <a href="/Ficha_812_Tareas_Cevicos.pdf" target="_blank" rel="noreferrer" onClick={()=>void markDownload()} style={primary}><Download size={18}/> Abrir / descargar ficha PDF</a>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          <a href="/Ficha_812_Tareas_Cevicos.pdf" target="_blank" rel="noreferrer" onClick={()=>void markDownload()} style={primary}><Download size={18}/> Abrir / descargar ficha PDF</a>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" style={whatsapp}><MessageCircle size={18}/> Continuar por WhatsApp</a>
+        </div>
       </div>
 
-      <div style={notice}><ShieldCheck size={18}/><div><strong>También la recibirás por correo</strong><br/><span>Si indicaste un correo electrónico válido, recibirás un mensaje con acceso a esta ficha. Para visitas, ubicación exacta o documentación ampliada, primero validaremos el interés y la identidad del comprador.</span></div></div>
+      <div style={notice}><ShieldCheck size={18}/><div><strong>Canal oficial</strong><br/><span>WhatsApp: {cevicosContact.whatsappDisplay}. Úsalo para coordinar preguntas, calificación y una eventual visita. Si indicaste un correo válido, también recibirás acceso a la ficha por email.</span></div></div>
 
-      <div style={{...notice,background:"#fff7df",color:"#5f5227"}}><ShieldCheck size={18}/><div><strong>Seguridad de la operación</strong><br/><span>Esta web no recibe reservas, depósitos ni pagos y no publica cuentas bancarias. Cualquier pago eventual se coordina únicamente después de la revisión correspondiente, un acuerdo formal y por el canal autorizado.</span></div></div>
+      <div style={{...notice,background:"#fff7df",color:"#5f5227"}}><ShieldCheck size={18}/><div><strong>Seguridad de la operación</strong><br/><span>Esta web no recibe reservas, depósitos ni pagos y no publica cuentas bancarias. No realices pagos a terceros ni a intermediarios. Cualquier pago eventual se coordina únicamente después de revisión, acuerdo formal y confirmación por el canal autorizado.</span></div></div>
 
       <Link href="/cevicos" style={back}><ArrowLeft size={16}/> Volver a la propiedad</Link>
       <p style={legal}>Información preliminar sujeta a verificación documental, catastral, registral, técnica y legal antes de cualquier cierre.</p>
@@ -56,6 +61,7 @@ const lead:React.CSSProperties={fontSize:17,lineHeight:1.7,color:"#60736c",maxWi
 const summary:React.CSSProperties={display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,margin:"24px 0"};
 const delivery:React.CSSProperties={border:"1px solid #e2ddcf",borderRadius:18,padding:20,background:"#fbfaf7"};
 const primary:React.CSSProperties={display:"inline-flex",alignItems:"center",gap:8,textDecoration:"none",background:"#173329",color:"#fff",padding:"13px 16px",borderRadius:12,fontWeight:900};
+const whatsapp:React.CSSProperties={display:"inline-flex",alignItems:"center",gap:8,textDecoration:"none",background:"#f1f7f3",color:"#173329",border:"1px solid #bdd2c5",padding:"13px 16px",borderRadius:12,fontWeight:900};
 const notice:React.CSSProperties={display:"flex",gap:10,marginTop:18,padding:16,borderRadius:14,background:"#eef4ef",color:"#38574c",lineHeight:1.55};
 const back:React.CSSProperties={display:"inline-flex",gap:7,alignItems:"center",marginTop:22,color:"#173329",fontWeight:800,textDecoration:"none"};
 const legal:React.CSSProperties={marginTop:20,fontSize:12,lineHeight:1.55,color:"#71827b"};
