@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import EurevectorLeadPage from "@/components/eurevector-lead-page";
 
-export default function EurevectorAlias() {
-  redirect("/aurevector");
+export default function EurevectorPage(){
+  return <EurevectorLeadPage/>;
 }
