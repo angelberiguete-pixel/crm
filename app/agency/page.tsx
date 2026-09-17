@@ -1,51 +1,30 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import styles from "./agency.module.css";
 
-const stages = [
-  ["Nuevos", "Leads entrantes pendientes de calificación"],
-  ["Contactar", "Prospectos con próxima acción comercial"],
-  ["Conversación", "Oportunidades con respuesta o reunión"],
-  ["Propuesta", "Negocios con alcance o propuesta abierta"],
-  ["Cierre", "Negociación, ganado o perdido"]
-];
+type Prospect={id:string;business_name:string;contact_name:string|null;email:string|null;phone:string|null;source:string|null;utm_source:string|null;utm_campaign:string|null;score:number|null;priority:string|null;stage:string;owner_name:string|null;next_action:string|null;next_action_at:string|null;service_interest:string|null;potential_value_cents:number|null;created_at:string};
+type Summary={stage:string;prospect_count:number;potential_value_cents:number};
+const stageLabels:Record<string,string>={prospecto:"Nuevos",contactado:"Contactados",respondio:"Respondieron",reunion:"Reunión",calificado:"Calificados",propuesta:"Propuesta",negociacion:"Negociación",ganado:"Ganados",perdido:"Perdidos"};
+const money=(c:number|null)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format((Number(c)||0)/100);
 
-export default function AgencyPage() {
-  return (
-    <main className={styles.page}>
-      <aside className={styles.sidebar}>
-        <div><strong>AUREVECTOR</strong><span>Agency OS</span></div>
-        <nav>
-          <a href="#hoy">Inicio</a><a href="#pipeline">Adquisición</a><a href="#clientes">Clientes de agencia</a><a href="#campanas">Campañas</a><a href="#actividad">Actividad</a>
-        </nav>
-        <Link href="/platform-admin">Administrar plataforma CRM →</Link>
-      </aside>
-      <section className={styles.workspace}>
-        <header className={styles.topbar}><div><span>OPERACIÓN DE AGENCIA</span><h1>Centro de adquisición AUREVECTOR</h1></div><Link href="/aurevector">Ver web pública ↗</Link></header>
-
-        <section id="hoy" className={styles.hero}>
-          <div><span className={styles.eyebrow}>HOY</span><h2>Lo que necesita atención para convertir.</h2><p>Este espacio administra la adquisición y los clientes de servicios de AUREVECTOR. Los CRM comprados por clientes se administran aparte desde Platform Admin.</p></div>
-          <div className={styles.actions}><a href="#pipeline">Abrir adquisición</a><Link href="/platform-admin">Platform Admin</Link></div>
-        </section>
-
-        <section className={styles.metrics} aria-label="Resumen operativo">
-          <article><span>Leads nuevos</span><strong>—</strong><small>Conectar fuente real</small></article>
-          <article><span>Por contactar</span><strong>—</strong><small>Próximas acciones</small></article>
-          <article><span>Propuestas</span><strong>—</strong><small>Abiertas</small></article>
-          <article><span>Clientes activos</span><strong>—</strong><small>Servicios de agencia</small></article>
-        </section>
-
-        <section id="pipeline" className={styles.section}>
-          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>ADQUISICIÓN</span><h2>Pipeline comercial de la agencia</h2></div><span className={styles.status}>Esperando datos reales</span></div>
-          <div className={styles.pipeline}>{stages.map(([name, description]) => <article key={name}><strong>{name}</strong><span>{description}</span><b>—</b></article>)}</div>
-        </section>
-
-        <section className={styles.twoColumns}>
-          <article id="clientes" className={styles.panel}><span className={styles.eyebrow}>CLIENTES DE AGENCIA</span><h3>Servicios activos</h3><p>Incluye clientes de marketing, automatización, growth u otros servicios, aunque no hayan comprado AUREVECTOR CRM.</p><div className={styles.empty}>Todavía no se muestran registros hasta conectar la fuente de datos.</div></article>
-          <article id="campanas" className={styles.panel}><span className={styles.eyebrow}>CAPTACIÓN</span><h3>Canales y campañas</h3><p>Web, formularios, outbound y campañas podrán alimentar este centro con fuente y UTM para medir adquisición completa.</p><div className={styles.empty}>Conexión de campañas pendiente.</div></article>
-        </section>
-
-        <section id="actividad" className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>PRÓXIMAS ACCIONES</span><h2>Cola operativa</h2></div></div><div className={styles.empty}>Aquí aparecerán seguimientos, reuniones, propuestas y tareas cuando conectemos la capa de datos.</div></section>
-      </section>
-    </main>
-  );
+export default function AgencyPage(){
+ const router=useRouter();const[loading,setLoading]=useState(true);const[notice,setNotice]=useState("");const[prospects,setProspects]=useState<Prospect[]>([]);const[summary,setSummary]=useState<Summary[]>([]);
+ const load=useCallback(async()=>{setLoading(true);setNotice("");const{data:{session}}=await supabase.auth.getSession();if(!session){router.replace('/login');return}const access=await supabase.rpc('platform_current_access');if(access.error||!(access.data as any)?.is_platform_admin){setNotice(access.error?.message??'Tu usuario no tiene acceso al Agency OS.');setLoading(false);return}const[p,s]=await Promise.all([supabase.from('agency_prospects').select('id,business_name,contact_name,email,phone,source,utm_source,utm_campaign,score,priority,stage,owner_name,next_action,next_action_at,service_interest,potential_value_cents,created_at').order('created_at',{ascending:false}).limit(100),supabase.rpc('agency_prospect_pipeline_summary')]);if(p.error||s.error){setNotice((p.error??s.error)?.message??'No se pudo cargar adquisición');setLoading(false);return}setProspects((p.data??[]) as Prospect[]);setSummary((s.data??[]) as Summary[]);setLoading(false)},[router]);
+ useEffect(()=>{load()},[load]);
+ const counts=useMemo(()=>Object.fromEntries(summary.map(x=>[x.stage,Number(x.prospect_count)])),[summary]);
+ const openValue=useMemo(()=>summary.filter(x=>!['ganado','perdido'].includes(x.stage)).reduce((n,x)=>n+Number(x.potential_value_cents||0),0),[summary]);
+ const urgent=useMemo(()=>prospects.filter(p=>p.next_action_at&&new Date(p.next_action_at)<=new Date()).slice(0,8),[prospects]);
+ if(loading)return <div className={styles.loading}>Cargando Agency OS…</div>;
+ return <main className={styles.page}><aside className={styles.sidebar}><div><strong>AUREVECTOR</strong><span>Agency OS</span></div><nav><a href="#hoy">Inicio</a><a href="#pipeline">Adquisición</a><a href="#prospectos">Prospectos</a><a href="#actividad">Próximas acciones</a></nav><Link href="/platform-admin">Administrar plataforma CRM →</Link></aside><section className={styles.workspace}>
+ <header className={styles.topbar}><div><span>OPERACIÓN PRIVADA DE AGENCIA</span><h1>Centro de adquisición AUREVECTOR</h1></div><button onClick={load}>Actualizar</button></header>{notice&&<div className={styles.alert}>{notice}</div>}
+ <section id="hoy" className={styles.hero}><div><span className={styles.eyebrow}>HOY</span><h2>Convierte atención comercial en ingresos.</h2><p>Prospectos y adquisición de AUREVECTOR viven aquí. Los tenants de clientes CRM se administran por separado desde Platform Admin.</p></div><div className={styles.actions}><a href="#prospectos">Ver prospectos</a><Link href="/platform-admin">Platform Admin</Link></div></section>
+ <section className={styles.metrics}><article><span>Prospectos</span><strong>{prospects.length}</strong><small>Últimos 100</small></article><article><span>Nuevos</span><strong>{counts.prospecto??0}</strong><small>Sin contactar</small></article><article><span>Propuestas</span><strong>{counts.propuesta??0}</strong><small>Abiertas</small></article><article><span>Pipeline potencial</span><strong>{money(openValue)}</strong><small>Excluye ganado/perdido</small></article></section>
+ <section id="pipeline" className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>ADQUISICIÓN</span><h2>Pipeline comercial real</h2></div><span className={styles.status}>{summary.reduce((n,x)=>n+Number(x.prospect_count),0)} registros</span></div><div className={styles.pipeline}>{summary.filter(x=>x.stage!=='perdido').map(x=><article key={x.stage}><strong>{stageLabels[x.stage]??x.stage}</strong><span>{money(x.potential_value_cents)} potencial</span><b>{x.prospect_count}</b></article>)}</div></section>
+ <section id="prospectos" className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>PROSPECTOS</span><h2>Entradas recientes</h2></div></div><div className={styles.tableWrap}><table><thead><tr><th>Negocio</th><th>Fuente</th><th>Etapa</th><th>Score</th><th>Responsable</th><th>Próxima acción</th></tr></thead><tbody>{prospects.slice(0,25).map(p=><tr key={p.id}><td><strong>{p.business_name}</strong><small>{p.contact_name??p.email??p.phone??'Sin contacto'}</small></td><td>{p.utm_source??p.source??'—'}<small>{p.utm_campaign??''}</small></td><td>{stageLabels[p.stage]??p.stage}</td><td>{p.score??'—'}<small>{p.priority??''}</small></td><td>{p.owner_name??'Sin asignar'}</td><td>{p.next_action??'Definir seguimiento'}<small>{p.next_action_at?new Date(p.next_action_at).toLocaleString('es-DO'):''}</small></td></tr>)}</tbody></table>{!prospects.length&&<div className={styles.empty}>No hay prospectos todavía.</div>}</div></section>
+ <section id="actividad" className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>PRÓXIMAS ACCIONES</span><h2>Seguimientos vencidos o para hoy</h2></div></div>{urgent.map(p=><div className={styles.followup} key={p.id}><div><strong>{p.business_name}</strong><small>{p.next_action??'Seguimiento pendiente'}</small></div><span>{p.owner_name??'Sin asignar'}</span></div>)}{!urgent.length&&<div className={styles.empty}>No hay seguimientos vencidos en los registros cargados.</div>}</section>
+ </section></main>;
 }
