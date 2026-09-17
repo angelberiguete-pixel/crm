@@ -3,10 +3,10 @@ import AurevectorPricing from "./pricing";
 import styles from "./aurevector.module.css";
 
 const outcomes = [
-  ["Captura", "Web, WhatsApp y campañas alimentan un mismo sistema."],
-  ["Seguimiento", "Cada lead tiene etapa, responsable y próxima acción."],
-  ["Automatización", "Recordatorios, recuperación y tareas reducen fugas."],
-  ["Medición", "Pipeline, actividad y conversión se revisan con datos."]
+  ["Captura", "Centraliza oportunidades que llegan desde web, campañas y canales conectados."],
+  ["Seguimiento", "Cada oportunidad queda con etapa, responsable y próxima acción."],
+  ["Automatización", "Reduce tareas manuales y prepara seguimiento, recuperación y reactivación."],
+  ["Medición", "Visualiza pipeline, actividad y conversión para decidir con datos."]
 ];
 
 export default function AurevectorSalesPage() {
@@ -15,7 +15,7 @@ export default function AurevectorSalesPage() {
       <header className={styles.header}>
         <a className={styles.brand} href="#inicio" aria-label="AUREVECTOR inicio">AUREVECTOR</a>
         <nav className={styles.nav} aria-label="Navegación principal">
-          <a href="#sistema">Sistema</a>
+          <a href="#sistema">Cómo funciona</a>
           <a href="#planes">Planes</a>
           <a href="#diagnostico">Contacto</a>
           <a href="/crm">Acceso CRM</a>
@@ -24,32 +24,33 @@ export default function AurevectorSalesPage() {
 
       <section className={styles.hero} id="inicio">
         <div className={styles.heroCopy}>
-          <span className={styles.kicker}>Agencia + CRM + Automatización + IA</span>
-          <h1>No necesitas más herramientas. Necesitas un sistema que convierta.</h1>
-          <p className={styles.lead}>AUREVECTOR combina CRM, seguimiento comercial, automatización y servicios de crecimiento para que cada oportunidad tenga responsable, próxima acción y trazabilidad hasta ingreso.</p>
+          <span className={styles.kicker}>CRM + AUTOMATIZACIÓN + IA + GROWTH</span>
+          <h1>Convierte más oportunidades sin perseguir leads a mano.</h1>
+          <p className={styles.lead}>AUREVECTOR organiza captación, seguimiento y ventas en un mismo sistema. Prueba cómo se configuraría para tu negocio antes de hablar con ventas.</p>
           <div className={styles.heroActions}>
-            <a className={styles.primary} href="#planes">Ver planes</a>
-            <a className={styles.secondary} href="#diagnostico">Solicitar diagnóstico</a>
+            <a className={styles.primary} href="/aurevector/start">Probar AUREVECTOR</a>
+            <a className={styles.secondary} href="#sistema">Ver cómo funciona</a>
           </div>
-          <div className={styles.micro}>CRM incluido en todos los planes · Implementación según alcance · Sin activaciones ni cargos automáticos</div>
+          <div className={styles.micro}>Vista previa sin pago · No conecta WhatsApp ni activa automatizaciones externas durante la prueba</div>
         </div>
-        <aside className={styles.heroPanel} aria-label="Qué incluye el sistema">
-          <span className={styles.panelLabel}>Una sola operación para marketing y ventas</span>
+        <aside className={styles.heroPanel} aria-label="Qué prepara AUREVECTOR">
+          <span className={styles.panelLabel}>Tu operación comercial, conectada</span>
           <ul>
             <li>Contactos y empresas centralizados.</li>
             <li>Pipeline y próximas acciones.</li>
-            <li>Calendario y seguimiento.</li>
-            <li>Reportes de actividad y conversión.</li>
-            <li>Más automatización e IA según el plan.</li>
+            <li>Inbox y seguimiento según configuración.</li>
+            <li>Automatizaciones y recuperación de oportunidades.</li>
+            <li>IA y servicios de crecimiento según plan y activación.</li>
           </ul>
+          <a className={styles.primary} href="/aurevector/start">Crear mi vista previa</a>
         </aside>
       </section>
 
       <section className={styles.system} id="sistema">
         <div className={styles.sectionHeading}>
-          <span className={styles.kicker}>Revenue System</span>
-          <h2>Del lead a la venta, sin perder el hilo.</h2>
-          <p>El CRM no se vende como una herramienta aislada: es la infraestructura donde ejecutamos el servicio de agencia y medimos qué ocurre con cada oportunidad.</p>
+          <span className={styles.kicker}>DE CONVERSACIÓN A INGRESO</span>
+          <h2>Un sistema para saber quién llegó, qué necesita y qué debe ocurrir después.</h2>
+          <p>Describe tu negocio y tus objetivos. AUREVECTOR prepara una vista previa del sistema comercial recomendado para que puedas entender el flujo antes de activarlo.</p>
         </div>
         <div className={styles.grid}>
           {outcomes.map(([title, text], index) => (
@@ -60,28 +61,32 @@ export default function AurevectorSalesPage() {
             </article>
           ))}
         </div>
+        <div className={styles.heroActions}>
+          <a className={styles.primary} href="/aurevector/start">Configurar mi sistema</a>
+        </div>
       </section>
 
       <AurevectorPricing />
 
       <section className={styles.offerBand}>
         <div>
-          <span className={styles.kicker}>¿No sabes qué plan elegir?</span>
-          <h2>Growth Audit · RD$29,500</h2>
+          <span className={styles.kicker}>SERVICIO + TECNOLOGÍA</span>
+          <h2>No te entregamos otra herramienta para que la resuelvas solo.</h2>
         </div>
-        <p>Auditamos captación, respuesta, seguimiento, CRM y conversión. Identificamos dónde se pierden oportunidades y definimos qué sistema necesitas antes de invertir en implementación.</p>
+        <p>Según el plan, AUREVECTOR combina plataforma, configuración, automatización y ejecución de crecimiento. Primero entendemos el proceso comercial; después activamos únicamente el alcance acordado.</p>
       </section>
 
       <section className={styles.diagnostic} id="diagnostico">
         <div className={styles.formIntro}>
-          <span className={styles.kicker}>Siguiente paso</span>
-          <h2>Hablemos de tu sistema comercial.</h2>
-          <p>Puedes solicitar un plan directamente o empezar por el Growth Audit. Revisaremos encaje, alcance e implementación antes de cualquier activación o cobro.</p>
+          <span className={styles.kicker}>SIGUIENTE PASO</span>
+          <h2>Prueba primero. Habla con nosotros cuando quieras activarlo.</h2>
+          <p>Puedes generar una vista previa ahora mismo o enviarnos tu contexto para revisar encaje, alcance e implementación.</p>
+          <div className={styles.heroActions}><a className={styles.primary} href="/aurevector/start">Probar AUREVECTOR</a></div>
           <div className={styles.promise}>
             <strong>Qué ocurre después</strong>
-            <span>1. Revisamos tu contexto y el plan de interés.</span>
-            <span>2. Validamos alcance y prioridades.</span>
-            <span>3. Si tiene sentido, definimos implementación y fecha de inicio.</span>
+            <span>1. Entendemos tu negocio y objetivo.</span>
+            <span>2. Validamos la configuración y el alcance.</span>
+            <span>3. Solo después se activan integraciones, automatizaciones o servicios contratados.</span>
           </div>
         </div>
         <LeadForm />
@@ -89,7 +94,8 @@ export default function AurevectorSalesPage() {
 
       <footer className={styles.footer}>
         <strong>AUREVECTOR</strong>
-        <span>CRM + Growth + Automatización para convertir con control.</span>
+        <span>CRM + automatización + IA + growth para convertir con control.</span>
+        <a href="/aurevector/start">Probar AUREVECTOR</a>
         <a href="/crm">Acceso al CRM</a>
       </footer>
     </main>
