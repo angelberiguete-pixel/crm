@@ -1,8 +1,12 @@
-import SalesPortal from "@/components/cevicos/SalesPortal";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Sales Command Center | Proyecto 812",
-  description: "Portal privado para administrar vendedores, compradores, atribución y comisiones del Proyecto 812.",
-};
-
-export default function PropertySalesPage(){ return <SalesPortal/>; }
+/**
+ * Legacy Proyecto 812 administrative entry point.
+ *
+ * Buyer/seller operations now belong to the canonical multi-tenant CRM.
+ * Keep this route as a compatibility alias so existing bookmarks do not
+ * strand users in the legacy parallel sales portal.
+ */
+export default function PropertySalesPage() {
+  redirect("/crm");
+}
