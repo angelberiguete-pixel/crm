@@ -8,7 +8,8 @@ import styles from "./agency.module.css";
 
 type SourceData={utm_source?:string;utm_campaign?:string;utm_medium?:string;campaign?:string};
 type Prospect={id:string;name:string;decision_maker:string|null;email:string|null;phone:string|null;source:string|null;source_data:SourceData|null;score:number|null;priority:number|null;stage:string;owner_user_id:string|null;next_action:string|null;next_action_at:string|null;service_interest:string|null;potential_value_cents:number|null;created_at:string};
-type Summary={stage:string;prospect_count:number;potential_value_cents:number};\ntype Activity={id:string;prospect_id:string;activity_type:string;summary:string;outcome:string|null;occurred_at:string;next_action:string|null;next_action_at:string|null;created_by:string|null};
+type Summary={stage:string;prospect_count:number;potential_value_cents:number};
+type Activity={id:string;prospect_id:string;activity_type:string;summary:string;outcome:string|null;occurred_at:string;next_action:string|null;next_action_at:string|null;created_by:string|null};
 const stageLabels:Record<string,string>={prospecto:"Nuevos",contactado:"Contactados",respondio:"Respondieron",reunion:"Reunión",calificado:"Calificados",propuesta:"Propuesta",negociacion:"Negociación",ganado:"Ganados",perdido:"Perdidos"};
 const money=(c:number|null)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format((Number(c)||0)/100);
 const attribution=(p:Prospect)=>({source:p.source_data?.utm_source??p.source??"—",campaign:p.source_data?.utm_campaign??p.source_data?.campaign??""});
