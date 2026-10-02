@@ -1,0 +1,2 @@
+AUREVECTOR git data API write-path probe.
+No runtime or production behavior changes.
