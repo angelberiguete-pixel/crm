@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Building2, CircleAlert, Inbox, Search, Target, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -30,6 +30,9 @@ export default function OmnichannelInbox() {
   const [onlyUnread, setOnlyUnread] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [followupAction, setFollowupAction] = useState("");
+  const [followupAt, setFollowupAt] = useState("");
+  const [savingFollowup, setSavingFollowup] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -96,12 +99,46 @@ export default function OmnichannelInbox() {
   const opportunity = selected?.opportunity_id ? opportunityMap.get(selected.opportunity_id) : null;
   const channel = selected ? channelMap.get(selected.channel_id) : null;
 
-  async function updateConversation(patch: Partial<Pick<Conversation, "status" | "priority" | "unread_count">>) {
+  async function updateConversation(patch: Partial<Pick<Conversation, "status" | "priority" | "unread_count" | "assigned_to">>) {
     if (!tenantId || !selected) return;
     const before = conversations;
     setConversations((rows) => rows.map((row) => row.id === selected.id ? { ...row, ...patch } : row));
     const result = await supabase.from("conversations").update(patch).eq("tenant_id", tenantId).eq("id", selected.id);
     if (result.error) { setConversations(before); setError(result.error.message); }
+  }
+
+  async function assignToMe() {
+    if (!tenantId || !selected) return;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) { setError(authError?.message ?? "No hay una sesión válida."); return; }
+    await updateConversation({ assigned_to: user.id });
+  }
+
+  async function createFollowup(e: FormEvent) {
+    e.preventDefault();
+    if (!tenantId || !selected || !followupAction.trim()) return;
+    setSavingFollowup(true); setError("");
+    const dueAt = followupAt ? new Date(followupAt).toISOString() : null;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) { setSavingFollowup(false); setError(authError?.message ?? "No hay una sesión válida."); return; }
+    const ownerId = selected.assigned_to ?? user.id;
+    if (!selected.assigned_to) {
+      const assign = await supabase.from("conversations").update({ assigned_to: ownerId }).eq("tenant_id", tenantId).eq("id", selected.id);
+      if (assign.error) { setSavingFollowup(false); setError(assign.error.message); return; }
+    }
+    if (opportunity) {
+      const op = await supabase.from("opportunities").update({ next_action: followupAction.trim(), next_action_at: dueAt }).eq("tenant_id", tenantId).eq("id", opportunity.id);
+      if (op.error) { setSavingFollowup(false); setError(op.error.message); return; }
+    }
+    const task = await supabase.from("tasks").insert({
+      tenant_id: tenantId, title: followupAction.trim(), status: "todo", priority: selected.priority === "urgent" ? "urgent" : selected.priority === "high" ? "high" : "normal",
+      due_at: dueAt, assigned_user_id: ownerId, contact_id: selected.contact_id, company_id: contact?.company_id ?? null,
+      opportunity_id: selected.opportunity_id, source: "crm_inbox", metadata: { kind: "conversation_followup", conversation_id: selected.id, channel_id: selected.channel_id }
+    });
+    if (task.error) { setSavingFollowup(false); setError(task.error.message); return; }
+    setConversations(rows => rows.map(row => row.id === selected.id ? { ...row, assigned_to: ownerId } : row));
+    if (opportunity) setOpportunities(rows => rows.map(row => row.id === opportunity.id ? { ...row, next_action: followupAction.trim(), next_action_at: dueAt } : row));
+    setFollowupAction(""); setFollowupAt(""); setSavingFollowup(false);
   }
 
   if (loading) return <div className="loading">Preparando Inbox omnicanal…</div>;
@@ -133,7 +170,8 @@ export default function OmnichannelInbox() {
         <div className="card"><div className="eyebrow"><UserRound size={13}/> Contacto</div><h3>{contact?.display_name ?? "Sin vincular"}</h3>{contact ? <div className="stack gap-8"><span>{contact.whatsapp_phone || contact.phone || "Sin teléfono"}</span><span>{contact.email || "Sin email"}</span><span className="muted">Fuente: {contact.source || "sin fuente"}</span></div> : <p className="muted">Vincula la conversación a un contacto para completar el contexto 360°.</p>}</div>
         <div className="card"><div className="eyebrow"><Building2 size={13}/> Empresa</div><h3>{company?.name ?? "Sin empresa"}</h3></div>
         <div className="card"><div className="eyebrow"><Target size={13}/> Oportunidad</div>{opportunity ? <><h3>{opportunity.title}</h3><strong>{opportunity.currency === "DOP" ? money.format(Number(opportunity.value)) : `${opportunity.currency} ${Number(opportunity.value).toLocaleString("es-DO")}`}</strong><p className="muted">{opportunity.status}</p><div className="notice"><strong>Próxima acción</strong><div>{opportunity.next_action || "No definida"}</div>{opportunity.next_action_at && <small>{when.format(new Date(opportunity.next_action_at))}</small>}</div></> : <p className="muted">Sin oportunidad vinculada.</p>}</div>
-        <div className="card"><div className="eyebrow"><CircleAlert size={13}/> Atención</div><strong>{selected?.unread_count ?? 0} sin leer</strong><div className="muted">Prioridad {selected?.priority ?? "—"}</div></div>
+        <div className="card"><div className="eyebrow"><CircleAlert size={13}/> Atención</div><strong>{selected?.unread_count ?? 0} sin leer</strong><div className="muted">Prioridad {selected?.priority ?? "—"}</div>{selected && <><div className="muted" style={{marginTop:8}}>Responsable: {selected.assigned_to ? "Asignado" : "Sin asignar"}</div>{!selected.assigned_to && <button className="button" style={{marginTop:8}} onClick={assignToMe}>Asignarme</button>}</>}</div>
+        {selected && <div className="card"><div className="eyebrow">Seguimiento</div><form className="stack gap-8" onSubmit={createFollowup}><input aria-label="Próxima acción" required value={followupAction} onChange={(e)=>setFollowupAction(e.target.value)} placeholder="Llamar, enviar propuesta…"/><input aria-label="Fecha del seguimiento" type="datetime-local" value={followupAt} onChange={(e)=>setFollowupAt(e.target.value)}/><button className="button primary" disabled={savingFollowup}>{savingFollowup ? "Guardando…" : "Crear seguimiento"}</button></form></div>}
       </aside>
     </section>
   </main>;
