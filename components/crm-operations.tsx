@@ -61,20 +61,13 @@ export default function CrmOperations({ tenantId }: { tenantId: string }) {
     const quote=acceptedQuotes.find(q=>q.id===quoteId);
     if(!quote) return setNotice("Selecciona una cotización aceptada.");
     setBusy(true);
-    const orderNumber="PED-"+Date.now().toString().slice(-8);
-    const created=await supabase.from("orders").insert({
-      tenant_id:tenantId, order_number:orderNumber, quotation_id:quote.id, contact_id:quote.contact_id,
-      company_id:quote.company_id, opportunity_id:quote.opportunity_id, status:"confirmed", currency:"DOP",
-      subtotal:quote.total, total:quote.total, committed_at:committedAt?new Date(committedAt).toISOString():null
-    }).select("id").single();
-    if(created.error){setBusy(false);return setNotice(created.error.message);}
-    const job=await supabase.from("production_jobs").insert({
-      tenant_id:tenantId, order_id:created.data.id, status:"blocked_design_approval",
-      priority:3, design_approved:false, committed_at:committedAt?new Date(committedAt).toISOString():null
+    const converted=await supabase.rpc("convert_quotation_to_order",{
+      p_quotation_id:quote.id,
+      p_committed_at:committedAt?new Date(committedAt).toISOString():null
     });
     setBusy(false);
-    if(job.error) return setNotice(job.error.message);
-    setQuoteId(""); setCommittedAt(""); setNotice("Pedido creado y enviado a la cola de producción, bloqueado hasta aprobar el diseño."); setReload(v=>v+1);
+    if(converted.error) return setNotice(converted.error.message);
+    setQuoteId(""); setCommittedAt(""); setNotice("Pedido creado con sus artículos y enviado a producción. El diseño debe aprobarse antes de comenzar."); setReload(v=>v+1);
   }
 
   async function approveDesign(orderId:string){
