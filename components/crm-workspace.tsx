@@ -19,6 +19,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import CrmOperations from "@/components/crm-operations";
 
 type Member = { tenant_id: string; role: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -43,6 +44,7 @@ const nav = [
   ["inbox", "Inbox", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
+  ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones / IA", Bot],
   ["settings", "Configuración", Settings],
@@ -146,6 +148,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && <Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "automations" && <Automations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
@@ -258,13 +261,106 @@ function Products({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
 }
 
 function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
-  const [rows, setRows] = useState<Quotation[]>([]); const [companies, setCompanies] = useState<Company[]>([]); const [companyId, setCompanyId] = useState(""); const [validUntil, setValidUntil] = useState(""); const [notes, setNotes] = useState("");
-  useEffect(() => { (async () => { const [q, c] = await Promise.all([supabase.from("quotations").select("id,quote_number,company_id,contact_id,status,currency,valid_until,total,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500), supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("name")]); const err = q.error ?? c.error; if (err) notice(err.message); setRows((q.data ?? []).map((x) => ({ ...x, total: Number(x.total) })) as Quotation[]); setCompanies((c.data ?? []) as Company[]); })(); }, [tenantId, reloadKey, notice]);
-  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
-  async function add(e: FormEvent) { e.preventDefault(); const quoteNumber = `COT-${Date.now().toString().slice(-8)}`; const r = await supabase.from("quotations").insert({ tenant_id: tenantId, quote_number: quoteNumber, company_id: companyId || null, status: "draft", currency: "DOP", valid_until: validUntil || null, notes: notes || null, subtotal: 0, discount_total: 0, tax_total: 0, total: 0 }); if (r.error) return notice(r.error.message); setCompanyId(""); setValidUntil(""); setNotes(""); refresh(); }
-  return <div className="stack gap-16"><form className="card" onSubmit={add}><h2>Nueva cotización</h2><div className="form-grid"><label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Válida hasta<input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></label></div><label style={{ marginTop: 12 }}>Notas<textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></label><div className="section-gap"><button className="button primary">Crear borrador</button></div></form><div className="table-wrap"><table className="data-table"><thead><tr><th>Número</th><th>Empresa</th><th>Estado</th><th>Total</th><th>Validez</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td><strong>{r.quote_number}</strong></td><td>{r.company_id ? companyMap.get(r.company_id) ?? "—" : "—"}</td><td><span className="pill">{r.status}</span></td><td>{money.format(r.total)}</td><td>{r.valid_until ?? "—"}</td></tr>)}</tbody></table>{rows.length === 0 && <Empty title="Sin cotizaciones" text="Crea un borrador y luego añade productos en el flujo comercial." />}</div></div>;
-}
+  const [rows, setRows] = useState<Quotation[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [items, setItems] = useState<Array<{ id:string; quotation_id:string; product_id:string|null; description:string; quantity:number; unit_price:number; line_subtotal:number|null }>>([]);
+  const [companyId, setCompanyId] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [notes, setNotes] = useState("");
+  const [selectedQuote, setSelectedQuote] = useState("");
+  const [productId, setProductId] = useState("");
+  const [quantity, setQuantity] = useState("1");
 
+  useEffect(() => { (async () => {
+    const [q, c, p, i] = await Promise.all([
+      supabase.from("quotations").select("id,quote_number,company_id,contact_id,status,currency,valid_until,total,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500),
+      supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("name"),
+      supabase.from("products").select("id,sku,name,description,status,sale_price,currency,stock_snapshot,created_at").eq("tenant_id", tenantId).eq("status","active").order("name"),
+      supabase.from("quotation_items").select("id,quotation_id,product_id,description,quantity,unit_price,line_subtotal").eq("tenant_id",tenantId).order("position")
+    ]);
+    const err = q.error ?? c.error ?? p.error ?? i.error; if (err) notice(err.message);
+    setRows((q.data ?? []).map((x) => ({ ...x, total: Number(x.total) })) as Quotation[]);
+    setCompanies((c.data ?? []) as Company[]);
+    setProducts((p.data ?? []).map(x=>({...x,sale_price:Number(x.sale_price),stock_snapshot:x.stock_snapshot===null?null:Number(x.stock_snapshot)})) as Product[]);
+    setItems((i.data??[]).map(x=>({...x,quantity:Number(x.quantity),unit_price:Number(x.unit_price),line_subtotal:x.line_subtotal===null?null:Number(x.line_subtotal)})));
+  })(); }, [tenantId, reloadKey, notice]);
+
+  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
+  const selected = rows.find(r=>r.id===selectedQuote) ?? null;
+  const selectedItems = items.filter(i=>i.quotation_id===selectedQuote);
+
+  async function add(e: FormEvent) {
+    e.preventDefault();
+    const quoteNumber = `COT-${Date.now().toString().slice(-8)}`;
+    const r = await supabase.from("quotations").insert({ tenant_id: tenantId, quote_number: quoteNumber, company_id: companyId || null, status: "draft", currency: "DOP", valid_until: validUntil || null, notes: notes || null, subtotal: 0, discount_total: 0, tax_total: 0, total: 0 }).select("id").single();
+    if (r.error) return notice(r.error.message);
+    setCompanyId(""); setValidUntil(""); setNotes(""); setSelectedQuote(r.data.id); refresh();
+  }
+
+  async function addItem(e: FormEvent) {
+    e.preventDefault();
+    if(!selectedQuote) return notice("Selecciona una cotización.");
+    const product=products.find(p=>p.id===productId);
+    if(!product) return notice("Selecciona un producto activo con precio aprobado.");
+    const qty=Number(quantity);
+    if(!Number.isFinite(qty)||qty<=0) return notice("Cantidad inválida.");
+    const subtotal=qty*product.sale_price;
+    const r=await supabase.from("quotation_items").insert({
+      tenant_id:tenantId, quotation_id:selectedQuote, product_id:product.id, position:selectedItems.length+1,
+      sku_snapshot:product.sku, description:product.name, quantity:qty, unit_price:product.sale_price,
+      discount_percent:0, tax_rate:0
+    });
+    if(r.error) return notice(r.error.message);
+    const newSubtotal=selectedItems.reduce((a,i)=>a+Number(i.line_subtotal??i.quantity*i.unit_price),0)+subtotal;
+    const u=await supabase.from("quotations").update({subtotal:newSubtotal,total:newSubtotal}).eq("tenant_id",tenantId).eq("id",selectedQuote);
+    if(u.error) return notice(u.error.message);
+    setProductId(""); setQuantity("1"); refresh();
+  }
+
+  async function setQuoteStatus(q:Quotation,status:string) {
+    if(status==="accepted" && q.total<=0) return notice("No puedes aceptar una cotización sin artículos y total.");
+    const patch:Record<string,unknown>={status};
+    if(status==="accepted") patch.accepted_at=new Date().toISOString();
+    if(status==="rejected") patch.rejected_at=new Date().toISOString();
+    const r=await supabase.from("quotations").update(patch).eq("tenant_id",tenantId).eq("id",q.id);
+    if(r.error) return notice(r.error.message);
+    notice(`Cotización ${q.quote_number}: ${status}.`); refresh();
+  }
+
+  function printQuote(q:Quotation) {
+    const quoteItems=items.filter(i=>i.quotation_id===q.id);
+    const company=q.company_id?companyMap.get(q.company_id)??"Cliente":"Cliente";
+    const lines=quoteItems.map(i=>`<tr><td>${i.description}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${money.format(i.unit_price)}</td><td style="text-align:right">${money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</td></tr>`).join("");
+    const html=`<!doctype html><html><head><meta charset="utf-8"><title>${q.quote_number}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#111}h1{margin-bottom:4px}.muted{color:#666}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:20px;font-weight:700;margin-top:24px}@media print{button{display:none}}</style></head><body><h1>Sublimaciones Lazala</h1><div class="muted">Cotización ${q.quote_number}</div><p><strong>Cliente:</strong> ${company}</p><p><strong>Estado:</strong> ${q.status}</p><table><thead><tr><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${lines||'<tr><td colspan="4">Sin artículos</td></tr>'}</tbody></table><div class="total">Total: ${money.format(q.total)}</div><p class="muted">Documento generado desde el CRM. Usa Imprimir → Guardar como PDF para compartirlo por WhatsApp.</p><button onclick="window.print()">Imprimir / Guardar PDF</button></body></html>`;
+    const w=window.open("","_blank"); if(!w) return notice("El navegador bloqueó la ventana de impresión.");
+    w.document.write(html); w.document.close();
+  }
+
+  return <div className="stack gap-16">
+    <form className="card" onSubmit={add}><h2>Nueva cotización</h2><div className="form-grid"><label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Válida hasta<input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></label></div><label style={{ marginTop: 12 }}>Notas<textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></label><div className="section-gap"><button className="button primary">Crear borrador</button></div></form>
+
+    <section className="grid two-col">
+      <div className="card"><h2>Cotizaciones</h2>{rows.map(q=><button type="button" key={q.id} className="priority-item" style={{width:"100%",textAlign:"left",marginBottom:8}} onClick={()=>setSelectedQuote(q.id)}><div><strong>{q.quote_number}</strong><div className="muted">{q.company_id?companyMap.get(q.company_id)??"—":"—"} · {money.format(q.total)}</div></div><span className="pill">{q.status}</span></button>)}{rows.length===0&&<Empty title="Sin cotizaciones" text="Crea el primer borrador comercial." />}</div>
+      <div className="card">
+        <h2>Detalle</h2>
+        {!selected&&<Empty title="Selecciona una cotización" text="Añade artículos, cambia su estado y genera la versión imprimible." />}
+        {selected&&<div className="stack gap-12">
+          <div className="priority-item"><strong>{selected.quote_number}</strong><span>{money.format(selected.total)}</span></div>
+          {selectedItems.map(i=><div key={i.id} className="priority-item"><div><strong>{i.description}</strong><div className="muted">{i.quantity} × {money.format(i.unit_price)}</div></div><span>{money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</span></div>)}
+          {selected.status==="draft"&&<form onSubmit={addItem} className="stack gap-12"><label>Producto<select value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">Seleccionar producto activo</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} · {money.format(p.sale_price)}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} required /></label><button className="button primary">Añadir artículo</button></form>}
+          <div className="top-actions" style={{flexWrap:"wrap"}}>
+            {selected.status==="draft"&&<button className="button" onClick={()=>setQuoteStatus(selected,"sent")}>Marcar enviada</button>}
+            {["draft","sent"].includes(selected.status)&&<button className="button primary" onClick={()=>setQuoteStatus(selected,"accepted")}>Aceptar</button>}
+            {["draft","sent"].includes(selected.status)&&<button className="button danger" onClick={()=>setQuoteStatus(selected,"rejected")}>Rechazar</button>}
+            <button className="button" onClick={()=>printQuote(selected)}>Imprimir / PDF</button>
+          </div>
+          {products.length===0&&<div className="notice">No hay productos activos con precio aprobado. Completa costos/precio antes de cotizar.</div>}
+        </div>}
+      </div>
+    </section>
+  </div>;
+}
 function Calendar({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
   const [rows, setRows] = useState<CalendarEvent[]>([]); const [title, setTitle] = useState(""); const [start, setStart] = useState(""); const [end, setEnd] = useState(""); const [location, setLocation] = useState("");
   useEffect(() => { (async () => { const r = await supabase.from("calendar_events").select("id,title,description,event_type,status,starts_at,ends_at,location,created_at").eq("tenant_id", tenantId).order("starts_at", { ascending: true }).limit(500); if (r.error) notice(r.error.message); else setRows((r.data ?? []) as CalendarEvent[]); })(); }, [tenantId, reloadKey, notice]);
