@@ -19,6 +19,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import CrmOperations from "@/components/crm-operations";
 
 type Member = { tenant_id: string; role: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -43,6 +44,7 @@ const nav = [
   ["inbox", "Inbox", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
+  ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones / IA", Bot],
   ["settings", "Configuración", Settings],
@@ -146,6 +148,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && <Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "automations" && <Automations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
