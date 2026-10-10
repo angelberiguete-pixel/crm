@@ -309,7 +309,7 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
     const r=await supabase.from("quotation_items").insert({
       tenant_id:tenantId, quotation_id:selectedQuote, product_id:product.id, position:selectedItems.length+1,
       sku_snapshot:product.sku, description:product.name, quantity:qty, unit_price:product.sale_price,
-      discount_percent:0, tax_rate:0, line_subtotal:subtotal
+      discount_percent:0, tax_rate:0
     });
     if(r.error) return notice(r.error.message);
     const newSubtotal=selectedItems.reduce((a,i)=>a+Number(i.line_subtotal??i.quantity*i.unit_price),0)+subtotal;
