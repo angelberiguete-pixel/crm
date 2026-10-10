@@ -13,6 +13,7 @@ const sectionPermission: Record<string, string> = {
   inbox: "inbox",
   products: "products",
   quotations: "quotations",
+  operations: "operations",
   calendar: "calendar",
   automations: "automations",
   settings: "settings",
