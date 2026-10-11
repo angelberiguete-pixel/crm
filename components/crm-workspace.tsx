@@ -19,11 +19,10 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { resolveTenantContext } from "@/lib/tenant-context";
+import { useActiveTenant } from "@/components/tenant-context";
+import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
-
-type TenantChoice = { tenant_id: string; tenant_name: string; tenant_slug: string; membership_role: string; is_active: boolean };
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -64,8 +63,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const section = slug[0] ?? "";
   const [userId, setUserId] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
-  const [tenantChoices, setTenantChoices] = useState<TenantChoice[]>([]);
-  const [selectingTenant, setSelectingTenant] = useState(false);
+  const activeTenant = useActiveTenant();
   const [onboarding, setOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -83,44 +81,10 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         return;
       }
       setUserId(session.user.id);
-      const tenants = await supabase.rpc("list_my_tenants");
-      if (!alive) return;
-      if (tenants.error) {
-        setNotice(tenants.error.message);
-        setLoading(false);
-        return;
-      }
-
-      const memberships = (tenants.data ?? []) as Array<{
-        tenant_id: string;
-        tenant_name: string;
-        tenant_slug: string;
-        membership_role: string;
-        is_active: boolean;
-      }>;
-
-      if (memberships.length === 0) {
+      if (!activeTenant) {
         setOnboarding(true);
         setLoading(false);
         return;
-      }
-
-      const selectedTenant = resolveTenantContext(memberships);
-      if (!selectedTenant && memberships.length > 1) {
-        setTenantChoices(memberships);
-        setLoading(false);
-        return;
-      }
-      let activeTenant = selectedTenant ?? memberships[0];
-      if (!activeTenant.is_active) {
-        const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
-        if (!alive) return;
-        if (selected.error) {
-          setNotice(selected.error.message);
-          setLoading(false);
-          return;
-        }
-        activeTenant = { ...activeTenant, is_active: true };
       }
 
       setMember({
@@ -138,27 +102,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       alive = false;
       listener.subscription.unsubscribe();
     };
-  }, [router]);
-
-  async function chooseTenant(tenant: TenantChoice) {
-    setSelectingTenant(true);
-    setNotice("");
-    try {
-      const result = await supabase.rpc("set_active_tenant", { p_tenant_id: tenant.tenant_id });
-      if (result.error) { setNotice(result.error.message); return; }
-      setMember({ tenant_id: tenant.tenant_id, role: tenant.membership_role, tenant_name: tenant.tenant_name, tenant_slug: tenant.tenant_slug });
-      setTenantChoices([]);
-    } catch {
-      setNotice("No se pudo seleccionar la empresa. Intenta nuevamente.");
-    } finally { setSelectingTenant(false); }
-  }
-
-  if (!member && tenantChoices.length > 0) return <main className="auth-shell"><section className="auth-panel">
-    <div className="eyebrow">Look Social Media CRM</div><h1>Selecciona tu empresa</h1>
-    <p className="muted">Elige el workspace que deseas abrir.</p>
-    <div className="stack gap-16">{tenantChoices.map(tenant => <button type="button" className="button" key={tenant.tenant_id} disabled={selectingTenant} onClick={() => chooseTenant(tenant)}>{tenant.tenant_name}</button>)}</div>
-    {notice && <div className="notice" role="alert">{notice}</div>}
-  </section></main>;
+  }, [router, activeTenant]);
 
   if (loading) return <div className="loading">Cargando CRM…</div>;
   if (onboarding && userId) {
@@ -231,6 +175,7 @@ function Onboarding({ userId, done }: { userId: string; done: (tenant: { tenantI
     const active = await supabase.rpc("set_active_tenant", { p_tenant_id: tenantId });
     setBusy(false);
     if (active.error) { setError(active.error.message); return; }
+    notifyTenantContextChanged();
     done({ tenantId, tenantName: name.trim(), tenantSlug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-") });
   }
   return <main className="auth-shell"><section className="auth-panel"><div className="eyebrow">Primer acceso</div><h1>Crea tu workspace</h1><p className="muted">Esto prepara tu tenant, plan, pipeline y permisos.</p><form className="stack gap-16" onSubmit={submit}><label>Nombre del negocio<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Slug<input value={slug} onChange={(e) => setSlug(e.target.value)} required /></label>{error && <div className="notice">{error}</div>}<button className="button primary" disabled={busy}>{busy ? "Creando…" : "Crear workspace"}</button></form><small className="muted">Usuario {userId.slice(0, 8)}…</small></section></main>;

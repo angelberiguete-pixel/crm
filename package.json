@@ -2,12 +2,15 @@
   "name": "look-social-media-crm",
   "version": "0.1.0",
   "private": true,
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:browser:tenant": "node tests/tenant-context-browser.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
@@ -22,6 +25,7 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright": "1.62.1",
     "typescript": "^5.9.0"
   }
 }

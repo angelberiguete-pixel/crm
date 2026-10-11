@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
+import TenantSwitcher from "@/components/tenant-switcher";
+import { TenantContextProvider, type ActiveTenant } from "@/components/tenant-context";
+import { notifyTenantContextChanged, TENANT_CONTEXT_EVENT, TENANT_CONTEXT_REVISION } from "@/lib/tenant-context-events";
 
 const sectionPermission: Record<string, string> = {
   "": "dashboard",
   companies: "companies",
   contacts: "contacts",
   revenue: "pipeline",
+  sales: "pipeline",
   inbox: "inbox",
   products: "products",
   quotations: "quotations",
@@ -29,6 +34,10 @@ type TenantAccess = {
 };
 
 export default function TenantPermissionGate({ section, children }: { section: string; children: ReactNode }) {
+  const router = useRouter();
+  const [tenant, setTenant] = useState<ActiveTenant | null>(null);
+  const tenantRef = useRef<string | null>(null);
+  const [validatedSection, setValidatedSection] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "allow" | "deny">("loading");
   const [reason, setReason] = useState("");
   const [choices, setChoices] = useState<TenantAccess[]>([]);
@@ -41,8 +50,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
       if (!session?.user) {
-        // CrmWorkspace owns the redirect to /login. Keep onboarding/login behavior intact.
-        setState("allow");
+        router.replace("/login");
+        setState("loading");
         return;
       }
 
@@ -57,16 +66,21 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const memberships = (tenants.data ?? []) as TenantAccess[];
       if (memberships.length === 0) {
         // New users must be allowed through so onboarding can create their first tenant.
+        setTenant(null);
+        setChoices([]);
+        setValidatedSection(section);
         setState("allow");
         return;
       }
 
       const resolved = resolveTenantContext(memberships);
       if (!resolved) {
+        setState("loading");
         setChoices(memberships);
         return;
       }
       let activeTenant = resolved;
+      setChoices([]);
       if (!memberships.some((membership) => membership.is_active)) {
         const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
         if (!alive) return;
@@ -76,8 +90,10 @@ export default function TenantPermissionGate({ section, children }: { section: s
           return;
         }
         activeTenant = { ...activeTenant, is_active: true };
+        notifyTenantContextChanged();
       }
 
+      if (tenantRef.current && tenantRef.current !== activeTenant.tenant_id) setState("loading");
       const tenantId = activeTenant.tenant_id;
       const permissionKey = sectionPermission[section] ?? section;
       const [permissionsResult, modulesResult] = await Promise.all([
@@ -99,14 +115,46 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const moduleEnabled = module ? module.enabled : true;
 
       if (hasPermission && moduleEnabled) {
+        tenantRef.current = activeTenant.tenant_id;
+        setTenant(activeTenant);
+        setValidatedSection(section);
         setState("allow");
       } else {
         setReason(!moduleEnabled ? "Este módulo no está habilitado para el plan/configuración de esta empresa." : "Tu rol no tiene permiso para utilizar esta función.");
         setState("deny");
       }
-    })();
+    })().catch(() => {
+      if (!alive) return;
+      setReason("No pudimos validar el acceso. Intenta nuevamente.");
+      setState("deny");
+    });
     return () => { alive = false; };
-  }, [section, contextVersion]);
+  }, [section, contextVersion, router]);
+
+  useEffect(() => {
+    const invalidate = () => {
+      setState("loading");
+      setTenant(null);
+      setValidatedSection(null);
+      setContextVersion(version => version + 1);
+    };
+    const storage = (event: StorageEvent) => {
+      if (event.key === TENANT_CONTEXT_REVISION) invalidate();
+    };
+    const focus = () => setContextVersion(version => version + 1);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" || event === "USER_UPDATED") invalidate();
+    });
+    window.addEventListener("storage", storage);
+    window.addEventListener(TENANT_CONTEXT_EVENT, invalidate);
+    window.addEventListener("focus", focus);
+    return () => {
+      window.removeEventListener("storage", storage);
+      window.removeEventListener(TENANT_CONTEXT_EVENT, invalidate);
+      window.removeEventListener("focus", focus);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   async function selectTenant(tenant: TenantAccess) {
     setSelecting(true);
@@ -115,8 +163,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const result = await supabase.rpc("set_active_tenant", { p_tenant_id: tenant.tenant_id });
       if (result.error) { setReason(result.error.message); return; }
       setChoices([]);
-      setState("loading");
-      setContextVersion(version => version + 1);
+      notifyTenantContextChanged();
     } catch { setReason("No se pudo seleccionar la empresa. Intenta nuevamente."); }
     finally { setSelecting(false); }
   }
@@ -128,8 +175,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
     {reason && <div className="notice" role="alert">{reason}</div>}
   </section></main>;
 
-  if (state === "loading") return <div className="loading">Comprobando permisos…</div>;
-  if (state === "allow") return <>{children}</>;
+  if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
+  if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>{tenant && <div className="workspace-switcher"><TenantSwitcher /></div>}{children}</TenantContextProvider>;
 
   return <main className="auth-shell">
     <section className="auth-panel">

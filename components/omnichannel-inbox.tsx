@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Building2, CircleAlert, Inbox, Search, Target, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useActiveTenant } from "@/components/tenant-context";
 
-type TenantRow = { tenant_id: string; is_active: boolean };
 type Channel = { id: string; provider: string; name: string; status: string };
 type Contact = { id: string; company_id: string | null; display_name: string; email: string | null; phone: string | null; whatsapp_phone: string | null; source: string | null; status: string };
 type Company = { id: string; name: string };
@@ -17,7 +17,8 @@ const when = new Intl.DateTimeFormat("es-DO", { dateStyle: "short", timeStyle: "
 const money = new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 0 });
 
 export default function OmnichannelInbox() {
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const activeTenant = useActiveTenant();
+  const tenantId = activeTenant?.tenant_id ?? null;
   const [channels, setChannels] = useState<Channel[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -32,23 +33,7 @@ export default function OmnichannelInbox() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const tenants = await supabase.rpc("list_my_tenants");
-      if (tenants.error) { setError(tenants.error.message); setLoading(false); return; }
-      const rows = (tenants.data ?? []) as TenantRow[];
-      const active = rows.find((row) => row.is_active) ?? rows[0];
-      if (!active) { setError("No hay un tenant activo para abrir Inbox."); setLoading(false); return; }
-      if (!active.is_active) {
-        const activate = await supabase.rpc("set_active_tenant", { p_tenant_id: active.tenant_id });
-        if (activate.error) { setError(activate.error.message); setLoading(false); return; }
-      }
-      setTenantId(active.tenant_id);
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId) { setLoading(false); setError("Selecciona una empresa para abrir Inbox."); return; }
     (async () => {
       setLoading(true); setError("");
       const [channelRes, conversationRes, contactRes, companyRes, opportunityRes] = await Promise.all([
