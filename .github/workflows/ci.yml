@@ -34,3 +34,5 @@ jobs:
         run: npm run test:browser:tenant
       - name: Password recovery browser regression tests
         run: node tests/auth-browser.test.mjs
+      - name: Super Admin mobile browser regression tests
+        run: node tests/platform-admin-browser.test.mjs
