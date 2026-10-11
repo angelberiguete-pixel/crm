@@ -33,6 +33,7 @@ type Module = { module_key: string; module_name: string; enabled: boolean; sourc
 type Member = { user_id: string; email: string | null; membership_role: string; membership_status: string; role_key: string | null; role_name: string | null };
 type Role = { role_key: string; role_name: string; description: string | null; permissions: Record<string, unknown>; is_system: boolean };
 type Plan = { id?: string; code?: string; name?: string; [key: string]: unknown };
+type Template = { template_key: string; name: string; description: string | null; status: string };
 
 function unwrap<T>(value: unknown, rpcName: string): T[] {
   if (!Array.isArray(value)) return [];
@@ -47,6 +48,7 @@ export default function PlatformAdmin() {
   const [access, setAccess] = useState<Access | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -56,6 +58,10 @@ export default function PlatformAdmin() {
   const [bootstrapCode, setBootstrapCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
+  const [newPlan, setNewPlan] = useState("starter");
+  const [newVertical, setNewVertical] = useState("");
+  const [newTemplate, setNewTemplate] = useState("");
+  const [creatingTenant, setCreatingTenant] = useState(false);
   const [odooUrl, setOdooUrl] = useState("");
   const [odooDb, setOdooDb] = useState("");
   const [odooBusy, setOdooBusy] = useState(false);
@@ -81,15 +87,18 @@ export default function PlatformAdmin() {
 
   const loadPlatform = useCallback(async () => {
     setLoading(true);
-    const [tenantResult, planResult] = await Promise.all([
+    const [tenantResult, planResult, templateResult] = await Promise.all([
       supabase.rpc("platform_admin_tenants"),
       supabase.rpc("platform_admin_plans"),
+      supabase.from("crm_templates").select("template_key,name,description,status").eq("status", "active").order("name"),
     ]);
     if (tenantResult.error) setNotice(tenantResult.error.message);
     if (planResult.error) setNotice(planResult.error.message);
+    if (templateResult.error) setNotice(templateResult.error.message);
     const tenantRows = (tenantResult.data ?? []) as Tenant[];
     setTenants(tenantRows);
     setPlans(unwrap<Plan>(planResult.data, "platform_admin_plans"));
+    setTemplates((templateResult.data ?? []) as Template[]);
     setSelectedId((current) => current && tenantRows.some((t) => t.tenant_id === current) ? current : tenantRows[0]?.tenant_id ?? null);
     setLoading(false);
   }, []);
@@ -130,16 +139,30 @@ export default function PlatformAdmin() {
   }
 
   async function createTenant(e: FormEvent) {
-    e.preventDefault(); setNotice("");
-    const slug = newSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
-    const result = await supabase.rpc("create_tenant", { p_name: newName.trim(), p_slug: slug });
+    e.preventDefault();
+    setNotice("");
+    const slug = newSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "");
+    if (slug.length < 3) return setNotice("El slug debe tener al menos 3 caracteres.");
+    setCreatingTenant(true);
+    const result = await supabase.rpc("platform_create_client_tenant", {
+      p_name: newName.trim(),
+      p_slug: slug,
+      p_plan_code: newPlan,
+      p_vertical: newVertical.trim() || null,
+      p_template_key: newTemplate || null,
+    });
+    setCreatingTenant(false);
     if (result.error) return setNotice(result.error.message);
     const tenantId = result.data as string;
-    setNewName(""); setNewSlug("");
-    await supabase.rpc("initialize_revenue_command_center", { p_tenant_id: tenantId });
+    const createdName = newName.trim();
+    setNewName("");
+    setNewSlug("");
+    setNewVertical("");
+    setNewTemplate("");
     await loadPlatform();
     setSelectedId(tenantId);
-    setNotice("Cliente/tenant creado. Ya puedes asignarle plan, módulos y template.");
+    await loadTenant(tenantId);
+    setNotice(`${createdName} creado con plan ${newPlan}${newTemplate ? ` y plantilla ${newTemplate}` : ""}. Continúa con branding, usuarios, módulos e integraciones.`);
   }
 
   async function setPlan(code: string) {
@@ -257,9 +280,18 @@ export default function PlatformAdmin() {
           <div className="table-wrap"><table className="data-table"><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>Usuarios</th><th></th></tr></thead><tbody>{tenants.map((t) => <tr key={t.tenant_id}><td><strong>{t.tenant_name}</strong><div className="muted">{t.tenant_slug}</div></td><td>{t.plan_code ?? "—"}</td><td><span className="pill">{t.subscription_status ?? "sin plan"}</span></td><td>{t.member_count}</td><td><button className="button small" onClick={() => setSelectedId(t.tenant_id)}>Gestionar</button></td></tr>)}</tbody></table>{tenants.length === 0 && <div className="empty"><strong>Sin tenants todavía</strong><div>Crea el primero desde este panel.</div></div>}</div>
         </div>
         <form className="card" onSubmit={createTenant}>
-          <h2>Nuevo cliente</h2>
-          <p className="muted">Provisiona un tenant sobre el mismo core CRM.</p>
-          <div className="stack gap-12"><label>Empresa / cliente<input value={newName} onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")); }} required /></label><label>Slug<input value={newSlug} onChange={(e) => setNewSlug(e.target.value)} required /></label><button className="button primary">Crear tenant</button></div>
+          <div className="eyebrow">Onboarding de cliente</div>
+          <h2>Agregar nuevo cliente</h2>
+          <p className="muted">Crea el workspace aislado, asigna el plan y aplica una plantilla vertical opcional en una sola operación.</p>
+          <div className="stack gap-12">
+            <label>Empresa / cliente<input value={newName} onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")); }} required /></label>
+            <label>Slug<input value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} required minLength={3} /></label>
+            <label>Sector / nicho<input value={newVertical} onChange={(e) => setNewVertical(e.target.value)} placeholder="Ej. clínica dental, rent-a-car, dealer, restaurante" /></label>
+            <label>Plan<select value={newPlan} onChange={(e) => setNewPlan(e.target.value)} required>{plans.map((p, i) => <option key={String(p.id ?? p.code ?? i)} value={String(p.code ?? "")}>{String(p.name ?? p.code ?? "Plan")}</option>)}</select></label>
+            <label>Plantilla inicial<select value={newTemplate} onChange={(e) => setNewTemplate(e.target.value)}><option value="">Core general · sin plantilla vertical</option>{templates.map((t) => <option key={t.template_key} value={t.template_key}>{t.name}</option>)}</select></label>
+            {newTemplate && <div className="notice">{templates.find((t) => t.template_key === newTemplate)?.description ?? "La plantilla configurará módulos y procesos iniciales."}</div>}
+            <button className="button primary" disabled={creatingTenant || !newName.trim() || !newPlan}>{creatingTenant ? "Creando cliente…" : "Crear cliente y continuar onboarding"}</button>
+          </div>
         </form>
       </section>
 
