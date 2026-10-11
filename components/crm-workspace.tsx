@@ -121,7 +121,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><strong>CRM Revenue OS</strong><span>Ventas · Operaciones · IA</span></div>
+        <div className="brand"><strong>Look Social Media CRM</strong><span>Ventas · Operaciones · IA</span></div>
         <nav className="nav">
           {nav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
