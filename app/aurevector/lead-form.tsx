@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import styles from "./aurevector.module.css";
 
-const ENDPOINT = "https://ygipjqgyreeahslzorik.supabase.co/functions/v1/aurevector-lead-capture";
+const ENDPOINT = "https://ygipjqgyreeahslzorik.supabase.co/functions/v1/look-social-media-lead-capture";
 
 type Status = { kind: "idle" | "sending" | "success" | "error"; message?: string };
 
@@ -59,9 +59,9 @@ export default function LeadForm() {
         <label>Plan de interés
           <select name="selected_plan" defaultValue="">
             <option value="">Quiero recomendación / Growth Audit</option>
-            <option value="essential">AUREVECTOR Essential — US$80/mes</option>
-            <option value="growth">AUREVECTOR Growth — US$460/mes</option>
-            <option value="scale">AUREVECTOR Scale — US$800/mes</option>
+            <option value="essential">Look Social Media Essential — US$80/mes</option>
+            <option value="growth">Look Social Media Growth — US$460/mes</option>
+            <option value="scale">Look Social Media Scale — US$800/mes</option>
           </select>
         </label>
         <label>Sector<input name="sector" maxLength={120} placeholder="Clínica, servicios, inmobiliaria…" /></label>
@@ -74,7 +74,7 @@ export default function LeadForm() {
       <button className={styles.submit} type="submit" disabled={status.kind === "sending"}>
         {status.kind === "sending" ? "Registrando solicitud…" : "Solicitar evaluación"}
       </button>
-      <p className={styles.consent}>Enviar este formulario no activa ningún servicio ni cargo. AUREVECTOR te contactará para validar alcance y encaje.</p>
+      <p className={styles.consent}>Enviar este formulario no activa ningún servicio ni cargo. Look Social Media te contactará para validar alcance y encaje.</p>
       {status.kind === "success" && <div className={styles.success} role="status">{status.message}</div>}
       {status.kind === "error" && <div className={styles.error} role="alert">{status.message}</div>}
     </form>
