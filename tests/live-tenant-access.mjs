@@ -55,10 +55,10 @@ try {
   }
   const {context,page}=await login(f.email_admin);
   assert.ok(page.url().includes('/platform-admin'));
-  await page.getByRole('heading',{name:'Look Social Media · Super Admin'}).waitFor({timeout:60000});
+  await page.getByRole('heading',{name:'LOOK SOCIAL MEDIA · Super Admin'}).waitFor({timeout:60000});
   const row=page.getByRole('row').filter({has:page.getByText('QA E2E A',{exact:true})});
   await row.getByRole('button',{name:'Gestionar',exact:true}).click();
-  await page.getByRole('button',{name:'Entrar al CRM del cliente',exact:true}).click();
+  await page.getByRole('button',{name:'Entrar al CRM',exact:true}).click();
   await page.waitForURL(/\/crm/,{timeout:30000});
   await page.goto(base+'/crm/companies');
   await page.getByText('QA E2E Company A',{exact:true}).waitFor({timeout:60000});
