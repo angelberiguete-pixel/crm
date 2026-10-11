@@ -55,7 +55,10 @@ export default function PlatformAdmin() {
   const [notice, setNotice] = useState("");
   const [bootstrapCode, setBootstrapCode] = useState("");
   const [newName, setNewName] = useState("");
-  const [newSlug, setNewSlug] = useState("");\n  const [odooUrl, setOdooUrl] = useState("");\n  const [odooDb, setOdooDb] = useState("");\n  const [odooBusy, setOdooBusy] = useState(false);
+  const [newSlug, setNewSlug] = useState("");
+  const [odooUrl, setOdooUrl] = useState("");
+  const [odooDb, setOdooDb] = useState("");
+  const [odooBusy, setOdooBusy] = useState(false);
 
   const selected = useMemo(() => tenants.find((t) => t.tenant_id === selectedId) ?? null, [tenants, selectedId]);
 
