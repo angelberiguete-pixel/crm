@@ -1,20 +1,21 @@
-# Revenue Command Center — RD$1M
+# Look Social Media CRM
 
-Módulo ejecutivo sobre el CRM existente para gestionar el plan hacia RD$1,000,000 de MRR.
+Plataforma CRM multi-tenant de Look Social Media para administrar clientes, ventas, automatizaciones, operaciones, integraciones y servicios de agencia desde un mismo core.
 
 ## Stack
 - Next.js App Router + TypeScript
 - Supabase Auth/Postgres/RLS
 - Recharts
 - Vercel
+- Odoo como ERP externo por tenant cuando aplique
 
-## Inicio
-1. Copia `.env.example` a `.env.local`.
-2. Configura `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-3. `npm install`
-4. `npm run dev`
+## Arquitectura
+- `/platform-admin`: administración global de clientes, planes, módulos e integraciones.
+- `/agency`: operación comercial interna de Look Social Media.
+- `/crm`: workspace CRM aislado por tenant.
+- `/look-social-media`: presencia comercial pública de Look Social Media.
 
-El primer usuario crea su tenant desde onboarding. La app invoca `initialize_revenue_command_center` para crear el pipeline y sus etapas de forma idempotente.
+Los identificadores técnicos históricos pueden conservarse internamente cuando cambiarlos implique riesgo de compatibilidad. La identidad visible y comercial de la plataforma es Look Social Media.
 
 ## Seguridad
-La aplicación usa únicamente la publishable key en cliente. El acceso a filas se controla por las políticas RLS del CRM. No existe service role en frontend.
+El frontend usa únicamente la publishable key de Supabase. El aislamiento de datos depende de RLS/RBAC por tenant. No se expone service role en el navegador.

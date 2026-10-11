@@ -1,5 +1,5 @@
 {
-  "name": "crm-revenue-command-center",
+  "name": "look-social-media-crm",
   "version": "0.1.0",
   "private": true,
   "engines": {"node": ">=22"},

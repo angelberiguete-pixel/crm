@@ -123,12 +123,12 @@ export default function SalesHub({ slug }: Props) {
       <nav className="nav">
         {nav.map(([key, label, Icon]) => <Link key={key} className={section === key ? "active" : ""} href={`/ventas${key ? `/${key}` : ""}`}><Icon size={17}/>{label}</Link>)}
         <Link href="/crm"><Building2 size={17}/>CRM</Link>
-        {platformAdmin && <Link href="/admin"><Settings2 size={17}/>Consola Eurevector</Link>}
+        {platformAdmin && <Link href="/admin"><Settings2 size={17}/>Consola Look Social Media</Link>}
       </nav>
       <div className="sidebar-footer"><div className="muted">Rol: {role || "—"}</div><button className="text-button" onClick={async()=>{await supabase.auth.signOut();router.replace('/login')}}><LogOut size={14}/> Salir</button></div>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Motor comercial</div><h1>{title}</h1></div><div className="top-actions"><Link className="button" href="/eurevector">Landing pública</Link><button className="button" onClick={reload}><RefreshCw size={14}/> Actualizar</button></div></header>
+      <header className="topbar"><div><div className="eyebrow">Motor comercial</div><h1>{title}</h1></div><div className="top-actions"><Link className="button" href="/look-social-media">Landing pública</Link><button className="button" onClick={reload}><RefreshCw size={14}/> Actualizar</button></div></header>
       {notice && <div className="notice" style={{marginBottom:16}}>{notice}</div>}
       {loading && <div className="notice" style={{marginBottom:16}}>Actualizando datos…</div>}
       {section === "" && <Overview opps={opps} contacts={contacts} companies={companies} tags={tags} stages={stages}/>} 
@@ -146,7 +146,7 @@ function Overview({opps,contacts,companies,tags,stages}:{opps:Opportunity[];cont
   const open=opps.filter(x=>x.status==='open'); const won=opps.filter(x=>x.status==='won');
   return <div className="stack gap-16">
     <section className="grid metrics"><Metric label="Prospectos" value={String(open.length)} sub="Oportunidades abiertas"/><Metric label="Contactos" value={String(contacts.length)} sub="Base centralizada"/><Metric label="Empresas" value={String(companies.length)} sub="Cuentas comerciales"/><Metric label="Etiquetas" value={String(tags.length)} sub="Segmentación activa"/><Metric label="Ganadas" value={String(won.length)} sub="Clientes cerrados"/><Metric label="Etapas" value={String(stages.length)} sub="Pipeline configurable"/></section>
-    <section className="grid two-col"><div className="card"><h2>Flujo unificado</h2><p className="muted">Un lead nuevo entra como contacto, oportunidad y prospecto. Mantiene su fuente, UTM, etiquetas y próxima acción sin duplicar el negocio.</p><div className="top-actions"><Link className="button primary" href="/ventas/prospectos">Ver prospectos</Link><Link className="button" href="/ventas/pipeline">Abrir pipeline</Link></div></div><div className="card"><h2>Captación</h2><p className="muted">La landing pública de Eurevector ya está conectada al CRM. Los formularios de publicidad aterrizan directamente en Ventas.</p><Link className="button primary" href="/eurevector">Abrir landing</Link></div></section>
+    <section className="grid two-col"><div className="card"><h2>Flujo unificado</h2><p className="muted">Un lead nuevo entra como contacto, oportunidad y prospecto. Mantiene su fuente, UTM, etiquetas y próxima acción sin duplicar el negocio.</p><div className="top-actions"><Link className="button primary" href="/ventas/prospectos">Ver prospectos</Link><Link className="button" href="/ventas/pipeline">Abrir pipeline</Link></div></div><div className="card"><h2>Captación</h2><p className="muted">La landing pública de Look Social Media ya está conectada al CRM. Los formularios de publicidad aterrizan directamente en Ventas.</p><Link className="button primary" href="/look-social-media">Abrir landing</Link></div></section>
   </div>
 }
 

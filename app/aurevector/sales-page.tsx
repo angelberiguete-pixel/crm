@@ -13,7 +13,7 @@ export default function AurevectorSalesPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="#inicio" aria-label="AUREVECTOR inicio">AUREVECTOR</a>
+        <a className={styles.brand} href="#inicio" aria-label="LOOK SOCIAL MEDIA inicio">LOOK SOCIAL MEDIA</a>
         <nav className={styles.nav} aria-label="Navegación principal">
           <a href="#sistema">Cómo funciona</a>
           <a href="#planes">Planes</a>
@@ -26,14 +26,14 @@ export default function AurevectorSalesPage() {
         <div className={styles.heroCopy}>
           <span className={styles.kicker}>CRM + AUTOMATIZACIÓN + IA + GROWTH</span>
           <h1>Convierte más oportunidades sin perseguir leads a mano.</h1>
-          <p className={styles.lead}>AUREVECTOR organiza captación, seguimiento y ventas en un mismo sistema. Prueba cómo se configuraría para tu negocio antes de hablar con ventas.</p>
+          <p className={styles.lead}>LOOK SOCIAL MEDIA organiza captación, seguimiento y ventas en un mismo sistema. Prueba cómo se configuraría para tu negocio antes de hablar con ventas.</p>
           <div className={styles.heroActions}>
-            <a className={styles.primary} href="/aurevector/start">Probar AUREVECTOR</a>
+            <a className={styles.primary} href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a>
             <a className={styles.secondary} href="#sistema">Ver cómo funciona</a>
           </div>
           <div className={styles.micro}>Vista previa sin pago · No conecta WhatsApp ni activa automatizaciones externas durante la prueba</div>
         </div>
-        <aside className={styles.heroPanel} aria-label="Qué prepara AUREVECTOR">
+        <aside className={styles.heroPanel} aria-label="Qué prepara LOOK SOCIAL MEDIA">
           <span className={styles.panelLabel}>Tu operación comercial, conectada</span>
           <ul>
             <li>Contactos y empresas centralizados.</li>
@@ -42,7 +42,7 @@ export default function AurevectorSalesPage() {
             <li>Automatizaciones y recuperación de oportunidades.</li>
             <li>IA y servicios de crecimiento según plan y activación.</li>
           </ul>
-          <a className={styles.primary} href="/aurevector/start">Crear mi vista previa</a>
+          <a className={styles.primary} href="/look-social-media/start">Crear mi vista previa</a>
         </aside>
       </section>
 
@@ -50,7 +50,7 @@ export default function AurevectorSalesPage() {
         <div className={styles.sectionHeading}>
           <span className={styles.kicker}>DE CONVERSACIÓN A INGRESO</span>
           <h2>Un sistema para saber quién llegó, qué necesita y qué debe ocurrir después.</h2>
-          <p>Describe tu negocio y tus objetivos. AUREVECTOR prepara una vista previa del sistema comercial recomendado para que puedas entender el flujo antes de activarlo.</p>
+          <p>Describe tu negocio y tus objetivos. LOOK SOCIAL MEDIA prepara una vista previa del sistema comercial recomendado para que puedas entender el flujo antes de activarlo.</p>
         </div>
         <div className={styles.grid}>
           {outcomes.map(([title, text], index) => (
@@ -62,7 +62,7 @@ export default function AurevectorSalesPage() {
           ))}
         </div>
         <div className={styles.heroActions}>
-          <a className={styles.primary} href="/aurevector/start">Configurar mi sistema</a>
+          <a className={styles.primary} href="/look-social-media/start">Configurar mi sistema</a>
         </div>
       </section>
 
@@ -73,7 +73,7 @@ export default function AurevectorSalesPage() {
           <span className={styles.kicker}>SERVICIO + TECNOLOGÍA</span>
           <h2>No te entregamos otra herramienta para que la resuelvas solo.</h2>
         </div>
-        <p>Según el plan, AUREVECTOR combina plataforma, configuración, automatización y ejecución de crecimiento. Primero entendemos el proceso comercial; después activamos únicamente el alcance acordado.</p>
+        <p>Según el plan, LOOK SOCIAL MEDIA combina plataforma, configuración, automatización y ejecución de crecimiento. Primero entendemos el proceso comercial; después activamos únicamente el alcance acordado.</p>
       </section>
 
       <section className={styles.diagnostic} id="diagnostico">
@@ -81,7 +81,7 @@ export default function AurevectorSalesPage() {
           <span className={styles.kicker}>SIGUIENTE PASO</span>
           <h2>Prueba primero. Habla con nosotros cuando quieras activarlo.</h2>
           <p>Puedes generar una vista previa ahora mismo o enviarnos tu contexto para revisar encaje, alcance e implementación.</p>
-          <div className={styles.heroActions}><a className={styles.primary} href="/aurevector/start">Probar AUREVECTOR</a></div>
+          <div className={styles.heroActions}><a className={styles.primary} href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a></div>
           <div className={styles.promise}>
             <strong>Qué ocurre después</strong>
             <span>1. Entendemos tu negocio y objetivo.</span>
@@ -93,9 +93,9 @@ export default function AurevectorSalesPage() {
       </section>
 
       <footer className={styles.footer}>
-        <strong>AUREVECTOR</strong>
+        <strong>LOOK SOCIAL MEDIA</strong>
         <span>CRM + automatización + IA + growth para convertir con control.</span>
-        <a href="/aurevector/start">Probar AUREVECTOR</a>
+        <a href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a>
         <a href="/crm">Acceso al CRM</a>
       </footer>
     </main>

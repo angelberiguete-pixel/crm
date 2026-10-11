@@ -1,10 +1,5 @@
-import { AiOnboarding } from "./ai-onboarding";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Configura tu sistema comercial | AUREVECTOR",
-  description: "Configura y prueba una propuesta de agente IA y seguimiento comercial antes de activar tu CRM.",
-};
-
-export default function AurevectorStartPage() {
-  return <AiOnboarding />;
+export default function LegacyAurevectorStartPage() {
+  redirect("/look-social-media/start");
 }
