@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import styles from "./eurevector-lead-page.module.css";
 import { supabase } from "@/lib/supabase";
 
-export default function Look Social MediaLeadPage(){
+export default function EurevectorLeadPage(){
   const[name,setName]=useState(""); const[company,setCompany]=useState(""); const[email,setEmail]=useState(""); const[phone,setPhone]=useState(""); const[message,setMessage]=useState(""); const[consent,setConsent]=useState(false);
   const[busy,setBusy]=useState(false); const[status,setStatus]=useState<"idle"|"success"|"error">("idle"); const[error,setError]=useState(""); const[attribution,setAttribution]=useState<Record<string,string>>({});
 
