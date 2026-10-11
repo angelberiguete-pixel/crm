@@ -21,7 +21,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import CrmOperations from "@/components/crm-operations";
 
-type Member = { tenant_id: string; role: string };
+type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
 type Contact = { id: string; company_id: string | null; display_name: string; job_title: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; status: string; source: string | null; created_at: string };
 type Conversation = { id: string; contact_id: string | null; subject: string | null; status: string; priority: string; unread_count: number; last_message_at: string | null; created_at: string };
@@ -77,25 +77,46 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         return;
       }
       setUserId(session.user.id);
-      const membership = await supabase
-        .from("memberships")
-        .select("tenant_id,role")
-        .eq("user_id", session.user.id)
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
+      const tenants = await supabase.rpc("list_my_tenants");
       if (!alive) return;
-      if (membership.error) {
-        setNotice(membership.error.message);
+      if (tenants.error) {
+        setNotice(tenants.error.message);
         setLoading(false);
         return;
       }
-      if (!membership.data) {
+
+      const memberships = (tenants.data ?? []) as Array<{
+        tenant_id: string;
+        tenant_name: string;
+        tenant_slug: string;
+        membership_role: string;
+        is_active: boolean;
+      }>;
+
+      if (memberships.length === 0) {
         setOnboarding(true);
         setLoading(false);
         return;
       }
-      setMember(membership.data as Member);
+
+      let activeTenant = memberships.find((membership) => membership.is_active) ?? memberships[0];
+      if (!activeTenant.is_active) {
+        const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
+        if (!alive) return;
+        if (selected.error) {
+          setNotice(selected.error.message);
+          setLoading(false);
+          return;
+        }
+        activeTenant = { ...activeTenant, is_active: true };
+      }
+
+      setMember({
+        tenant_id: activeTenant.tenant_id,
+        role: activeTenant.membership_role,
+        tenant_name: activeTenant.tenant_name,
+        tenant_slug: activeTenant.tenant_slug,
+      });
       setLoading(false);
     })();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -109,8 +130,8 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
 
   if (loading) return <div className="loading">Cargando CRM…</div>;
   if (onboarding && userId) {
-    return <Onboarding userId={userId} done={(tenantId) => {
-      setMember({ tenant_id: tenantId, role: "owner" });
+    return <Onboarding userId={userId} done={({ tenantId, tenantName, tenantSlug }) => {
+      setMember({ tenant_id: tenantId, role: "owner", tenant_name: tenantName, tenant_slug: tenantSlug });
       setOnboarding(false);
       refresh();
     }} />;
@@ -121,7 +142,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><strong>Look Social Media CRM</strong><span>Ventas · Operaciones · IA</span></div>
+        <div className="brand"><strong>Look Social Media CRM</strong><span>{member.tenant_name ? `Workspace · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav">
           {nav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
@@ -136,7 +157,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       </aside>
       <main className="content">
         <header className="topbar">
-          <div><div className="eyebrow">CRM multi-tenant</div><h1>{titleFor(section)}</h1></div>
+          <div><div className="eyebrow">CRM multi-tenant{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{titleFor(section)}</h1></div>
           <div className="top-actions">
             <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Revenue Command Center</Link>
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
@@ -162,7 +183,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   );
 }
 
-function Onboarding({ userId, done }: { userId: string; done: (tenantId: string) => void }) {
+function Onboarding({ userId, done }: { userId: string; done: (tenant: { tenantId: string; tenantName: string; tenantSlug: string }) => void }) {
   const [name, setName] = useState("Mi negocio");
   const [slug, setSlug] = useState("mi-negocio");
   const [error, setError] = useState("");
@@ -174,9 +195,11 @@ function Onboarding({ userId, done }: { userId: string; done: (tenantId: string)
     if (result.error) { setError(result.error.message); setBusy(false); return; }
     const tenantId = result.data as string;
     const init = await supabase.rpc("initialize_revenue_command_center", { p_tenant_id: tenantId });
+    if (init.error) { setBusy(false); setError(init.error.message); return; }
+    const active = await supabase.rpc("set_active_tenant", { p_tenant_id: tenantId });
     setBusy(false);
-    if (init.error) { setError(init.error.message); return; }
-    done(tenantId);
+    if (active.error) { setError(active.error.message); return; }
+    done({ tenantId, tenantName: name.trim(), tenantSlug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-") });
   }
   return <main className="auth-shell"><section className="auth-panel"><div className="eyebrow">Primer acceso</div><h1>Crea tu workspace</h1><p className="muted">Esto prepara tu tenant, plan, pipeline y permisos.</p><form className="stack gap-16" onSubmit={submit}><label>Nombre del negocio<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Slug<input value={slug} onChange={(e) => setSlug(e.target.value)} required /></label>{error && <div className="notice">{error}</div>}<button className="button primary" disabled={busy}>{busy ? "Creando…" : "Crear workspace"}</button></form><small className="muted">Usuario {userId.slice(0, 8)}…</small></section></main>;
 }
