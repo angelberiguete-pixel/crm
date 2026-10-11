@@ -307,7 +307,7 @@ export default function PlatformAdmin() {
       </div>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button></div></header>
+      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button><button type="button" className="button mobile-only" onClick={async()=>{const result=await supabase.auth.signOut();if(result.error)return setNotice("No se pudo cerrar la sesión. Intenta nuevamente.");router.replace("/login");}}>Salir</button></div></header>
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <section className="grid metrics" style={{ marginBottom: 16 }}>

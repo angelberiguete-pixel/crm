@@ -7,6 +7,7 @@ import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
 import TenantSwitcher from "@/components/tenant-switcher";
+import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import { TenantContextProvider, type ActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged, TENANT_CONTEXT_EVENT, TENANT_CONTEXT_REVISION } from "@/lib/tenant-context-events";
 
@@ -176,7 +177,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   </section></main>;
 
   if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
-  if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>{tenant && <div className="workspace-switcher"><TenantSwitcher /></div>}{children}</TenantContextProvider>;
+  if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>{tenant && <div className="workspace-switcher"><TenantSwitcher /></div>}<MobileTenantNavigation />{children}</TenantContextProvider>;
 
   return <main className="auth-shell">
     <section className="auth-panel">

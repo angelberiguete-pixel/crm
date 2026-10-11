@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, KeyRound } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getAuthLinkError } from "@/lib/supabase";
+import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
 export default function AcceptInvitePage() {
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const linkError=getAuthLinkError();
+      if(linkError){setReady(true);setMessage(linkError);return;}
       let session = (await supabase.auth.getSession()).data.session;
       if (!session && typeof window !== "undefined") {
         const code = new URLSearchParams(window.location.search).get("code");
@@ -33,6 +36,7 @@ export default function AcceptInvitePage() {
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!alive) return;
+      if(getAuthLinkError())return;
       if (session) {
         setAuthenticated(true);
         setReady(true);
@@ -73,11 +77,12 @@ export default function AcceptInvitePage() {
       setMessage(accepted.error.message);
       return;
     }
-    const result = (accepted.data ?? {}) as { tenant_id?: string | null; activated?: number };
-    if (!result.tenant_id) {
+    const result = (accepted.data ?? {}) as { tenant_id?: string | null; activated?: number; membership_count?: number };
+    if (!result.tenant_id && !result.activated && !result.membership_count) {
       setMessage("Tu cuenta está activa, pero no encontramos una invitación pendiente para un workspace.");
       return;
     }
+    notifyTenantContextChanged();
     router.replace("/crm");
   }
 
