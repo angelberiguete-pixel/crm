@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { resolveTenantContext } from "@/lib/tenant-context";
 
 const sectionPermission: Record<string, string> = {
   "": "dashboard",
@@ -30,6 +31,9 @@ type TenantAccess = {
 export default function TenantPermissionGate({ section, children }: { section: string; children: ReactNode }) {
   const [state, setState] = useState<"loading" | "allow" | "deny">("loading");
   const [reason, setReason] = useState("");
+  const [choices, setChoices] = useState<TenantAccess[]>([]);
+  const [selecting, setSelecting] = useState(false);
+  const [contextVersion, setContextVersion] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -57,11 +61,12 @@ export default function TenantPermissionGate({ section, children }: { section: s
         return;
       }
 
-      // list_my_tenants orders the explicit active tenant first. If this account has
-      // never selected one, establish that deterministic first tenant before the CRM
-      // workspace performs any membership/data reads. RLS then scopes those reads to
-      // the exact same tenant used by this permission gate.
-      let activeTenant = memberships.find((membership) => membership.is_active) ?? memberships[0];
+      const resolved = resolveTenantContext(memberships);
+      if (!resolved) {
+        setChoices(memberships);
+        return;
+      }
+      let activeTenant = resolved;
       if (!memberships.some((membership) => membership.is_active)) {
         const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
         if (!alive) return;
@@ -101,7 +106,27 @@ export default function TenantPermissionGate({ section, children }: { section: s
       }
     })();
     return () => { alive = false; };
-  }, [section]);
+  }, [section, contextVersion]);
+
+  async function selectTenant(tenant: TenantAccess) {
+    setSelecting(true);
+    setReason("");
+    try {
+      const result = await supabase.rpc("set_active_tenant", { p_tenant_id: tenant.tenant_id });
+      if (result.error) { setReason(result.error.message); return; }
+      setChoices([]);
+      setState("loading");
+      setContextVersion(version => version + 1);
+    } catch { setReason("No se pudo seleccionar la empresa. Intenta nuevamente."); }
+    finally { setSelecting(false); }
+  }
+
+  if (choices.length > 0) return <main className="auth-shell"><section className="auth-panel">
+    <div className="eyebrow">Look Social Media CRM</div><h1>Selecciona tu empresa</h1>
+    <p className="muted">Elige el workspace que deseas abrir.</p>
+    <div className="stack gap-16">{choices.map(tenant => <button type="button" className="button" key={tenant.tenant_id} disabled={selecting} onClick={() => selectTenant(tenant)}>{tenant.tenant_name}</button>)}</div>
+    {reason && <div className="notice" role="alert">{reason}</div>}
+  </section></main>;
 
   if (state === "loading") return <div className="loading">Comprobando permisos…</div>;
   if (state === "allow") return <>{children}</>;
