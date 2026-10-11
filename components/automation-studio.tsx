@@ -72,6 +72,7 @@ type Run = {
   created_at: string;
   duration_ms: number | null;
   error_message: string | null;
+  context: { event_id?: string; mode?: string };
 };
 
 type PaletteItem = {
@@ -178,7 +179,7 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
       supabase.from("automation_flow_nodes").select("id,tenant_id,rule_id,node_key,node_type,action_type,label,position_x,position_y,config,is_enabled").eq("tenant_id", tenantId).eq("rule_id", ruleId).order("created_at"),
       supabase.from("automation_flow_edges").select("id,tenant_id,rule_id,source_node_id,target_node_id,source_handle,label,condition_config").eq("tenant_id", tenantId).eq("rule_id", ruleId).order("created_at"),
       supabase.from("automation_flow_versions").select("id,version_number,state,created_at,published_at").eq("tenant_id", tenantId).eq("rule_id", ruleId).order("version_number", { ascending: false }).limit(8),
-      supabase.from("automation_runs").select("id,status,trigger_event,created_at,duration_ms,error_message").eq("tenant_id", tenantId).eq("rule_id", ruleId).order("created_at", { ascending: false }).limit(10),
+      supabase.from("automation_runs").select("id,status,trigger_event,created_at,duration_ms,error_message,context").eq("tenant_id", tenantId).eq("rule_id", ruleId).order("created_at", { ascending: false }).limit(10),
     ]);
     const err = n.error ?? e.error ?? v.error ?? run.error;
     if (err) notice(err.message);
@@ -370,7 +371,7 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
     const r = await supabase.rpc("queue_automation_test", { p_rule_id: selectedRuleId });
     setBusy(false);
     if (r.error) return notice(r.error.message);
-    notice("Prueba encolada. El worker la ejecutará automáticamente; usa Actualizar historial para ver el resultado.");
+    notice("Prueba encolada sin acciones reales sobre contactos, tareas, pedidos ni mensajes. Usa Actualizar historial para ver resultados simulados y bloqueos de ejecutores.");
   }
 
   async function activateFlow() {
@@ -387,6 +388,16 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
     if (!selectedRuleId) return;
     await Promise.all([loadRules(), loadFlow(selectedRuleId)]);
     notice("Historial de automatización actualizado.");
+  }
+
+  async function retryRun(run: Run) {
+    if (!run.context?.event_id || busy) return;
+    setBusy(true);
+    const result = await supabase.rpc("retry_automation_event", { p_event_id: run.context.event_id });
+    setBusy(false);
+    if (result.error) return notice(result.error.message);
+    notice("Reintento encolado sobre la misma ejecución y versión. Las acciones internas completadas se reutilizan.");
+    await refreshExecution();
   }
 
   async function changeRuleStatus(status: "draft" | "paused" | "archived") {
@@ -538,7 +549,7 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
       </div>
       <div className="card">
         <h2>Historial de ejecuciones</h2>
-        <div className="stack gap-8">{runs.map((run) => <div className="priority-item" key={run.id}><div><strong>{run.status}</strong><div className="muted">{run.trigger_event ?? "manual"} · {new Date(run.created_at).toLocaleString("es-DO")}</div>{run.error_message && <div className="muted">{run.error_message}</div>}</div><span>{run.duration_ms == null ? "—" : `${run.duration_ms} ms`}</span></div>)}{runs.length === 0 && <span className="muted">Todavía no existen ejecuciones reales para este flujo.</span>}</div>
+        <div className="stack gap-8">{runs.map((run) => <div className="priority-item" key={run.id}><div><strong>{run.status}{run.context?.mode === "test" ? " · PRUEBA" : ""}</strong><div className="muted">{run.trigger_event ?? "manual"} · {new Date(run.created_at).toLocaleString("es-DO")}</div>{run.error_message && <div className="muted">{run.error_message}</div>}{run.status === "failed" && run.context?.event_id && <button type="button" className="button" disabled={busy} onClick={() => retryRun(run)}>Reintentar</button>}</div><span>{run.duration_ms == null ? "—" : `${run.duration_ms} ms`}</span></div>)}{runs.length === 0 && <span className="muted">Todavía no existen ejecuciones para este flujo.</span>}</div>
       </div>
     </section>}
   </div>;

@@ -20,6 +20,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
+      - name: Automation execution regression tests
+        run: node --experimental-strip-types --test tests/automation-worker.test.mjs
+      - name: Automation worker typecheck
+        run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
