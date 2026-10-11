@@ -364,6 +364,31 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
     notice(publishForTesting ? "Versión validada y enviada a estado PRUEBA. Aún no está activa para ejecutar acciones externas." : "Versión de borrador guardada.");
   }
 
+  async function queueTest() {
+    if (!selectedRuleId) return;
+    setBusy(true);
+    const r = await supabase.rpc("queue_automation_test", { p_rule_id: selectedRuleId });
+    setBusy(false);
+    if (r.error) return notice(r.error.message);
+    notice("Prueba encolada. El worker la ejecutará automáticamente; usa Actualizar historial para ver el resultado.");
+  }
+
+  async function activateFlow() {
+    if (!selectedRuleId) return;
+    setBusy(true);
+    const r = await supabase.rpc("activate_automation_flow", { p_rule_id: selectedRuleId });
+    setBusy(false);
+    if (r.error) return notice(r.error.message);
+    await Promise.all([loadRules(), loadFlow(selectedRuleId)]);
+    notice("Automatización ACTIVA. Solo los ejecutores internos validados pueden llegar a este estado.");
+  }
+
+  async function refreshExecution() {
+    if (!selectedRuleId) return;
+    await Promise.all([loadRules(), loadFlow(selectedRuleId)]);
+    notice("Historial de automatización actualizado.");
+  }
+
   async function changeRuleStatus(status: "draft" | "paused" | "archived") {
     if (!selectedRuleId) return;
     const r = await supabase.from("automation_rules").update({ status }).eq("tenant_id", tenantId).eq("id", selectedRuleId);
@@ -404,7 +429,10 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
         <div className="top-actions">
           <button className="button" disabled={busy} onClick={() => saveVersion(false)}><Save size={14}/> Guardar versión</button>
           <button className="button primary" disabled={busy} onClick={() => saveVersion(true)}><Bot size={14}/> Validar para prueba</button>
-          {selectedRule.status === "testing" && <button className="button" onClick={() => changeRuleStatus("paused")}>Pausar</button>}
+          {selectedRule.status === "testing" && <button className="button" disabled={busy} onClick={queueTest}><Activity size={14}/> Ejecutar prueba</button>}
+          {selectedRule.status === "testing" && <button className="button primary" disabled={busy} onClick={activateFlow}><CheckCircle2 size={14}/> Activar</button>}
+          <button className="button" disabled={busy} onClick={refreshExecution}><Activity size={14}/> Actualizar historial</button>
+          {selectedRule.status === "active" && <button className="button" onClick={() => changeRuleStatus("paused")}>Pausar</button>}
           {selectedRule.status !== "archived" && <button className="button danger" onClick={() => changeRuleStatus("archived")}>Archivar</button>}
         </div>
       </div>
@@ -505,7 +533,7 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
     {selectedRule && <section className="grid two-col">
       <div className="card">
         <h2>Versiones</h2>
-        <p className="muted">Una versión “publicada” se mantiene en PRUEBA hasta que el motor de ejecución haya sido validado. No se enviarán mensajes externos solo por versionarla.</p>
+        <p className="muted">Una versión publicada entra en PRUEBA. Para pasar a ACTIVA necesita una prueba exitosa de esa misma versión y solo puede contener ejecutores live ya soportados. WhatsApp, email, IA, webhooks, Odoo y documentos permanecen bloqueados hasta tener su integración real validada.</p>
         <div className="stack gap-8">{versions.map((v) => <div className="priority-item" key={v.id}><strong>v{v.version_number}</strong><span className={`pill ${v.state === "published" ? "warn" : ""}`}>{v.state}</span></div>)}{versions.length === 0 && <span className="muted">Aún no hay versiones guardadas.</span>}</div>
       </div>
       <div className="card">
