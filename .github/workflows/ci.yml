@@ -32,3 +32,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
+      - name: Password recovery browser regression tests
+        run: node tests/auth-browser.test.mjs
+      - name: Super Admin mobile browser regression tests
+        run: node tests/platform-admin-browser.test.mjs

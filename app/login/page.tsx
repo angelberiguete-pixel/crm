@@ -15,11 +15,13 @@ export default function LoginPage() {
 
   async function routeAuthenticatedUser() {
     const access = await supabase.rpc("platform_current_access");
+    if(access.error){setMessage("La sesión es válida, pero no pudimos comprobar tu acceso. Intenta entrar nuevamente.");return;}
     const value = (access.data ?? {}) as { is_platform_admin?: boolean };
     router.replace(value.is_platform_admin ? "/platform-admin" : "/crm");
   }
 
   useEffect(() => {
+    if(new URLSearchParams(window.location.search).get("reset")==="done") setMessage("Contraseña actualizada y sesiones anteriores cerradas. Inicia sesión con tu nueva contraseña.");
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) await routeAuthenticatedUser();
     });
