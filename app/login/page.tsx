@@ -32,7 +32,7 @@ export default function LoginPage() {
     if (!target) return setMessage("Escribe tu correo para enviarte el enlace de recuperación.");
     setResetBusy(true);
     setMessage("");
-    const redirectTo = `${window.location.origin}/reset-password`;
+    const redirectTo = "https://crm-revenue-os.vercel.app/reset-password";
     const { error } = await supabase.auth.resetPasswordForEmail(target, { redirectTo });
     setResetBusy(false);
     if (error) return setMessage(error.message);
