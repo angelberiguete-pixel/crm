@@ -32,10 +32,9 @@ export default function ResetPasswordPage() {
     const {error}=await supabase.auth.updateUser({password});
     setBusy(false);
     if(error) return setMessage(error.message);
-    setMessage("Contraseña actualizada. Entrando al Super Admin…");
-    const access=await supabase.rpc("platform_current_access");
-    const value=(access.data??{}) as {is_platform_admin?:boolean};
-    router.replace(value.is_platform_admin?"/platform-admin":"/crm");
+    setMessage("Contraseña actualizada. Cerrando sesiones anteriores…");
+    await supabase.auth.signOut({ scope: "global" });
+    router.replace("/login?reset=done");
   }
 
   return <main className="auth-shell">
