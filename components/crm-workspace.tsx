@@ -32,7 +32,9 @@ type CalendarEvent = { id: string; title: string; description: string | null; ev
 type AutomationRule = { id: string; name: string; description: string | null; status: string; trigger_type: string; trigger_event: string | null; created_at: string };
 type Agent = { id: string; name: string; purpose: string | null; status: string; model_provider: string; model_name: string; approval_mode: string; created_at: string };
 type TenantSettings = { tenant_id: string; brand_name: string | null; primary_color: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean };
-type RevenueDash = { current_mrr: number | null; open_pipeline_mrr: number | null; weighted_pipeline_mrr: number | null; cash_collected: number | null; open_opportunities: number | null; won_opportunities: number | null };\ntype ErpStatus = { tenant_id:string; connection_id:string; provider:string; status:string; sync_direction:string; last_healthcheck_at:string|null; last_error:string|null; source_of_truth:Record<string,unknown>|null; inventory_synced_at:string|null; odoo_products:number };\ntype ProductPublication = { product_id:string; is_published:boolean; show_exact_stock:boolean; show_price:boolean; public_label:string|null };
+type RevenueDash = { current_mrr: number | null; open_pipeline_mrr: number | null; weighted_pipeline_mrr: number | null; cash_collected: number | null; open_opportunities: number | null; won_opportunities: number | null };
+type ErpStatus = { tenant_id:string; connection_id:string; provider:string; status:string; sync_direction:string; last_healthcheck_at:string|null; last_error:string|null; source_of_truth:Record<string,unknown>|null; inventory_synced_at:string|null; odoo_products:number };
+type ProductPublication = { product_id:string; is_published:boolean; show_exact_stock:boolean; show_price:boolean; public_label:string|null };
 
 const money = new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 0 });
 const date = new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" });
@@ -337,7 +339,9 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
     setProductId(""); setQuantity("1"); refresh();
   }
 
-  async function syncQuotationToOdoo(q:Quotation) { if(q.total<=0) return notice("La cotización necesita artículos y total antes de enviarse a Odoo."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"quotation",p_entity_id:q.id}); if(r.error)return notice(r.error.message); notice("Cotización encolada para sincronizar con Odoo. Odoo será la fuente del documento/PDF definitivo."); }\n\n  async function setQuoteStatus(q:Quotation,status:string) {
+  async function syncQuotationToOdoo(q:Quotation) { if(q.total<=0) return notice("La cotización necesita artículos y total antes de enviarse a Odoo."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"quotation",p_entity_id:q.id}); if(r.error)return notice(r.error.message); notice("Cotización encolada para sincronizar con Odoo. Odoo será la fuente del documento/PDF definitivo."); }
+
+  async function setQuoteStatus(q:Quotation,status:string) {
     if(status==="accepted" && q.total<=0) return notice("No puedes aceptar una cotización sin artículos y total.");
     const patch:Record<string,unknown>={status};
     if(status==="accepted") patch.accepted_at=new Date().toISOString();
@@ -372,7 +376,8 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
             {selected.status==="draft"&&<button className="button" onClick={()=>setQuoteStatus(selected,"sent")}>Marcar enviada</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button primary" onClick={()=>setQuoteStatus(selected,"accepted")}>Aceptar</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button danger" onClick={()=>setQuoteStatus(selected,"rejected")}>Rechazar</button>}
-            <button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>\n            <button className="button" onClick={()=>printQuote(selected)}>Vista previa interna</button>
+            <button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>
+            <button className="button" onClick={()=>printQuote(selected)}>Vista previa interna</button>
           </div>
           {products.length===0&&<div className="notice">No hay productos activos con precio aprobado. Completa costos/precio antes de cotizar.</div>}
         </div>}
