@@ -69,8 +69,10 @@ export default function PlatformAdmin() {
   const [odooDb, setOdooDb] = useState("");
   const [odooApiKey, setOdooApiKey] = useState("");
   const [odooBusy, setOdooBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
 
   const selected = useMemo(() => tenants.find((t) => t.tenant_id === selectedId) ?? null, [tenants, selectedId]);
+  const demoTenant = useMemo(() => tenants.find((t) => t.tenant_slug === "look-social-media-demo") ?? null, [tenants]);
 
   const loadAccess = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -241,6 +243,38 @@ export default function PlatformAdmin() {
     window.location.href = "/crm";
   }
 
+  async function openDemo() {
+    const demo = tenants.find((t) => t.tenant_slug === "look-social-media-demo");
+    if (!demo) {
+      setNotice("El tenant demo todavía no existe. Créalo con “Restablecer Demo”.");
+      return;
+    }
+    setDemoBusy(true);
+    setNotice("");
+    const r = await supabase.rpc("platform_join_tenant_as_admin", { p_tenant_id: demo.tenant_id });
+    setDemoBusy(false);
+    if (r.error) return setNotice(r.error.message);
+    window.localStorage.setItem("crm_active_tenant_id", demo.tenant_id);
+    window.location.href = "/crm";
+  }
+
+  async function resetDemo() {
+    setDemoBusy(true);
+    setNotice("");
+    const r = await supabase.rpc("platform_reset_demo_tenant");
+    if (r.error) {
+      setDemoBusy(false);
+      setNotice(r.error.message);
+      return;
+    }
+    const demoId = r.data as string;
+    await loadPlatform();
+    setSelectedId(demoId);
+    await loadTenant(demoId);
+    setDemoBusy(false);
+    setNotice("Demo comercial restablecida. Solo se regeneraron datos ficticios del tenant Look Social Media Demo.");
+  }
+
   async function setMemberRole(userId: string, roleKey: string) {
     if (!selectedId) return;
     setNotice("");
@@ -314,6 +348,26 @@ export default function PlatformAdmin() {
         <div className="metric"><div className="metric-label">Usuarios activos</div><div className="metric-value">{tenants.reduce((n, t) => n + Number(t.member_count ?? 0), 0)}</div><div className="metric-sub">Membresías activas</div></div>
         <div className="metric"><div className="metric-label">Planes</div><div className="metric-value">{plans.length}</div><div className="metric-sub">Catálogo actual</div></div>
         <div className="metric"><div className="metric-label">Control</div><div className="metric-value"><ShieldCheck size={26} /></div><div className="metric-sub">Platform Owner activo</div></div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="topbar" style={{ marginBottom: 0 }}>
+          <div>
+            <div className="eyebrow">Demo comercial segura</div>
+            <h2>Look Social Media Demo</h2>
+            <p className="muted" style={{ marginBottom: 0 }}>Workspace aislado con datos 100% ficticios para mostrar el CRM a prospectos sin exponer información de clientes reales.</p>
+          </div>
+          <div className="top-actions">
+            <button className="button primary" type="button" disabled={demoBusy || !demoTenant} onClick={openDemo}>{demoBusy ? "Preparando…" : "Abrir Demo"}</button>
+            <button className="button" type="button" disabled={demoBusy} onClick={resetDemo}><RefreshCw size={14} /> {demoBusy ? "Restableciendo…" : "Restablecer Demo"}</button>
+          </div>
+        </div>
+        <div className="kpi-row" style={{ marginTop: 12 }}>
+          <span className="kpi-chip"><strong>Datos:</strong> ficticios</span>
+          <span className="kpi-chip"><strong>MRR/setup:</strong> RD$0</span>
+          <span className="kpi-chip"><strong>Reset:</strong> solo tenant demo</span>
+          <span className="kpi-chip"><strong>Estado:</strong> {demoTenant ? "Disponible" : "Crear demo"}</span>
+        </div>
       </section>
 
       <section className="grid two-col" id="tenants">
