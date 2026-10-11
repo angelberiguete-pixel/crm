@@ -10,7 +10,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");\n  const [resetBusy, setResetBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
 
   async function routeAuthenticatedUser() {
     const access = await supabase.rpc("platform_current_access");
@@ -26,7 +27,19 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  async function requestPasswordReset() {\n    const target = email.trim();\n    if (!target) return setMessage("Escribe tu correo para enviarte el enlace de recuperación.");\n    setResetBusy(true);\n    setMessage("");\n    const redirectTo = `${window.location.origin}/reset-password`;\n    const { error } = await supabase.auth.resetPasswordForEmail(target, { redirectTo });\n    setResetBusy(false);\n    if (error) return setMessage(error.message);\n    setMessage("Te enviamos un enlace para establecer una nueva contraseña. Revisa tu correo.");\n  }\n\n  async function submit(e: FormEvent) {
+  async function requestPasswordReset() {
+    const target = email.trim();
+    if (!target) return setMessage("Escribe tu correo para enviarte el enlace de recuperación.");
+    setResetBusy(true);
+    setMessage("");
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(target, { redirectTo });
+    setResetBusy(false);
+    if (error) return setMessage(error.message);
+    setMessage("Te enviamos un enlace para establecer una nueva contraseña. Revisa tu correo.");
+  }
+
+  async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMessage("");
@@ -50,7 +63,8 @@ export default function LoginPage() {
         {message && <div className="notice">{message}</div>}
         <button className="button primary" disabled={busy}>{busy ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
-      {mode === "login" && <button type="button" className="text-button" disabled={resetBusy} onClick={requestPasswordReset}>{resetBusy ? "Enviando…" : "Olvidé mi contraseña"}</button>}\n      <button type="button" className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
+      {mode === "login" && <button type="button" className="text-button" disabled={resetBusy} onClick={requestPasswordReset}>{resetBusy ? "Enviando…" : "Olvidé mi contraseña"}</button>}
+      <button type="button" className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
         {mode === "login" ? "¿Primera vez? Crear cuenta" : "Ya tengo cuenta"}
       </button>
     </section>
