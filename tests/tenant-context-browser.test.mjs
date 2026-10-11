@@ -14,8 +14,9 @@ try {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   assert.ok(ready, 'test web server is ready');
-  browser = await chromium.launch({ headless: true, ...(process.env.CRM_TEST_CHROMIUM_PATH ? { executablePath: process.env.CRM_TEST_CHROMIUM_PATH, args: ['--no-sandbox','--disable-dev-shm-usage'] } : { channel: 'chromium' }) });
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  browser = await chromium.launch({ headless: true, ...(process.env.CRM_TEST_PROXY_URL ? { proxy: { server: process.env.CRM_TEST_PROXY_URL } } : {}), ...(process.env.CRM_TEST_CHROMIUM_PATH ? { executablePath: process.env.CRM_TEST_CHROMIUM_PATH, args: ['--no-sandbox','--disable-dev-shm-usage'] } : { channel: 'chromium' }) });
+  // The optional workspace proxy terminates TLS; this fixture-only test has no real credentials.
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, ignoreHTTPSErrors: Boolean(process.env.CRM_TEST_PROXY_URL) });
   const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
   let activeId = null;
   let denyPipeline = false;

@@ -18,7 +18,7 @@ select c.id,t.id,'QA Automation contact' from qa_auto_ids c join qa_auto_ids t o
 insert into public.pipelines(id,tenant_id,name)
 select id,(select id from qa_auto_ids where k='tenant_a'),'QA pipeline '||k from qa_auto_ids where k in ('pipeline','other_pipeline');
 insert into public.pipeline_stages(id,tenant_id,pipeline_id,name,position,win_probability,stage_type)
-select id,(select id from qa_auto_ids where k='tenant_a'),(select id from qa_auto_ids where k=case s.k when 'wrong_stage' then 'other_pipeline' else 'pipeline' end),s.k,case s.k when 'stage_two' then 2 else 1 end,25,'open'
+select id,(select id from qa_auto_ids where k='tenant_a'),(select id from qa_auto_ids where k=case s.k when 'wrong_stage' then 'other_pipeline' else 'pipeline' end),s.k,case s.k when 'stage_two' then 2 else 1 end,0.25,'open'
 from qa_auto_ids s where k in ('stage_one','stage_two','wrong_stage');
 insert into public.opportunities(id,tenant_id,pipeline_id,stage_id,contact_id,title)
 select (select id from qa_auto_ids where k='opportunity'),(select id from qa_auto_ids where k='tenant_a'),(select id from qa_auto_ids where k='pipeline'),(select id from qa_auto_ids where k='stage_one'),(select id from qa_auto_ids where k='contact_a'),'QA Automation opportunity';
@@ -36,7 +36,7 @@ select (select id from qa_auto_ids where k='event'),(select id from qa_auto_ids 
 insert into public.automation_runs(id,tenant_id,rule_id,status,context)
 select (select id from qa_auto_ids where k='run'),(select id from qa_auto_ids where k='tenant_a'),(select id from qa_auto_ids where k='rule'),'running',jsonb_build_object('mode','live','execution_contract','safe-v2','flow_version',1,'event_id',(select id from qa_auto_ids where k='event'));
 
-do $$ declare r uuid:=(select id from qa_auto_ids where k='run'); t uuid:=(select id from qa_auto_ids where k='tenant_a'); ctx jsonb:=jsonb_build_object('contact_id',(select id from qa_auto_ids where k='contact_a')); a jsonb; b jsonb; denied boolean;
+do $$ declare r uuid:=(select id from qa_auto_ids where k='run'); t uuid:=(select id from qa_auto_ids where k='tenant_a'); ctx jsonb:=jsonb_build_object('contact_id',(select id from qa_auto_ids where k='contact_a')); a jsonb; b jsonb; denied boolean; retry_run uuid:=gen_random_uuid();
 begin
   denied:=false; begin update public.automation_rules set status='active' where id=(select id from qa_auto_ids where k='rule'); exception when others then denied:=sqlerrm like '%successful safe test%'; end;
   insert into qa_auto_results values('Direct activation without safe test rejected',denied);
@@ -58,6 +58,14 @@ begin
   insert into qa_auto_results values('Stage from another pipeline rejected',denied);
   a:=public.execute_automation_internal_action(r,(select id from qa_auto_ids where k='move'),'move_stage',jsonb_build_object('stage_id',(select id from qa_auto_ids where k='stage_two')),jsonb_build_object('opportunity_id',(select id from qa_auto_ids where k='opportunity')));
   insert into qa_auto_results values('Generated stage event inherits root and depth',exists(select 1 from public.automation_events where tenant_id=t and event_type='stage_changed' and payload#>>'{_automation,depth}'='1' and payload#>>'{_automation,root_event_id}'=(select id::text from qa_auto_ids where k='event')));
+  insert into public.automation_runs(id,tenant_id,rule_id,status,context)
+  select retry_run,tenant_id,rule_id,'running',context from public.automation_runs where id=r;
+  update public.automation_events set payload=payload||'{"_automation":{"depth":10}}' where id=(select id from qa_auto_ids where k='event');
+  denied:=false; begin perform public.execute_automation_internal_action(retry_run,(select id from qa_auto_ids where k='task'),'create_task','{}',ctx); exception when others then denied:=sqlerrm='automation_event_depth_limit'; end;
+  insert into qa_auto_results values('Causal chain at maximum depth cannot write',denied and (select count(*) from public.tasks where tenant_id=t)=1);
+  update public.automation_events set payload=payload-'_automation' where id=(select id from qa_auto_ids where k='event');
+  denied:=false; begin perform public.execute_automation_internal_action(retry_run,(select id from qa_auto_ids where k='contact_update'),'update_contact','{"field":"status","value":"qualified"}','{}'); exception when others then denied:=sqlerrm='update_contact_config_invalid'; end;
+  insert into qa_auto_results values('Missing target fails instead of silent success',denied and not exists(select 1 from private.automation_node_effects where run_id=retry_run));
   update public.automation_runs set context=context||'{"mode":"test"}' where id=r;
   denied:=false; begin perform public.execute_automation_internal_action(r,(select id from qa_auto_ids where k='task'),'create_task','{}',ctx); exception when others then denied:=sqlerrm='test_mode_business_write_blocked'; end;
   insert into qa_auto_results values('RPC rejects business writes in test mode',denied);
