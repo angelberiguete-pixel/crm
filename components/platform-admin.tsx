@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
 type Access = { is_platform_admin?: boolean; is_platform_user?: boolean; role?: string | null };
 type Tenant = {
@@ -237,7 +238,7 @@ export default function PlatformAdmin() {
     setNotice("");
     const r = await supabase.rpc("platform_join_tenant_as_admin", { p_tenant_id: selectedId });
     if (r.error) return setNotice(r.error.message);
-    window.localStorage.setItem("crm_active_tenant_id", selectedId);
+    notifyTenantContextChanged();
     window.location.href = "/crm";
   }
 

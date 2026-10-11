@@ -17,10 +17,14 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
         run: npm run build
+      - name: Install browser for regression tests
+        run: npx playwright install --with-deps chromium
+      - name: Tenant switching browser regression tests
+        run: npm run test:browser:tenant

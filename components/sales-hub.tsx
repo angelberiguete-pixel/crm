@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, ContactRound, Gauge, LayoutDashboard, LogOut, RefreshCw, Search, Settings2, Tag, Target, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useActiveTenant } from "@/components/tenant-context";
 
-type Membership = { tenant_id: string; role: string };
 type Opportunity = { id: string; pipeline_id: string; stage_id: string; company_id: string | null; contact_id: string | null; title: string; status: string; lead_score: number; acquisition_source: string | null; next_action: string | null; mrr_value: number; created_at: string };
 type Stage = { id: string; pipeline_id: string; name: string; position: number; stage_type: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null };
@@ -26,7 +26,8 @@ const nav = [
 export default function SalesHub({ slug }: Props) {
   const router = useRouter();
   const section = slug[0] ?? "";
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const activeTenant = useActiveTenant();
+  const tenantId = activeTenant?.tenant_id ?? null;
   const [role, setRole] = useState("");
   const [platformAdmin, setPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,18 +48,11 @@ export default function SalesHub({ slug }: Props) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) { router.replace("/login"); return; }
-        const [m, access] = await Promise.all([
-          supabase.from("memberships").select("tenant_id,role").eq("user_id", session.user.id).eq("status", "active"),
-          supabase.rpc("platform_current_access"),
-        ]);
+        const access = await supabase.rpc("platform_current_access");
         if (!alive) return;
-        if (m.error) throw m.error;
-        const memberships = (m.data ?? []) as Membership[];
-        if (!memberships.length) { setNotice("Tu usuario no tiene un workspace activo."); setLoading(false); return; }
-        const wanted = typeof window !== "undefined" ? window.localStorage.getItem("crm_active_tenant_id") : null;
-        const chosen = memberships.find((x) => x.tenant_id === wanted) ?? memberships[0];
-        setTenantId(chosen.tenant_id);
-        setRole(chosen.role);
+        if (access.error) throw access.error;
+        if (!activeTenant) { setNotice("Tu usuario no tiene un workspace activo."); setLoading(false); return; }
+        setRole(activeTenant.membership_role);
         const a = (access.data ?? {}) as { is_platform_admin?: boolean };
         setPlatformAdmin(Boolean(a.is_platform_admin));
       } catch (e) {
@@ -67,7 +61,7 @@ export default function SalesHub({ slug }: Props) {
       }
     })();
     return () => { alive = false; };
-  }, [router]);
+  }, [router, activeTenant]);
 
   useEffect(() => {
     if (!tenantId) return;

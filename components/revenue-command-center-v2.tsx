@@ -6,6 +6,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, BarChart3, CheckCircle2, ClipboardList, LayoutDashboard, LogOut, RefreshCw, Search, Target, TrendingUp, Upload, Users, Workflow } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/lib/supabase";
+import { resolveTenantContext } from "@/lib/tenant-context";
 import { starterProspects } from "@/data/starter-prospects";
 
 const PIPELINE="Revenue Command Center — RD$1M", GOAL=1_000_000, SETUP=60_000, MRR=45_000;
@@ -51,7 +52,7 @@ export default function RevenueCommandCenterV2({slug}:{slug:string[]}){
   setLoading(false);
  },[]);
 
- useEffect(()=>{let alive=true;(async()=>{const{data:{session}}=await supabase.auth.getSession();if(!alive)return;if(!session?.user){router.replace("/login");return}setUserId(session.user.id);const m=await supabase.from("memberships").select("tenant_id,role").eq("user_id",session.user.id).eq("status","active").limit(1).maybeSingle();if(!m.data){setOnboarding(true);setLoading(false);return}setMember(m.data as Member);await load(m.data.tenant_id as string)})();const{data:l}=supabase.auth.onAuthStateChange((_e,s)=>{if(!s)router.replace("/login")});return()=>{alive=false;l.subscription.unsubscribe()}},[load,router]);
+ useEffect(()=>{let alive=true;(async()=>{const{data:{session}}=await supabase.auth.getSession();if(!alive)return;if(!session?.user){router.replace("/login");return}setUserId(session.user.id);const m=await supabase.rpc("list_my_tenants");if(m.error){setNotice(m.error.message);setLoading(false);return}const rows=(m.data??[]) as Array<{tenant_id:string;membership_role:string;is_active:boolean}>;const chosen=resolveTenantContext(rows);if(!chosen){setNotice("Selecciona una empresa desde el CRM.");setLoading(false);return}if(!chosen.is_active){const r=await supabase.rpc("set_active_tenant",{p_tenant_id:chosen.tenant_id});if(r.error){setNotice(r.error.message);setLoading(false);return}}setMember({tenant_id:chosen.tenant_id,role:chosen.membership_role});await load(chosen.tenant_id)})();const{data:l}=supabase.auth.onAuthStateChange((_e,s)=>{if(!s)router.replace("/login")});return()=>{alive=false;l.subscription.unsubscribe()}},[load,router]);
  const reload=async()=>{if(member)await load(member.tenant_id)};
  if(loading)return <div className="loading">Cargando Revenue Command Center…</div>;
  if(onboarding&&userId)return <Onboarding userId={userId} done={async id=>{setMember({tenant_id:id,role:"owner"});setOnboarding(false);await load(id)}}/>;
