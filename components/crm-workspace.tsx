@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import CrmOperations from "@/components/crm-operations";
+import AutomationStudio from "@/components/automation-studio";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -173,7 +174,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
-        {section === "automations" && <Automations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "automations" && <AutomationStudio tenantId={tenantId} notice={setNotice} />}
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
