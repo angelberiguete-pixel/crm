@@ -67,6 +67,7 @@ export default function PlatformAdmin() {
   const [invitingMember, setInvitingMember] = useState(false);
   const [odooUrl, setOdooUrl] = useState("");
   const [odooDb, setOdooDb] = useState("");
+  const [odooApiKey, setOdooApiKey] = useState("");
   const [odooBusy, setOdooBusy] = useState(false);
 
   const selected = useMemo(() => tenants.find((t) => t.tenant_id === selectedId) ?? null, [tenants, selectedId]);
@@ -200,23 +201,37 @@ export default function PlatformAdmin() {
     if (!selectedId) return;
     setNotice("");
     setOdooBusy(true);
-    const configured = await supabase.rpc("platform_configure_odoo", {
-      p_tenant_id: selectedId,
-      p_base_url: odooUrl.trim(),
-      p_database_name: odooDb.trim() || null,
-      p_sync_direction: "bidirectional",
+    const configured = await supabase.functions.invoke("platform-odoo-onboarding", {
+      body: {
+        tenant_id: selectedId,
+        base_url: odooUrl.trim(),
+        database_name: odooDb.trim() || null,
+        api_key: odooApiKey,
+      },
     });
-    if (configured.error) { setOdooBusy(false); return setNotice(configured.error.message); }
-    const authority = await supabase.rpc("configure_tenant_odoo_authority", { p_tenant_id: selectedId });
-    if (authority.error) { setOdooBusy(false); return setNotice(authority.error.message); }
-    const moduleResult = await supabase.rpc("platform_set_tenant_module", { p_tenant_id: selectedId, p_module_key: "odoo_erp", p_enabled: true, p_config: { source_of_truth: true } });
     setOdooBusy(false);
+    setOdooApiKey("");
+    if (configured.error || !configured.data?.ok) {
+      const detail = configured.data?.error ?? configured.data?.message ?? configured.error?.message ?? "No se pudo completar el preflight de Odoo.";
+      setNotice(`Odoo no está listo: ${detail}`);
+      return;
+    }
+    const moduleResult = await supabase.rpc("platform_set_tenant_module", {
+      p_tenant_id: selectedId,
+      p_module_key: "odoo_erp",
+      p_enabled: true,
+      p_config: {
+        source_of_truth: true,
+        api_protocol: configured.data.api_protocol,
+        detected_version: configured.data.detected_version,
+      },
+    });
     if (moduleResult.error) return setNotice(moduleResult.error.message);
-    setOdooUrl(""); setOdooDb("");
+    setOdooUrl("");
+    setOdooDb("");
     await loadTenant(selectedId);
-    setNotice("Odoo configurado como fuente oficial de productos, inventario, cotizaciones, PDFs, pedidos y facturación. Falta validar credencial/healthcheck.");
+    setNotice(`Odoo conectado y credencial protegida en Vault. Versión: ${configured.data.detected_version ?? "detectada"} · protocolo: ${configured.data.api_protocol}.`);
   }
-
   async function enterTenant() {
     if (!selectedId) return;
     setNotice("");
@@ -366,11 +381,12 @@ export default function PlatformAdmin() {
         <section className="card" id="odoo">
           <div className="eyebrow">ERP por cliente</div>
           <h2>Conectar Odoo</h2>
-          <p className="muted">Odoo será la fuente oficial de productos, inventario, cotizaciones/PDF, pedidos y facturación. El CRM conserva leads, conversaciones, pipeline, seguimiento y experiencia comercial. Las credenciales no se guardan en el navegador.</p>
+          <p className="muted">Odoo será la fuente oficial de productos, inventario, cotizaciones/PDF, pedidos y facturación. El asistente detecta la versión, valida la API y guarda la clave una sola vez en Supabase Vault; nunca vuelve a mostrarse en el navegador.</p>
           <form className="form-grid" onSubmit={configureOdoo}>
-            <label>URL de Odoo<input type="url" value={odooUrl} onChange={(e) => setOdooUrl(e.target.value)} placeholder="https://empresa.odoo.com" required /></label>
+            <label>URL HTTPS de Odoo<input type="url" value={odooUrl} onChange={(e) => setOdooUrl(e.target.value)} placeholder="https://empresa.odoo.com" required /></label>
             <label>Base de datos (si aplica)<input value={odooDb} onChange={(e) => setOdooDb(e.target.value)} placeholder="Nombre de base" /></label>
-            <div><button className="button primary" disabled={odooBusy}>{odooBusy ? "Configurando…" : "Configurar Odoo"}</button></div>
+            <label>API key<input type="password" value={odooApiKey} onChange={(e) => setOdooApiKey(e.target.value)} placeholder="Se guardará cifrada en Vault" minLength={8} autoComplete="new-password" required /></label>
+            <div><button className="button primary" disabled={odooBusy || !odooApiKey}>{odooBusy ? "Detectando y validando…" : "Conectar Odoo de forma segura"}</button></div>
           </form>
         </section>
 
