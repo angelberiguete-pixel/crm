@@ -1,5 +1,5 @@
-import EurevectorLeadPage from "@/components/eurevector-lead-page";
+import { redirect } from "next/navigation";
 
-export default function EurevectorPage(){
-  return <EurevectorLeadPage/>;
+export default function LegacyEurevectorPage() {
+  redirect("/look-social-media");
 }
