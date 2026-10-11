@@ -56,6 +56,9 @@ export default function PlatformAdmin() {
   const [bootstrapCode, setBootstrapCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
+  const [odooUrl, setOdooUrl] = useState("");
+  const [odooDb, setOdooDb] = useState("");
+  const [odooBusy, setOdooBusy] = useState(false);
 
   const selected = useMemo(() => tenants.find((t) => t.tenant_id === selectedId) ?? null, [tenants, selectedId]);
 
@@ -166,6 +169,28 @@ export default function PlatformAdmin() {
     setNotice("Cita-24 instalado: pipeline, etapas y módulos configurados en este tenant.");
   }
 
+  async function configureOdoo(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedId) return;
+    setNotice("");
+    setOdooBusy(true);
+    const configured = await supabase.rpc("platform_configure_odoo", {
+      p_tenant_id: selectedId,
+      p_base_url: odooUrl.trim(),
+      p_database_name: odooDb.trim() || null,
+      p_sync_direction: "bidirectional",
+    });
+    if (configured.error) { setOdooBusy(false); return setNotice(configured.error.message); }
+    const authority = await supabase.rpc("configure_tenant_odoo_authority", { p_tenant_id: selectedId });
+    if (authority.error) { setOdooBusy(false); return setNotice(authority.error.message); }
+    const moduleResult = await supabase.rpc("platform_set_tenant_module", { p_tenant_id: selectedId, p_module_key: "odoo_erp", p_enabled: true, p_config: { source_of_truth: true } });
+    setOdooBusy(false);
+    if (moduleResult.error) return setNotice(moduleResult.error.message);
+    setOdooUrl(""); setOdooDb("");
+    await loadTenant(selectedId);
+    setNotice("Odoo configurado como fuente oficial de productos, inventario, cotizaciones, PDFs, pedidos y facturación. Falta validar credencial/healthcheck.");
+  }
+
   async function enterTenant() {
     if (!selectedId) return;
     setNotice("");
@@ -266,6 +291,17 @@ export default function PlatformAdmin() {
             <p className="muted">Estos perfiles permiten mostrar funciones distintas a dueño, administrador, gerente, vendedor y consulta.</p>
             {roles.map((r) => <div className="priority-item" key={r.role_key}><div><strong>{r.role_name}</strong><div className="muted">{r.description ?? r.role_key}</div></div><span className="pill">{r.is_system ? "Base" : "Custom"}</span></div>)}
           </div>
+        </section>
+
+        <section className="card" id="odoo">
+          <div className="eyebrow">ERP por cliente</div>
+          <h2>Conectar Odoo</h2>
+          <p className="muted">Odoo será la fuente oficial de productos, inventario, cotizaciones/PDF, pedidos y facturación. El CRM conserva leads, conversaciones, pipeline, seguimiento y experiencia comercial. Las credenciales no se guardan en el navegador.</p>
+          <form className="form-grid" onSubmit={configureOdoo}>
+            <label>URL de Odoo<input type="url" value={odooUrl} onChange={(e) => setOdooUrl(e.target.value)} placeholder="https://empresa.odoo.com" required /></label>
+            <label>Base de datos (si aplica)<input value={odooDb} onChange={(e) => setOdooDb(e.target.value)} placeholder="Nombre de base" /></label>
+            <div><button className="button primary" disabled={odooBusy}>{odooBusy ? "Configurando…" : "Configurar Odoo"}</button></div>
+          </form>
         </section>
 
         <section className="card" id="templates">
