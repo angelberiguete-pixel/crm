@@ -136,7 +136,7 @@ export default function Cita24CommandCenter({ slug }: Props) {
         const admin = Boolean((access.data as { is_platform_admin?: boolean } | null)?.is_platform_admin);
         setPlatformAdmin(admin);
         if (!admin) {
-          setNotice("Esta vista está reservada para la administración de AUREVECTOR.");
+          setNotice("Esta vista está reservada para la administración de LOOK SOCIAL MEDIA.");
           setLoading(false);
           return;
         }
@@ -202,7 +202,7 @@ export default function Cita24CommandCenter({ slug }: Props) {
   const title = detail ? detail.name : nav.find(([key]) => key === section)?.[1] ?? "Cita-24";
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand"><strong>Cita-24</strong><span>AUREVECTOR · Revenue Automation</span></div>
+      <div className="brand"><strong>Cita-24</strong><span>LOOK SOCIAL MEDIA · Revenue Automation</span></div>
       <nav className="nav">
         {nav.map(([key,label,Icon]) => <Link key={key} className={section === key ? "active" : ""} href={`/revenue-command-center${key ? `/${key}` : ""}`}><Icon size={17}/>{label}</Link>)}
         <Link href="/crm"><Target size={17}/>CRM Core</Link>
