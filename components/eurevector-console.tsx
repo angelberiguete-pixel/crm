@@ -16,7 +16,7 @@ const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",curren
 const dop=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format(Number(value)||0);
 const slugify=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64);
 
-export default function Look Social MediaConsole(){
+export default function EurevectorConsole(){
  const router=useRouter(); const[loading,setLoading]=useState(true); const[notice,setNotice]=useState("");
  const[tenants,setTenants]=useState<Tenant[]>([]); const[plans,setPlans]=useState<Plan[]>([]); const[selectedId,setSelectedId]=useState<string|null>(null);
  const[modules,setModules]=useState<Module[]>([]); const[members,setMembers]=useState<Member[]>([]); const[snapshot,setSnapshot]=useState<Snapshot|null>(null);
