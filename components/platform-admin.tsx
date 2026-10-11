@@ -213,7 +213,7 @@ export default function PlatformAdmin() {
   if (!access?.is_platform_admin) {
     return <main className="auth-shell">
       <section className="auth-panel">
-        <div className="eyebrow">Eurevector · Control plane</div>
+        <div className="eyebrow">Look Social Media · Control de plataforma</div>
         <h1>Activar Platform Owner</h1>
         <p className="muted">Esta activación es de un solo uso y convierte tu usuario autenticado en propietario global de la plataforma.</p>
         <form className="stack gap-16" onSubmit={claimOwner}>
@@ -228,7 +228,7 @@ export default function PlatformAdmin() {
 
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand"><strong>Eurevector Platform</strong><span>Super Admin · {access.role}</span></div>
+      <div className="brand"><strong>Look Social Media</strong><span>Super Admin · {access.role}</span></div>
       <nav className="nav">
         <a className="active" href="#tenants"><Building2 size={17} /> Clientes / Tenants</a>
         <a href="#modules"><Layers3 size={17} /> Planes y módulos</a>
@@ -241,7 +241,7 @@ export default function PlatformAdmin() {
       </div>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Super Admin OS</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button></div></header>
+      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button></div></header>
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <section className="grid metrics" style={{ marginBottom: 16 }}>
