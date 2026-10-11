@@ -62,6 +62,9 @@ export default function PlatformAdmin() {
   const [newVertical, setNewVertical] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const [creatingTenant, setCreatingTenant] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("viewer");
+  const [invitingMember, setInvitingMember] = useState(false);
   const [odooUrl, setOdooUrl] = useState("");
   const [odooDb, setOdooDb] = useState("");
   const [odooBusy, setOdooBusy] = useState(false);
@@ -229,6 +232,30 @@ export default function PlatformAdmin() {
     const r = await supabase.rpc("platform_set_member_role", { p_tenant_id: selectedId, p_user_id: userId, p_role_key: roleKey });
     if (r.error) return setNotice(r.error.message);
     await loadTenant(selectedId);
+    setNotice("Rol actualizado sin alterar el estado de la invitación.");
+  }
+
+  async function inviteMember(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedId || !inviteEmail.trim() || !inviteRole) return;
+    setInvitingMember(true);
+    setNotice("");
+    const r = await supabase.functions.invoke("platform-invite-user", {
+      body: {
+        tenant_id: selectedId,
+        email: inviteEmail.trim().toLowerCase(),
+        role_key: inviteRole,
+      },
+    });
+    setInvitingMember(false);
+    if (r.error || !r.data?.ok) {
+      setNotice(r.data?.message ?? r.error?.message ?? "No se pudo enviar la invitación.");
+      return;
+    }
+    const invited = inviteEmail.trim().toLowerCase();
+    setInviteEmail("");
+    await loadTenant(selectedId);
+    setNotice(`Invitación enviada a ${invited}. El acceso quedará activo cuando la persona acepte el enlace.`);
   }
 
   if (loading) return <div className="loading">Cargando Platform Admin…</div>;
@@ -314,13 +341,24 @@ export default function PlatformAdmin() {
 
         <section className="grid two-col" id="team">
           <div className="card">
-            <h2>Usuarios del cliente</h2>
-            {members.map((m) => <div className="priority-item" key={m.user_id}><div><strong>{m.email ?? m.user_id.slice(0, 8)}</strong><div className="muted">Membership: {m.membership_role}</div></div><select style={{ width: 160 }} value={m.role_key ?? (m.membership_role === "owner" ? "owner" : "sales")} onChange={(e) => setMemberRole(m.user_id, e.target.value)}>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></div>)}
-            {members.length === 0 && <div className="empty"><strong>Sin usuarios</strong><div>El tenant todavía no tiene miembros activos.</div></div>}
+            <div className="eyebrow">Acceso del cliente</div>
+            <h2>Usuarios e invitaciones</h2>
+            <form className="stack gap-12" onSubmit={inviteMember} style={{ marginBottom: 16 }}>
+              <label>Email del usuario<input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="persona@empresa.com" required /></label>
+              <label>Rol inicial<select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} required>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
+              <button className="button primary" disabled={invitingMember || !roles.length}>{invitingMember ? "Enviando invitación…" : "Invitar usuario"}</button>
+            </form>
+            <div className="stack gap-8">
+              {members.map((m) => <div className="priority-item" key={m.user_id}>
+                <div><strong>{m.email ?? m.user_id.slice(0, 8)}</strong><div className="muted">Base: {m.membership_role} · <span className={`pill ${m.membership_status === "active" ? "good" : m.membership_status === "invited" ? "warn" : "danger"}`}>{m.membership_status}</span></div></div>
+                <select style={{ width: 170 }} value={m.role_key ?? (m.membership_role === "owner" ? "owner" : m.membership_role === "admin" ? "admin" : m.membership_role === "manager" ? "manager" : m.membership_role === "viewer" ? "viewer" : "sales")} onChange={(e) => setMemberRole(m.user_id, e.target.value)}>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select>
+              </div>)}
+              {members.length === 0 && <div className="empty"><strong>Sin usuarios</strong><div>Invita al dueño o al equipo de este cliente.</div></div>}
+            </div>
           </div>
           <div className="card">
             <h2>Perfiles de acceso</h2>
-            <p className="muted">Estos perfiles permiten mostrar funciones distintas a dueño, administrador, gerente, vendedor y consulta.</p>
+            <p className="muted">Cada rol se traduce a un rol base seguro y conserva permisos específicos del tenant. Roles personalizados como Producción o Entregas no necesitan tocar código.</p>
             {roles.map((r) => <div className="priority-item" key={r.role_key}><div><strong>{r.role_name}</strong><div className="muted">{r.description ?? r.role_key}</div></div><span className="pill">{r.is_system ? "Base" : "Custom"}</span></div>)}
           </div>
         </section>
