@@ -17,7 +17,7 @@ type Opportunity = {
 type Stage = { id: string; pipeline_id: string; name: string; position: number; win_probability: number; stage_type: string };
 type Pipeline = { id: string; name: string; is_default: boolean };
 type Company = { id: string; name: string };
-type Contact = { id: string; display_name: string };
+type Contact = { id: string; display_name: string; company_id: string | null };
 type NewDeal = { title: string; value: string; companyId: string; contactId: string; expectedClose: string; source: string };
 const blankDeal: NewDeal = { title: "", value: "", companyId: "", contactId: "", expectedClose: "", source: "" };
 const nav = [
@@ -47,6 +47,8 @@ export default function CrmSales360() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [pipelineId, setPipelineId] = useState("");
   const [search, setSearch] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [contactFilter, setContactFilter] = useState("");
   const [reload, setReload] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -61,7 +63,13 @@ export default function CrmSales360() {
 
   useEffect(() => {
     setOpps([]); setStages([]); setPipelines([]); setCompanies([]); setContacts([]);
-    setPipelineId(""); setSelected(null); setNewOpen(false); setNotice(""); setSearch("");
+    const params=new URLSearchParams(window.location.search);
+    const companyId=params.get("companyId")??"";
+    const contactId=params.get("contactId")??"";
+    setPipelineId(""); setSelected(null); setNotice(""); setSearch("");
+    setCompanyFilter(companyId); setContactFilter(contactId);
+    setDraft({...blankDeal,companyId,contactId});
+    setNewOpen(params.get("new")==="1");
   }, [tenantId]);
   useEffect(() => {
     if (!tenantId) { setLoading(false); return; }
@@ -74,7 +82,7 @@ export default function CrmSales360() {
           supabase.from("pipeline_stages").select("id,pipeline_id,name,position,win_probability,stage_type").eq("tenant_id", tenantId).order("position"),
           supabase.from("pipelines").select("id,name,is_default").eq("tenant_id", tenantId).order("created_at"),
           supabase.from("companies").select("id,name").eq("tenant_id", tenantId).order("name").limit(2000),
-          supabase.from("contacts").select("id,display_name").eq("tenant_id", tenantId).order("display_name").limit(2000)
+          supabase.from("contacts").select("id,display_name,company_id").eq("tenant_id", tenantId).order("display_name").limit(2000)
         ]);
         if (!alive) return;
         const err = [o, s, p, c, ct].find(result => result.error)?.error;
@@ -84,7 +92,16 @@ export default function CrmSales360() {
         setStages((s.data ?? []) as Stage[]);
         setPipelines(ps);
         setCompanies((c.data ?? []) as Company[]);
-        setContacts((ct.data ?? []) as Contact[]);
+        const companyRows=(c.data??[]) as Company[];
+        const contactRows=(ct.data??[]) as Contact[];
+        setContacts(contactRows);
+        setCompanyFilter(value=>companyRows.some(row=>row.id===value)?value:"");
+        setContactFilter(value=>contactRows.some(row=>row.id===value)?value:"");
+        setDraft(current=>{
+          const companyId=companyRows.some(row=>row.id===current.companyId)?current.companyId:"";
+          const contactId=contactRows.some(row=>row.id===current.contactId&&(!companyId||row.company_id===companyId))?current.contactId:"";
+          return {...current,companyId,contactId};
+        });
         setPipelineId(current => ps.some(row => row.id === current) ? current : (ps.find(row => row.is_default)?.id ?? ps[0]?.id ?? ""));
       } catch {
         if (alive) setNotice("No se pudo conectar al servidor para cargar las oportunidades.");
@@ -96,10 +113,12 @@ export default function CrmSales360() {
   const companyMap = useMemo(() => new Map(companies.map(x => [x.id, x.name])), [companies]);
   const contactMap = useMemo(() => new Map(contacts.map(x => [x.id, x.display_name])), [contacts]);
   const visibleStages = useMemo(() => stages.filter(s => s.pipeline_id === pipelineId).sort((a, b) => a.position - b.position), [stages, pipelineId]);
-  const filtered = useMemo(() => opps.filter(o => o.pipeline_id === pipelineId).filter(o => (
-    [o.title, o.company_id ? companyMap.get(o.company_id) : "", o.contact_id ? contactMap.get(o.contact_id) : "", o.acquisition_source ?? ""]
+  const filtered = useMemo(() => opps.filter(o => o.pipeline_id === pipelineId)
+    .filter(o => !companyFilter || o.company_id===companyFilter)
+    .filter(o => !contactFilter || o.contact_id===contactFilter)
+    .filter(o => [o.title, o.company_id ? companyMap.get(o.company_id) : "", o.contact_id ? contactMap.get(o.contact_id) : "", o.acquisition_source ?? ""]
       .join(" ").toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))
-  )), [opps, pipelineId, search, companyMap, contactMap]);
+  ), [opps, pipelineId, search, companyMap, contactMap, companyFilter, contactFilter]);
   const open = filtered.filter(o => o.status === "open");
   const openValue = open.reduce((total, o) => total + Number(o.value || 0), 0);
   const weighted = open.reduce((total, o) => total + Number(o.value || 0) * Number(o.probability || 0), 0);
@@ -160,6 +179,10 @@ export default function CrmSales360() {
     const first = visibleStages.find(s => stageStatus(s) === "open");
     if (!first) { setNotice("Este proceso comercial no tiene una etapa abierta configurada."); return; }
     if (!title || !Number.isFinite(amount) || amount < 0) { setNotice("Indica un nombre y un monto válido."); return; }
+    if (draft.companyId && !companies.some(row=>row.id===draft.companyId)) { setNotice("Selecciona una empresa válida de esta cuenta."); return; }
+    const dealContact=contacts.find(row=>row.id===draft.contactId);
+    if (draft.contactId && !dealContact) { setNotice("Selecciona un contacto válido de esta cuenta."); return; }
+    if (draft.companyId && dealContact?.company_id && dealContact.company_id!==draft.companyId) { setNotice("El contacto pertenece a otra empresa. Selecciona un contacto de la empresa elegida."); return; }
     setSavingNew(true); setNotice("");
     try {
       const payload = {
@@ -213,6 +236,19 @@ export default function CrmSales360() {
           <div className="toolbar">
             <label className={styles.search}><Search size={17}/><input aria-label="Buscar oportunidades" placeholder="Buscar por negocio, empresa o contacto" value={search} onChange={e => setSearch(e.target.value)}/></label>
           </div>
+          <div className={styles.contextFilters} aria-label="Filtrar oportunidades vinculadas">
+            <label>Empresa
+              <select aria-label="Filtrar oportunidades por empresa" value={companyFilter} onChange={e=>{setCompanyFilter(e.target.value);setContactFilter("");}}>
+                <option value="">Todas las empresas</option>{companies.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}
+              </select>
+            </label>
+            <label>Contacto
+              <select aria-label="Filtrar oportunidades por contacto" value={contactFilter} onChange={e=>setContactFilter(e.target.value)}>
+                <option value="">Todos los contactos</option>{contacts.filter(c=>!companyFilter||c.company_id===companyFilter).map(c=><option value={c.id} key={c.id}>{c.display_name}</option>)}
+              </select>
+            </label>
+            {(companyFilter||contactFilter)&&<button type="button" className="button" onClick={()=>{setCompanyFilter("");setContactFilter("");}}>Quitar filtros</button>}
+          </div>
           {visibleStages.length === 0 ? <div className="card"><div className="empty"><strong>Proceso comercial sin etapas</strong><div>Configura las etapas desde la administración antes de crear oportunidades.</div></div></div> :
           <div className={styles.board} role="region" aria-label="Etapas de ventas">
             {visibleStages.map(stage => {
@@ -248,8 +284,8 @@ export default function CrmSales360() {
           <div className="form-grid">
             <label>Valor estimado en RD$<input type="number" min="0" step="0.01" inputMode="decimal" value={draft.value} onChange={e => setDraft(v => ({...v,value:e.target.value}))}/></label>
             <label>Fecha prevista de cierre<input type="date" value={draft.expectedClose} onChange={e => setDraft(v => ({...v,expectedClose:e.target.value}))}/></label>
-            <label>Empresa<select value={draft.companyId} onChange={e => setDraft(v => ({...v,companyId:e.target.value}))}><option value="">Sin empresa</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-            <label>Contacto<select value={draft.contactId} onChange={e => setDraft(v => ({...v,contactId:e.target.value}))}><option value="">Sin contacto</option>{contacts.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}</select></label>
+            <label>Empresa<select value={draft.companyId} onChange={e => setDraft(v => ({...v,companyId:e.target.value,contactId:""}))}><option value="">Sin empresa</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+            <label>Contacto<select value={draft.contactId} onChange={e => setDraft(v => ({...v,contactId:e.target.value}))}><option value="">Sin contacto</option>{contacts.filter(c=>!draft.companyId||c.company_id===draft.companyId).map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}</select></label>
             <label>Origen<input maxLength={80} value={draft.source} onChange={e => setDraft(v => ({...v,source:e.target.value}))} placeholder="Ej. Referido, Instagram"/></label>
           </div>
           <p className={styles.sectionIntro}>Se registrará en la primera etapa abierta del proceso seleccionado.</p>
