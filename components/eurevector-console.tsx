@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Building2, CheckCircle2, ChevronRight, Database, ExternalLink, Layers3, LogOut, Plus, RefreshCw, Settings2 } from "lucide-react";
+import { BarChart3, Building2, CheckCircle2, ChevronRight, Database, ExternalLink, Layers3, LogOut, Plus, RefreshCw, Settings2, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
