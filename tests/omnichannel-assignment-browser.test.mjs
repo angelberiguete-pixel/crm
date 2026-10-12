@@ -51,6 +51,7 @@ try{
  await page.getByRole("combobox",{name:"Filtrar conversaciones por canal"}).selectOption("whatsapp");
  await page.getByRole("button",{name:/Consulta de prueba/}).waitFor();
  await page.getByRole("combobox",{name:"Asignar conversación a vendedor"}).selectOption(seller);
+ await page.getByRole("combobox",{name:"Filtrar conversaciones por responsable"}).selectOption("all");
  await page.getByText("Responsable: Vendedora QA").waitFor();
  assert.equal(assignmentCalls,1,"supervisor assigns once");
  await page.getByRole("combobox",{name:"Filtrar conversaciones por responsable"}).selectOption("unassigned");
