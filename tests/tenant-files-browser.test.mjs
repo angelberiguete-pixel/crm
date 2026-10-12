@@ -98,7 +98,7 @@ try {
     filename:"recover.pdf",module_key:"general",mime_type:"application/pdf",byte_size:15,
     object_path:A+"/22222222-2222-4222-8222-222222222222.pdf",
     status:"reserved",created_at:new Date().toISOString()};
-  await page.getByRole("button",{name:"Actualizar"}).click();
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
   await page.getByText("recover.pdf",{exact:true}).waitFor();
   assert.equal(await page.getByRole("button",{name:"Descargar"}).count(),0,"unfinished file is not downloadable");
   await page.getByRole("button",{name:"Reintentar verificación"}).click();
@@ -108,7 +108,7 @@ try {
   // User-initiated cleanup of a reservation with no uploaded object.
   stored={...stored,id:"33333333-3333-4333-8333-333333333333",filename:"abandoned.pdf",
     status:"reserved",object_path:A+"/33333333-3333-4333-8333-333333333333.pdf"};
-  await page.getByRole("button",{name:"Actualizar"}).click();
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
   await page.getByText("abandoned.pdf",{exact:true}).waitFor();
   page.once("dialog",dialog=>dialog.accept());
   await page.getByRole("button",{name:"Descartar reserva"}).click();
@@ -121,7 +121,7 @@ try {
     uploaded_by:user.id,filename:"readonly.pdf",module_key:"general",mime_type:"application/pdf",
     byte_size:11,object_path:A+"/44444444-4444-4444-8444-444444444444.pdf",
     status:"ready",created_at:new Date().toISOString()};
-  await page.getByRole("button",{name:"Actualizar"}).click();
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
   await page.getByText("readonly.pdf",{exact:true}).waitFor();
   assert.equal(await page.getByRole("button",{name:"Subir documento"}).isDisabled(),true);
   assert.equal(await page.getByRole("button",{name:"Eliminar"}).count(),0);
