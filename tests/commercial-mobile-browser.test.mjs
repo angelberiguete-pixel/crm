@@ -159,6 +159,9 @@ try {
   await page.getByText("0 conversaciones con los filtros actuales").waitFor();
   await page.getByRole("button",{name:"No leídos"}).click();
   await page.getByRole("button",{name:"Actualizar"}).click();
+  // The summary may still display the previous count while the reload is in flight.
+  // Wait for the actual refreshed list item rather than checking visibility immediately.
+  await page.getByRole("button",{name:/Contacto actualizado/}).waitFor({state:"visible"});
   await page.getByText("1 conversación con los filtros actuales").waitFor();
   assert.ok(await page.getByRole("button",{name:/Contacto actualizado/}).isVisible(),"manual refresh retains inbox list");
   const dims=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
