@@ -98,6 +98,7 @@ try {
   assert.equal(writes.filter(([type])=>type==="company-insert").length,1);
   await page.getByRole("link",{name:"Añadir contacto a Empresa QA editada"}).click();
   await page.getByRole("heading",{name:"Nuevo contacto",exact:true}).waitFor();
+  await page.getByLabel("Empresa",{exact:true}).locator('option[value="co-1"]').waitFor();
   assert.equal(await page.getByLabel("Empresa",{exact:true}).inputValue(),"co-1","company context preselected from company card");
   await page.getByLabel("Nombre",{exact:true}).fill("Persona asociada QA");
   await page.getByRole("button",{name:"Guardar contacto"}).click();
@@ -111,17 +112,19 @@ try {
   assert.ok(writes.some(([type])=>type==="contact-update"),"contact editing reaches Supabase");
   await page.getByRole("link",{name:"Crear oportunidad para Contacto actualizado"}).click();
   await page.getByRole("dialog",{name:"Nueva oportunidad"}).waitFor();
+  await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).locator('option[value="ct-1"]').waitFor();
   assert.equal(await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).inputValue(),"ct-1","new deal links chosen contact");
   assert.equal(await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).inputValue(),"co-1","new deal links contact company");
   await page.getByRole("dialog").getByRole("button",{name:"Cancelar"}).click();
   await page.goto(base+"/crm/companies");
   await page.getByRole("link",{name:"Crear oportunidad para Empresa nueva QA"}).click();
   await page.getByRole("dialog",{name:"Nueva oportunidad"}).waitFor();
+  await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).locator('option[value="co-2"]').waitFor();
   assert.equal(await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).inputValue(),"co-2","company creation preselect");
   assert.equal(await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).locator("option").count(),1,"other-company contacts excluded");
   await page.getByRole("dialog").getByRole("button",{name:"Cancelar"}).click();
   await page.goto(base+"/crm/revenue?companyId=co-1");
-  await page.getByLabel("Filtrar oportunidades por empresa").waitFor();
+  await page.getByLabel("Filtrar oportunidades por empresa").locator('option[value="co-1"]').waitFor();
   assert.equal(await page.getByLabel("Filtrar oportunidades por empresa").inputValue(),"co-1","company-specific board filter");
   await page.getByLabel("Etapa de Oportunidad QA").waitFor();
   await page.goto(base+"/crm/revenue");
