@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 
 const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
-const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin"];
+const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels"];
 for(const route of routes){
  let finalError=null,passed=false;
  for(let attempt=1;attempt<=3;attempt++){
