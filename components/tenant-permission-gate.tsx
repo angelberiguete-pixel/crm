@@ -178,7 +178,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   </section></main>;
 
   if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
-  if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>{tenant && <div className="workspace-switcher"><TenantSwitcher /></div>}<MobileTenantNavigation />{children}</TenantContextProvider>;
+  if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>{tenant && <div className="workspace-header"><div className="workspace-switcher"><TenantSwitcher /></div><MobileTenantNavigation /></div>}{children}</TenantContextProvider>;
 
   return <main className="auth-shell">
     <section className="auth-panel">
