@@ -46,7 +46,7 @@ const nav = [
   ["", "Inicio", Gauge],
   ["companies", "Empresas", Building2],
   ["contacts", "Contactos", Users],
-  ["revenue", "Pipeline / Revenue", Target],
+  ["revenue", "Pipeline", Target],
   ["inbox", "Inbox", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
@@ -142,7 +142,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
           </div>
         </header>
         {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
-        {section === "" && <Dashboard tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
+        {section === "" && <Dashboard tenantId={tenantId} tenantName={member.tenant_name??"tu empresa"} reloadKey={reloadKey} notice={setNotice} />}
         {section === "companies" && <Companies tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "contacts" && <Contacts tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
@@ -156,7 +156,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
-        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} href={`/crm${key ? `/${key}` : ""}`}><Icon size={17} />{label}</Link>)}
+        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{label}</span></Link>)}
       </nav>
     </div>
   );
@@ -189,7 +189,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
 }
 function Empty({ title, text }: { title: string; text: string }) { return <div className="empty"><strong>{title}</strong><div>{text}</div></div>; }
 
-function Dashboard({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
+function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: string; tenantName: string; reloadKey: number; notice: (s: string) => void }) {
   const [counts, setCounts] = useState({ companies: 0, contacts: 0, opportunities: 0, conversations: 0, quotations: 0, events: 0 });
   const [revenue, setRevenue] = useState<RevenueDash | null>(null);
   useEffect(() => {
@@ -210,19 +210,40 @@ function Dashboard({ tenantId, reloadKey, notice }: { tenantId: string; reloadKe
     })();
   }, [tenantId, reloadKey, notice]);
   return <div className="stack gap-16">
-    <section className="grid metrics">
-      <Metric label="MRR actual" value={money.format(Number(revenue?.current_mrr ?? 0))} sub="Ingresos recurrentes" />
-      <Metric label="Pipeline abierto" value={money.format(Number(revenue?.open_pipeline_mrr ?? 0))} sub={`${Number(revenue?.open_opportunities ?? 0)} oportunidades`} />
-      <Metric label="Empresas" value={String(counts.companies)} sub="Cuentas CRM" />
+    <section className="dashboard-intro">
+      <div className="eyebrow">Panel de trabajo · LOOK SOCIAL MEDIA CRM</div>
+      <h2>Resumen de {tenantName}</h2>
+      <p className="muted">Organiza tus clientes, contactos y ventas desde aquí. Los datos aparecerán al registrar operaciones reales de esta empresa.</p>
+      <div className="dashboard-actions">
+        <Link className="button primary" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>
+        <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
+        <Link className="button" href="/crm/quotations"><FileText size={16}/> Cotizaciones</Link>
+        <Link className="button" href="/crm/operations"><Workflow size={16}/> Operaciones</Link>
+      </div>
+    </section>
+    <section className="grid dashboard-kpis" aria-label="Indicadores de esta empresa">
+      <Metric label="Empresas" value={String(counts.companies)} sub="Cuentas registradas" />
       <Metric label="Contactos" value={String(counts.contacts)} sub="Personas registradas" />
-      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Inbox omnicanal" />
-      <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos comerciales" />
-      <Metric label="Calendario" value={String(counts.events)} sub="Eventos registrados" />
       <Metric label="Oportunidades" value={String(counts.opportunities)} sub="Todas las etapas" />
+      <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos registrados" />
+      <Metric label="Pipeline abierto" value={money.format(Number(revenue?.open_pipeline_mrr ?? 0))} sub="Valor de oportunidades" />
+      <Metric label="MRR registrado" value={money.format(Number(revenue?.current_mrr ?? 0))} sub="Según los datos del CRM" />
+      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Inbox de esta empresa" />
+      <Metric label="Eventos" value={String(counts.events)} sub="Calendario" />
     </section>
     <section className="grid two-col">
-      <div className="card"><div className="eyebrow">Revenue Intelligence</div><h2>Tu centro comercial ya está conectado</h2><p className="muted">El Revenue Command Center conserva el objetivo de RD$1M MRR, prospectos, forecast, tareas y analytics; este workspace añade los módulos operativos del CRM.</p><Link className="button primary" href="/revenue-command-center">Abrir Revenue Command Center</Link></div>
-      <div className="card"><h2>Estado del producto</h2><div className="stack gap-8"><div className="priority-item"><strong>Autenticación + multi-tenant</strong><span>Activo</span></div><div className="priority-item"><strong>RLS por tenant</strong><span>Activo</span></div><div className="priority-item"><strong>CRM operativo</strong><span>Conectado</span></div><div className="priority-item"><strong>ERP Odoo</strong><span>Integración separada</span></div></div></div>
+      <div className="card">
+        <div className="eyebrow">Siguiente paso</div>
+        <h2>{counts.companies+counts.contacts===0?"Comienza con tus primeros registros":"Continúa dando seguimiento"}</h2>
+        <p className="muted">{counts.companies+counts.contacts===0?"Registra una empresa o un contacto para empezar a usar las funciones comerciales. No se han cargado datos ficticios.":"Abre tus contactos, revisa las cotizaciones y agenda los próximos seguimientos."}</p>
+        <div className="top-actions"><Link className="button primary" href="/crm/contacts">Ver contactos</Link><Link className="button" href="/crm/calendar">Abrir calendario</Link></div>
+      </div>
+      <div className="card">
+        <div className="eyebrow">Herramienta adicional</div>
+        <h2>Revenue Command Center</h2>
+        <p className="muted">Accede al seguimiento comercial avanzado. Las integraciones externas, la automatización de mensajes y el ERP requieren configuración y validación propias.</p>
+        <Link className="button" href="/revenue-command-center">Abrir centro comercial</Link>
+      </div>
     </section>
   </div>;
 }
