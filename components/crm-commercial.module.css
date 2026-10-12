@@ -1,0 +1,43 @@
+.headerActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.headerActions select { min-width:155px; max-width:260px; }
+.search { display:flex; align-items:center;gap:8px;min-width:200px;flex:1; }
+.search input { min-width:0; }
+.board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(265px, 1fr); gap:14px; overflow-x:auto; overscroll-behavior-inline:contain; scroll-snap-type:x proximity; padding:4px 0 18px; }
+.column { min-width:0; scroll-snap-align:start; padding:15px; background:var(--panel2); border:1px solid var(--border); border-radius:16px; }
+.columnHead { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px; }
+.columnHead small {display:block;color:var(--muted);margin-top:4px;}
+.columnContent {display:grid;gap:10px;}
+.deal { border:1px solid var(--border);border-radius:13px;padding:13px;background:var(--panel);min-width:0; }
+.deal strong { display:block;overflow-wrap:anywhere; }
+.dealMeta { display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0; }
+.dealMeta span { overflow-wrap:anywhere;font-size:12px; }
+.dealControls { display:grid;gap:9px; }
+.dealControls select { min-width:0; width:100%; }
+.stageLabel { color:var(--muted);font-size:12px; }
+.dialog { position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.62);display:grid;place-items:center;padding:12px; }
+.dialogBody { width:min(570px,100%);max-height:min(92dvh,850px);overflow-y:auto;overscroll-behavior:contain; }
+.dialogActions { display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap; }
+.dialogActions button { min-height:44px; }
+.notice {margin:0 0 16px;}
+.emptyColumn {color:var(--muted);font-size:13px;padding:20px 12px;text-align:center;border:1px dashed var(--border);border-radius:12px;}
+.toolRow {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.toolRow h2 {margin:0;}
+.customerGrid {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:12px;}
+.customerCard {display:flex;flex-direction:column;gap:10px; min-width:0;}
+.customerCard h3 {font-size:17px;margin:0;overflow-wrap:anywhere;}
+.customerCard p {margin:0;color:var(--muted);font-size:13px;overflow-wrap:anywhere;}
+.customerCard .button {width:100%;}
+.customerBadge { display:inline-flex;align-self:flex-start;padding:4px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:12px;border:1px solid var(--border); }
+.detailLinks {display:flex;gap:10px;flex-wrap:wrap;}
+.detailLinks a {font-size:13px; color:var(--accent); overflow-wrap:anywhere;}
+.companyList {display:grid;gap:12px;}
+.sectionIntro {margin:0;color:var(--muted);font-size:14px;}
+@media (max-width:760px) {
+ .headerActions {display:grid;grid-template-columns:1fr; width:100%;}
+ .headerActions select,.headerActions button {width:100%; max-width:unset;min-height:44px;}
+ .board{ grid-auto-columns:minmax(min(84vw,340px),1fr); }
+ .dialog { align-items:end;padding:0; }
+ .dialogBody{width:100%; max-height:90dvh; border-radius:20px 20px 0 0;}
+ .toolRow > button {width:100%; min-height:44px;}
+ .search {width:100%;}
+}
