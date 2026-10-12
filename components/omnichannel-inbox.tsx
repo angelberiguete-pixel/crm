@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, CircleAlert, Inbox, Search, Target, UserRound } from "lucide-react";
+import { ArrowLeft, Building2, CircleAlert, Gauge, Inbox, Search, Target, UserRound, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 
@@ -117,7 +117,7 @@ export default function OmnichannelInbox() {
   }
 
   if (loading) return <div className="loading">Preparando conversaciones…</div>;
-  return <main className="content" style={{ maxWidth: 1500, margin: "0 auto" }}>
+  return <><main className="content crm-inbox-page" style={{ maxWidth: 1500, margin: "0 auto" }}>
     <header className="topbar">
       <div><div className="eyebrow">Atención al cliente</div><h1>Conversaciones</h1><div className="muted">WhatsApp · Instagram · Correo · Chat web, separados por empresa</div></div>
       <Link className="button" href="/crm"><ArrowLeft size={14}/> Volver al CRM</Link>
@@ -152,5 +152,9 @@ export default function OmnichannelInbox() {
         <div className="card"><div className="eyebrow"><CircleAlert size={13}/> Atención</div><strong>{selected?.unread_count ?? 0} sin leer</strong><div className="muted">Prioridad {priorityLabel[selected?.priority??""]??"—"}</div></div>
       </aside>
     </section>
-  </main>;
+  </main>
+    <nav className="mobile-nav" aria-label="Secciones principales del CRM">
+      {([["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox]] as const).map(([key,label,Icon])=><Link key={key} aria-current={key==="inbox"?"page":undefined} className={key==="inbox"?"active":""} href={`/crm${key?"/"+key:""}`}><Icon size={19}/><span>{label}</span></Link>)}
+    </nav>
+  </>;
 }
