@@ -18,6 +18,7 @@ const sectionPermission: Record<string, string> = {
   revenue: "pipeline",
   sales: "pipeline",
   inbox: "inbox",
+  channels: "settings",
   products: "products",
   quotations: "quotations",
   operations: "operations",
