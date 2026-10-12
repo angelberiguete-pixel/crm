@@ -32,6 +32,7 @@ export default function OmnichannelInbox() {
   const [assignees,setAssignees]=useState<Assignee[]>([]);
   const [currentUserId,setCurrentUserId]=useState<string|null>(null);
   const [assignmentFilter,setAssignmentFilter]=useState("all");
+  const [channelFilter,setChannelFilter]=useState("all");
   const [assigning,setAssigning]=useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -85,8 +86,8 @@ export default function OmnichannelInbox() {
     const contact = row.contact_id ? contactMap.get(row.contact_id) : null;
     const opportunity = row.opportunity_id ? opportunityMap.get(row.opportunity_id) : null;
     const haystack = `${row.subject ?? ""} ${contact?.display_name ?? ""} ${contact?.email ?? ""} ${contact?.phone ?? ""} ${opportunity?.title ?? ""}`.toLowerCase();
-    return (!query || haystack.includes(query.toLowerCase())) && (status === "all" || row.status === status) && (!onlyUnread || row.unread_count > 0) && (assignmentFilter === "all" || (assignmentFilter==="mine" ? row.assigned_to===currentUserId : row.assigned_to===null));
-  }), [conversations, contactMap, opportunityMap, query, status, onlyUnread, assignmentFilter, currentUserId]);
+    return (!query || haystack.includes(query.toLowerCase())) && (status === "all" || row.status === status) && (!onlyUnread || row.unread_count > 0) && (assignmentFilter === "all" || (assignmentFilter==="mine" ? row.assigned_to===currentUserId : row.assigned_to===null)) && (channelFilter==="all" || channelMap.get(row.channel_id)?.provider===channelFilter);
+  }), [conversations, contactMap, opportunityMap, query, status, onlyUnread, assignmentFilter, currentUserId,channelFilter,channelMap]);
   const selected = conversations.find((row) => row.id === selectedId) ?? null;
   const contact = selected?.contact_id ? contactMap.get(selected.contact_id) : null;
   const company = contact?.company_id ? companyMap.get(contact.company_id) : null;
@@ -129,6 +130,7 @@ export default function OmnichannelInbox() {
           <label style={{ position: "relative" }}><Search size={15} style={{ position: "absolute", left: 10, top: 11 }}/><input aria-label="Buscar conversaciones" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar persona, oportunidad o correo…" style={{ paddingLeft: 32 }}/></label>
           <div style={{ display: "flex", gap: 8 }}><select value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">Todos los estados</option><option value="open">Abiertas</option><option value="pending">Pendientes</option><option value="closed">Cerradas</option></select><button className={`button ${onlyUnread ? "primary" : ""}`} onClick={() => setOnlyUnread((v) => !v)}>No leídos</button></div>
         </div>
+        <label className="crm-assignment-filter">Canal<select aria-label="Filtrar conversaciones por canal" value={channelFilter} onChange={e=>setChannelFilter(e.target.value)}><option value="all">Todos los canales</option><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option><option value="email">Correo</option><option value="messenger">Messenger</option><option value="webchat">Chat web</option></select></label>
         <label className="crm-assignment-filter">Responsable<select aria-label="Filtrar conversaciones por responsable" value={assignmentFilter} onChange={e=>setAssignmentFilter(e.target.value)}><option value="all">Todas las conversaciones</option><option value="mine">Mis conversaciones</option><option value="unassigned">Sin asignar</option></select></label>
         <div className="stack gap-8" style={{ marginTop: 12 }}>
           {filtered.length === 0 && <div className="empty"><strong>Sin conversaciones</strong><div>No hay conversaciones que coincidan con estos filtros.</div></div>}
