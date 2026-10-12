@@ -5,7 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 
-const links = [["", "Inicio"], ["companies", "Empresas"], ["contacts", "Contactos"], ["revenue", "Pipeline"], ["inbox", "Inbox"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["settings", "Configuración"]];
+const links = [["", "Inicio"], ["companies", "Empresas"], ["contacts", "Contactos"], ["revenue", "Pipeline"], ["inbox", "Inbox"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
