@@ -41,3 +41,18 @@
  .toolRow > button {width:100%; min-height:44px;}
  .search {width:100%;}
 }
+
+/* Direct customer-to-sales workflow: accessible actions and contextual filters. */
+.recordCounts { margin:0; font-size:13px; color:var(--muted); font-weight:600; }
+.recordActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.recordActions a { min-width:0; min-height:44px; text-align:center; font-size:12px; padding:8px; justify-content:center; overflow-wrap:anywhere; }
+.recordActions a:last-child { grid-column:1/-1; }
+.contextFilters { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin:2px 0 15px; }
+.contextFilters label { display:grid; gap:6px; flex:1 1 210px; min-width:0; font-size:13px; color:var(--muted); }
+.contextFilters select { min-width:0; width:100%; min-height:44px; }
+.contextFilters button { min-height:44px; }
+@media(max-width:760px) {
+ .contextFilters { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+ .contextFilters label, .contextFilters button { width:100%; }
+ .recordActions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
