@@ -5,7 +5,8 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 
-const links = [["", "Inicio"], ["companies", "Empresas"], ["contacts", "Contactos"], ["revenue", "Pipeline"], ["inbox", "Inbox"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["settings", "Configuración"]];
+// Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
+const links = [["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -17,9 +18,9 @@ export default function MobileTenantNavigation() {
     if(result.error) {setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
     router.replace("/login");
   }
-  return <details className="mobile-tenant-navigation"><summary>Menú · {tenant.tenant_name}</summary>
-    <nav aria-label="Navegación móvil del CRM">{links.map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
+  return <details className="mobile-tenant-navigation"><summary aria-label="Abrir todos los módulos">Módulos <span aria-hidden="true">☰</span></summary>
+    <div className="mobile-module-panel"><nav aria-label={`Más módulos de ${tenant.tenant_name}`}>{links.map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
     <button type="button" className="button" disabled={busy} onClick={logout}>{busy?"Cerrando sesión…":"Salir"}</button>
-    {error&&<p role="alert">{error}</p>}
+    {error&&<p role="alert">{error}</p>}</div>
   </details>;
 }

@@ -46,7 +46,7 @@ const nav = [
   ["", "Inicio", Gauge],
   ["companies", "Empresas", Building2],
   ["contacts", "Contactos", Users],
-  ["revenue", "Pipeline / Revenue", Target],
+  ["revenue", "Pipeline", Target],
   ["inbox", "Inbox", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
@@ -142,7 +142,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
           </div>
         </header>
         {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
-        {section === "" && <Dashboard tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
+        {section === "" && <Dashboard tenantId={tenantId} tenantName={member.tenant_name??"tu empresa"} reloadKey={reloadKey} notice={setNotice} />}
         {section === "companies" && <Companies tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "contacts" && <Contacts tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
@@ -156,7 +156,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
-        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} href={`/crm${key ? `/${key}` : ""}`}><Icon size={17} />{label}</Link>)}
+        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{label}</span></Link>)}
       </nav>
     </div>
   );
@@ -189,7 +189,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
 }
 function Empty({ title, text }: { title: string; text: string }) { return <div className="empty"><strong>{title}</strong><div>{text}</div></div>; }
 
-function Dashboard({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
+function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: string; tenantName: string; reloadKey: number; notice: (s: string) => void }) {
   const [counts, setCounts] = useState({ companies: 0, contacts: 0, opportunities: 0, conversations: 0, quotations: 0, events: 0 });
   const [revenue, setRevenue] = useState<RevenueDash | null>(null);
   useEffect(() => {
@@ -210,38 +210,110 @@ function Dashboard({ tenantId, reloadKey, notice }: { tenantId: string; reloadKe
     })();
   }, [tenantId, reloadKey, notice]);
   return <div className="stack gap-16">
-    <section className="grid metrics">
-      <Metric label="MRR actual" value={money.format(Number(revenue?.current_mrr ?? 0))} sub="Ingresos recurrentes" />
-      <Metric label="Pipeline abierto" value={money.format(Number(revenue?.open_pipeline_mrr ?? 0))} sub={`${Number(revenue?.open_opportunities ?? 0)} oportunidades`} />
-      <Metric label="Empresas" value={String(counts.companies)} sub="Cuentas CRM" />
+    <section className="dashboard-intro">
+      <div className="eyebrow">Panel de trabajo · LOOK SOCIAL MEDIA CRM</div>
+      <h2>Resumen de {tenantName}</h2>
+      <p className="muted">Organiza tus clientes, contactos y ventas desde aquí. Los datos aparecerán al registrar operaciones reales de esta empresa.</p>
+      <div className="dashboard-actions">
+        <Link className="button primary" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>
+        <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
+        <Link className="button" href="/crm/quotations"><FileText size={16}/> Cotizaciones</Link>
+        <Link className="button" href="/crm/operations"><Workflow size={16}/> Operaciones</Link>
+      </div>
+    </section>
+    <section className="grid dashboard-kpis" aria-label="Indicadores de esta empresa">
+      <Metric label="Empresas" value={String(counts.companies)} sub="Cuentas registradas" />
       <Metric label="Contactos" value={String(counts.contacts)} sub="Personas registradas" />
-      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Inbox omnicanal" />
-      <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos comerciales" />
-      <Metric label="Calendario" value={String(counts.events)} sub="Eventos registrados" />
       <Metric label="Oportunidades" value={String(counts.opportunities)} sub="Todas las etapas" />
+      <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos registrados" />
+      <Metric label="Pipeline abierto" value={money.format(Number(revenue?.open_pipeline_mrr ?? 0))} sub="Valor de oportunidades" />
+      <Metric label="MRR registrado" value={money.format(Number(revenue?.current_mrr ?? 0))} sub="Según los datos del CRM" />
+      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Inbox de esta empresa" />
+      <Metric label="Eventos" value={String(counts.events)} sub="Calendario" />
     </section>
     <section className="grid two-col">
-      <div className="card"><div className="eyebrow">Revenue Intelligence</div><h2>Tu centro comercial ya está conectado</h2><p className="muted">El Revenue Command Center conserva el objetivo de RD$1M MRR, prospectos, forecast, tareas y analytics; este workspace añade los módulos operativos del CRM.</p><Link className="button primary" href="/revenue-command-center">Abrir Revenue Command Center</Link></div>
-      <div className="card"><h2>Estado del producto</h2><div className="stack gap-8"><div className="priority-item"><strong>Autenticación + multi-tenant</strong><span>Activo</span></div><div className="priority-item"><strong>RLS por tenant</strong><span>Activo</span></div><div className="priority-item"><strong>CRM operativo</strong><span>Conectado</span></div><div className="priority-item"><strong>ERP Odoo</strong><span>Integración separada</span></div></div></div>
+      <div className="card">
+        <div className="eyebrow">Siguiente paso</div>
+        <h2>{counts.companies+counts.contacts===0?"Comienza con tus primeros registros":"Continúa dando seguimiento"}</h2>
+        <p className="muted">{counts.companies+counts.contacts===0?"Registra una empresa o un contacto para empezar a usar las funciones comerciales. No se han cargado datos ficticios.":"Abre tus contactos, revisa las cotizaciones y agenda los próximos seguimientos."}</p>
+        <div className="top-actions"><Link className="button primary" href="/crm/contacts">Ver contactos</Link><Link className="button" href="/crm/calendar">Abrir calendario</Link></div>
+      </div>
+      <div className="card">
+        <div className="eyebrow">Herramienta adicional</div>
+        <h2>Revenue Command Center</h2>
+        <p className="muted">Accede al seguimiento comercial avanzado. Las integraciones externas, la automatización de mensajes y el ERP requieren configuración y validación propias.</p>
+        <Link className="button" href="/revenue-command-center">Abrir centro comercial</Link>
+      </div>
     </section>
   </div>;
 }
 
 function Companies({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
-  const [rows, setRows] = useState<Company[]>([]);
-  const [name, setName] = useState(""); const [sector, setSector] = useState(""); const [city, setCity] = useState(""); const [phone, setPhone] = useState(""); const [email, setEmail] = useState("");
-  useEffect(() => { (async () => { const r = await supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500); if (r.error) notice(r.error.message); else setRows((r.data ?? []) as Company[]); })(); }, [tenantId, reloadKey, notice]);
-  async function add(e: FormEvent) { e.preventDefault(); const r = await supabase.from("companies").insert({ tenant_id: tenantId, name, sector: sector || null, city: city || null, phone: phone || null, whatsapp_phone: phone || null, email: email || null }); if (r.error) return notice(r.error.message); setName(""); setSector(""); setCity(""); setPhone(""); setEmail(""); refresh(); }
-  return <div className="stack gap-16"><form className="card" onSubmit={add}><h2>Nueva empresa</h2><div className="form-grid"><label>Nombre<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Sector<input value={sector} onChange={(e) => setSector(e.target.value)} /></label><label>Ciudad<input value={city} onChange={(e) => setCity(e.target.value)} /></label><label>WhatsApp / Teléfono<input value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label></div><div className="section-gap"><button className="button primary">Guardar empresa</button></div></form><div className="table-wrap"><table className="data-table"><thead><tr><th>Empresa</th><th>Sector</th><th>Ciudad</th><th>Contacto</th><th>Creada</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td><strong>{r.name}</strong></td><td>{r.sector ?? "—"}</td><td>{r.city ?? "—"}</td><td>{r.email ?? r.whatsapp_phone ?? r.phone ?? "—"}</td><td>{date.format(new Date(r.created_at))}</td></tr>)}</tbody></table>{rows.length === 0 && <Empty title="Sin empresas" text="Agrega tu primera empresa o activa prospectos desde Revenue." />}</div></div>;
+  const [rows,setRows]=useState<Company[]>([]);
+  const [name,setName]=useState("");const[sector,setSector]=useState("");const[city,setCity]=useState("");const[phone,setPhone]=useState("");const[email,setEmail]=useState("");
+  const [showForm,setShowForm]=useState(false),[saving,setSaving]=useState(false),[feedback,setFeedback]=useState("");
+  useEffect(()=>{setShowForm(new URLSearchParams(window.location.search).get("new")==="1");setFeedback("");},[tenantId]);
+  useEffect(()=>{let alive=true;(async()=>{const r=await supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(500);if(!alive)return;if(r.error)notice(r.error.message);else setRows((r.data??[]) as Company[]);})();return()=>{alive=false};},[tenantId,reloadKey,notice]);
+  async function add(e:FormEvent){
+    e.preventDefault();if(saving)return;setSaving(true);setFeedback("");
+    try{
+      const r=await supabase.from("companies").insert({tenant_id:tenantId,name:name.trim(),sector:sector||null,city:city||null,phone:phone||null,whatsapp_phone:phone||null,email:email||null});
+      if(r.error){setFeedback("No se pudo guardar: "+r.error.message);return;}
+      setName("");setSector("");setCity("");setPhone("");setEmail("");setShowForm(false);setFeedback("Empresa registrada correctamente.");refresh();
+    }catch{setFeedback("No se pudo conectar con el servidor. Intenta nuevamente.");}
+    finally{setSaving(false);}
+  }
+  return <div className="stack gap-16">
+    <section className="card crm-list-card">
+      <div className="crm-list-heading"><div><div className="eyebrow">Clientes y empresas</div><h2>Empresas registradas</h2></div>
+      <button type="button" className="button primary" aria-expanded={showForm} onClick={()=>{setShowForm(v=>!v);setFeedback("");}}>{showForm?"Cerrar formulario":"+ Nueva empresa"}</button></div>
+      {feedback&&<div className="notice" role="status" style={{marginTop:12}}>{feedback}</div>}
+      {rows.length===0?<Empty title="Aún no hay empresas" text="Pulsa Nueva empresa para registrar tu primer cliente. No hay datos de ejemplo."/>:
+      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table">
+        <thead><tr><th>Empresa</th><th>Sector</th><th>Ciudad</th><th>Contacto</th><th>Creada</th></tr></thead>
+        <tbody>{rows.map(r=><tr key={r.id}><td data-label="Empresa"><strong>{r.name}</strong></td><td data-label="Sector">{r.sector??"—"}</td><td data-label="Ciudad">{r.city??"—"}</td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td><td data-label="Creada">{date.format(new Date(r.created_at))}</td></tr>)}</tbody>
+      </table></div>}
+    </section>
+    {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nueva empresa</h2>
+      <div className="form-grid"><label>Nombre<input autoFocus value={name} onChange={e=>setName(e.target.value)} required /></label><label>Sector<input value={sector} onChange={e=>setSector(e.target.value)}/></label><label>Ciudad<input value={city} onChange={e=>setCity(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
+      <div className="top-actions section-gap"><button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar empresa"}</button><button className="button" type="button" disabled={saving} onClick={()=>setShowForm(false)}>Cancelar</button></div>
+    </form>}
+  </div>;
 }
 
 function Contacts({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
-  const [rows, setRows] = useState<Contact[]>([]); const [companies, setCompanies] = useState<Company[]>([]);
-  const [displayName, setDisplayName] = useState(""); const [companyId, setCompanyId] = useState(""); const [job, setJob] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
-  useEffect(() => { (async () => { const [c, co] = await Promise.all([supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500), supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("name")]); const err = c.error ?? co.error; if (err) notice(err.message); setRows((c.data ?? []) as Contact[]); setCompanies((co.data ?? []) as Company[]); })(); }, [tenantId, reloadKey, notice]);
-  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
-  async function add(e: FormEvent) { e.preventDefault(); const r = await supabase.from("contacts").insert({ tenant_id: tenantId, company_id: companyId || null, display_name: displayName, job_title: job || null, email: email || null, phone: phone || null, whatsapp_phone: phone || null, source: "manual", status: "lead" }); if (r.error) return notice(r.error.message); setDisplayName(""); setCompanyId(""); setJob(""); setEmail(""); setPhone(""); refresh(); }
-  return <div className="stack gap-16"><form className="card" onSubmit={add}><h2>Nuevo contacto</h2><div className="form-grid"><label>Nombre<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required /></label><label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Cargo<input value={job} onChange={(e) => setJob(e.target.value)} /></label><label>WhatsApp / Teléfono<input value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label></div><div className="section-gap"><button className="button primary">Guardar contacto</button></div></form><div className="table-wrap"><table className="data-table"><thead><tr><th>Contacto</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td><strong>{r.display_name}</strong></td><td>{r.company_id ? companyMap.get(r.company_id) ?? "—" : "—"}</td><td>{r.job_title ?? "—"}</td><td><span className="pill">{r.status}</span></td><td>{r.email ?? r.whatsapp_phone ?? r.phone ?? "—"}</td></tr>)}</tbody></table>{rows.length === 0 && <Empty title="Sin contactos" text="Registra personas y relaciónalas con tus empresas." />}</div></div>;
+  const [rows,setRows]=useState<Contact[]>([]),[companies,setCompanies]=useState<Company[]>([]);
+  const [displayName,setDisplayName]=useState("");const[companyId,setCompanyId]=useState("");const[job,setJob]=useState("");const[email,setEmail]=useState("");const[phone,setPhone]=useState("");
+  const [showForm,setShowForm]=useState(false),[saving,setSaving]=useState(false),[feedback,setFeedback]=useState("");
+  useEffect(()=>{setShowForm(new URLSearchParams(window.location.search).get("new")==="1");setFeedback("");},[tenantId]);
+  useEffect(()=>{let alive=true;(async()=>{const[c,co]=await Promise.all([
+    supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(500),
+    supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("name")]);if(!alive)return;
+    const err=c.error??co.error;if(err)notice(err.message);setRows((c.data??[]) as Contact[]);setCompanies((co.data??[]) as Company[]);
+  })();return()=>{alive=false};},[tenantId,reloadKey,notice]);
+  const companyMap=useMemo(()=>new Map(companies.map(c=>[c.id,c.name])),[companies]);
+  async function add(e:FormEvent){
+    e.preventDefault();if(saving)return;setSaving(true);setFeedback("");
+    try{
+      const r=await supabase.from("contacts").insert({tenant_id:tenantId,company_id:companyId||null,display_name:displayName.trim(),job_title:job||null,email:email||null,phone:phone||null,whatsapp_phone:phone||null,source:"manual",status:"lead"});
+      if(r.error){setFeedback("No se pudo guardar: "+r.error.message);return;}
+      setDisplayName("");setCompanyId("");setJob("");setEmail("");setPhone("");setShowForm(false);setFeedback("Contacto registrado correctamente.");refresh();
+    }catch{setFeedback("No se pudo conectar con el servidor. Intenta nuevamente.");}
+    finally{setSaving(false);}
+  }
+  return <div className="stack gap-16">
+    <section className="card crm-list-card">
+      <div className="crm-list-heading"><div><div className="eyebrow">Personas y prospectos</div><h2>Contactos registrados</h2></div><button type="button" className="button primary" aria-expanded={showForm} onClick={()=>{setShowForm(v=>!v);setFeedback("");}}>{showForm?"Cerrar formulario":"+ Nuevo contacto"}</button></div>
+      {feedback&&<div className="notice" role="status" style={{marginTop:12}}>{feedback}</div>}
+      {rows.length===0?<Empty title="Aún no hay contactos" text="Pulsa Nuevo contacto para registrar tu primer prospecto. No hay contactos ficticios."/>:
+      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th></tr></thead>
+      <tbody>{rows.map(r=><tr key={r.id}><td data-label="Nombre"><strong>{r.display_name}</strong></td><td data-label="Empresa">{r.company_id?companyMap.get(r.company_id)??"—":"—"}</td><td data-label="Cargo">{r.job_title??"—"}</td><td data-label="Estado"><span className="pill">{r.status}</span></td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td></tr>)}</tbody></table></div>}
+    </section>
+    {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nuevo contacto</h2>
+      <div className="form-grid"><label>Nombre<input autoFocus value={displayName} onChange={e=>setDisplayName(e.target.value)} required /></label><label>Empresa<select value={companyId} onChange={e=>setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Cargo<input value={job} onChange={e=>setJob(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
+      <div className="top-actions section-gap"><button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar contacto"}</button><button className="button" type="button" disabled={saving} onClick={()=>setShowForm(false)}>Cancelar</button></div>
+    </form>}
+  </div>;
 }
 
 function Revenue({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
@@ -279,7 +351,7 @@ function Products({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
   async function syncFromOdoo(){ const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error) return notice(r.error.message); notice("Sincronización de productos e inventario Odoo encolada."); refresh(); }
   async function togglePublication(product:Product){ const current=pubMap.get(product.id); if(current?.is_published){ const r=await supabase.from("product_publication").update({is_published:false,updated_at:new Date().toISOString()}).eq("tenant_id",tenantId).eq("product_id",product.id); if(r.error)return notice(r.error.message); } else { const r=await supabase.from("product_publication").upsert({tenant_id:tenantId,product_id:product.id,is_published:true,show_exact_stock:true,show_price:true},{onConflict:"tenant_id,product_id"}); if(r.error)return notice(r.error.message); } notice(current?.is_published?"Producto retirado del catálogo web.":"Producto publicado para consumo seguro desde la web."); refresh(); }
   return <div className="stack gap-16">
-    <section className="card"><div className="topbar" style={{marginBottom:0}}><div><div className="eyebrow">Fuente de inventario</div><h2>{erp?"Odoo conectado":"Odoo pendiente"}</h2><p className="muted">{erp ? ("Estado "+erp.status+" · "+Number(erp.odoo_products??0)+" productos Odoo · última sync "+(erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"sin sincronizar")) : "Cuando conectes Odoo, productos, precios e inventario sincronizados serán la fuente oficial."}</p></div><button className="button" type="button" onClick={syncFromOdoo} disabled={!erp}><RefreshCw size={14}/> Sincronizar Odoo</button></div></section>
+    <section className="card"><div className="topbar" style={{marginBottom:0}}><div><div className="eyebrow">Fuente de inventario</div><h2>{erp?.status==="connected"?"Odoo conectado":"Odoo no conectado"}</h2><p className="muted">{erp ? ("Estado "+erp.status+" · "+Number(erp.odoo_products??0)+" productos Odoo · última sync "+(erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"sin sincronizar")) : "Cuando conectes Odoo, productos, precios e inventario sincronizados serán la fuente oficial."}</p></div><button className="button" type="button" onClick={syncFromOdoo} disabled={erp?.status!=="connected"}><RefreshCw size={14}/> Sincronizar Odoo</button></div></section>
     <form className="card" onSubmit={add}><h2>Producto local / previo a Odoo</h2><p className="muted">Úsalo solo cuando aún no exista en Odoo. Una vez mapeado, Odoo pasa a ser la fuente de precio e inventario.</p><div className="form-grid"><label>SKU<input value={sku} onChange={(e) => setSku(e.target.value)} required /></label><label>Nombre<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Precio RD$<input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></label></div><div className="section-gap"><button className="button primary">Guardar producto</button></div></form>
     <div className="table-wrap"><table className="data-table"><thead><tr><th>SKU</th><th>Producto</th><th>Precio</th><th>Stock</th><th>Fuente</th><th>Web</th></tr></thead><tbody>{rows.map((r) => { const pub=pubMap.get(r.id); return <tr key={r.id}><td>{r.sku}</td><td><strong>{r.name}</strong><div className="muted">{r.stock_synced_at?("Actualizado "+date.format(new Date(r.stock_synced_at))):"Sin fecha de sync"}</div></td><td>{money.format(r.sale_price)}</td><td>{r.stock_snapshot ?? "—"}</td><td><span className="pill">{r.source_system==="odoo"?"Odoo":"CRM"}</span></td><td><button type="button" className="button small" onClick={()=>togglePublication(r)}>{pub?.is_published?"Publicado":"Publicar"}</button></td></tr>; })}</tbody></table>{rows.length === 0 && <Empty title="Sin productos" text="Conecta Odoo o crea temporalmente un producto local." />}</div>
   </div>;
@@ -406,10 +478,10 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
   const [settings, setSettings] = useState<TenantSettings | null>(null); const [erp,setErp]=useState<ErpStatus|null>(null); const [brand, setBrand] = useState(""); const [support, setSupport] = useState(""); const [primary, setPrimary] = useState("#2563EB"); const [saving, setSaving] = useState(false);
   useEffect(() => { (async () => { const [r,e]=await Promise.all([supabase.from("tenant_settings").select("tenant_id,brand_name,primary_color,support_email,timezone,currency,hide_platform_branding").eq("tenant_id", tenantId).maybeSingle(),supabase.from("tenant_erp_status").select("tenant_id,connection_id,provider,status,sync_direction,last_healthcheck_at,last_error,source_of_truth,inventory_synced_at,odoo_products").eq("tenant_id",tenantId).maybeSingle()]); if (r.error) return notice(r.error.message); if(e.error) notice(e.error.message); const s = r.data as TenantSettings | null; setSettings(s); setBrand(s?.brand_name ?? ""); setSupport(s?.support_email ?? ""); setPrimary(s?.primary_color ?? "#2563EB"); setErp(e.data as ErpStatus|null); })(); }, [tenantId, reloadKey, notice]);
   async function save(e: FormEvent) { e.preventDefault(); setSaving(true); const r = await supabase.from("tenant_settings").update({ brand_name: brand || null, support_email: support || null, primary_color: primary }).eq("tenant_id", tenantId); setSaving(false); if (r.error) return notice(r.error.message); notice("Configuración guardada."); }
-  async function syncProducts(){ const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error)return notice(r.error.message); notice("Sincronización Odoo encolada."); }
+  async function syncProducts(){ if(erp?.status!=="connected")return notice("Conecta y verifica Odoo antes de sincronizar."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error)return notice(r.error.message); notice("Sincronización Odoo encolada."); }
   return <div className="stack gap-16">
     <div className="grid two-col"><form className="card" onSubmit={save}><h2>Marca y soporte</h2><div className="stack gap-12"><label>Nombre de marca<input value={brand} onChange={(e) => setBrand(e.target.value)} /></label><label>Email de soporte<input type="email" value={support} onChange={(e) => setSupport(e.target.value)} /></label><label>Color principal<input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} /></label><button className="button primary" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button></div></form><div className="card"><h2>Workspace</h2><div className="priority-list"><div className="priority-item"><strong>Moneda</strong><span>{settings?.currency ?? "DOP"}</span></div><div className="priority-item"><strong>Zona horaria</strong><span>{settings?.timezone ?? "America/Santo_Domingo"}</span></div><div className="priority-item"><strong>White-label</strong><span>{settings?.hide_platform_branding ? "Activo" : "Disponible"}</span></div><div className="priority-item"><strong>Tenant</strong><span>{tenantId.slice(0, 8)}…</span></div></div></div></div>
-    <section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>
+    <section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>
     <section className="card"><h2>Catálogo web conectado</h2><p className="muted">Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo.</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
   </div>;
 }
