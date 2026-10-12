@@ -44,3 +44,5 @@ jobs:
         run: node tests/tenant-files-browser.test.mjs
       - name: Spanish team conversations and assignment browser tests
         run: node tests/omnichannel-assignment-browser.test.mjs
+      - name: Company channel authorization browser regression tests
+        run: node tests/company-channel-onboarding-browser.test.mjs
