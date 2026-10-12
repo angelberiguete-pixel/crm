@@ -51,7 +51,13 @@ try {
       else data=companies;
     }
     else if(path==="contacts"){
-      if(req.method()==="PATCH"){const body=json(); assert.equal(url.searchParams.get("tenant_id"),"eq."+A);Object.assign(contacts[0],body);writes.push(["contact-update",body]);data={id:"ct-1"};}
+      if(req.method()==="POST"){
+        const body=json();assert.equal(body.tenant_id,A);
+        writes.push(["contact-insert",body]);
+        contacts.push({...body,id:"ct-2",created_at:new Date().toISOString()});
+        data={};
+      }
+      else if(req.method()==="PATCH"){const body=json(); assert.equal(url.searchParams.get("tenant_id"),"eq."+A);Object.assign(contacts[0],body);writes.push(["contact-update",body]);data={id:"ct-1"};}
       else data=contacts;
     }
     else if(path==="channels") data=channels;
@@ -90,12 +96,37 @@ try {
   await page.getByRole("button",{name:"Guardar empresa"}).click();
   await page.getByText("Empresa registrada correctamente.").waitFor();
   assert.equal(writes.filter(([type])=>type==="company-insert").length,1);
+  await page.getByRole("link",{name:"Añadir contacto a Empresa QA editada"}).click();
+  await page.getByRole("heading",{name:"Nuevo contacto",exact:true}).waitFor();
+  await page.getByLabel("Empresa",{exact:true}).locator('option[value="co-1"]').waitFor({state:"attached"});
+  assert.equal(await page.getByLabel("Empresa",{exact:true}).inputValue(),"co-1","company context preselected from company card");
+  await page.getByLabel("Nombre",{exact:true}).fill("Persona asociada QA");
+  await page.getByRole("button",{name:"Guardar contacto"}).click();
+  await page.getByText("Contacto registrado correctamente.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="contact-insert"&&body.company_id==="co-1"),"new contact linked to the correct company");
   await page.goto(base+"/crm/contacts");
-  await page.getByRole("button",{name:"Editar contacto"}).click();
+  await page.getByRole("button",{name:"Editar contacto"}).first().click();
   await page.getByLabel("Nombre",{exact:true}).fill("Contacto actualizado");
   await page.getByRole("button",{name:"Guardar cambios"}).click();
   await page.getByText("Cambios guardados correctamente.").waitFor();
   assert.ok(writes.some(([type])=>type==="contact-update"),"contact editing reaches Supabase");
+  await page.getByRole("link",{name:"Crear oportunidad para Contacto actualizado"}).click();
+  await page.getByRole("dialog",{name:"Nueva oportunidad"}).waitFor();
+  await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).locator('option[value="ct-1"]').waitFor({state:"attached"});
+  assert.equal(await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).inputValue(),"ct-1","new deal links chosen contact");
+  assert.equal(await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).inputValue(),"co-1","new deal links contact company");
+  await page.getByRole("dialog").getByRole("button",{name:"Cancelar"}).click();
+  await page.goto(base+"/crm/companies");
+  await page.getByRole("link",{name:"Crear oportunidad para Empresa nueva QA"}).click();
+  await page.getByRole("dialog",{name:"Nueva oportunidad"}).waitFor();
+  await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).locator('option[value="co-2"]').waitFor({state:"attached"});
+  assert.equal(await page.getByRole("dialog").getByLabel("Empresa",{exact:true}).inputValue(),"co-2","company creation preselect");
+  assert.equal(await page.getByRole("dialog").getByLabel("Contacto",{exact:true}).locator("option").count(),1,"other-company contacts excluded");
+  await page.getByRole("dialog").getByRole("button",{name:"Cancelar"}).click();
+  await page.goto(base+"/crm/revenue?companyId=co-1");
+  await page.getByLabel("Filtrar oportunidades por empresa").locator('option[value="co-1"]').waitFor({state:"attached"});
+  assert.equal(await page.getByLabel("Filtrar oportunidades por empresa").inputValue(),"co-1","company-specific board filter");
+  await page.getByLabel("Etapa de Oportunidad QA").waitFor();
   await page.goto(base+"/crm/revenue");
   await page.getByRole("heading",{name:"Oportunidades",exact:true}).waitFor();
   await page.getByRole("button",{name:"Nueva oportunidad"}).click();
