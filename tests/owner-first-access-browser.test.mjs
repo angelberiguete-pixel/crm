@@ -41,7 +41,7 @@ try{
  await page.goto(base+'/first-access');
  await page.getByText('Este enlace de activación no es válido. Solicita un nuevo acceso seguro.').waitFor();
  assert.equal(calls.bootstrap,0,'no code must never call privileged bootstrap');
- await page.goto(base+'/first-access#ticket='+'A'.repeat(44));
+ await page.goto(base+'/login'); // Force full document navigation; a hash-only navigation would not remount React.\n await page.goto(base+'/first-access#ticket='+'A'.repeat(44));
  try{await page.getByRole('button',{name:'Crear contraseña y entrar'}).waitFor({timeout:8000});}catch(error){console.error('FIRST-ACCESS DIAGNOSTIC:',(await page.locator('body').innerText()).slice(0,1600),JSON.stringify(calls));throw error;}
  assert.equal(new URL(page.url()).hash,'','one-time ticket must be cleared from address bar');
  await page.getByLabel('Nueva contraseña').fill('long-qa-password-123');
