@@ -53,10 +53,13 @@ try {
   await one.getByText('Empresa A',{exact:true}).waitFor();
   await two.getByText('Empresa A',{exact:true}).waitFor();
   assert.ok(reads.every(id=>id==='eq.'+A),'explicit server selection beats stale localStorage');
+  await one.getByRole('button',{name:'+ Nueva empresa'}).click();
   await one.getByLabel('Nombre',{exact:true}).fill('Borrador privado A');
   await two.getByLabel('Empresa activa').selectOption(B);
   await two.getByText('Empresa B',{exact:true}).waitFor();
   await one.getByText('Empresa B',{exact:true}).waitFor();
+  assert.equal(await one.getByRole('button',{name:'+ Nueva empresa'}).count(),1,'switching tenants closes previous draft');
+  await one.getByRole('button',{name:'+ Nueva empresa'}).click();
   assert.equal(await one.getByLabel('Nombre',{exact:true}).inputValue(),'','tenant change discards previous form');
   assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'previous tenant rows are removed');
   assert.equal(await one.getByLabel('Empresa activa').inputValue(),B);
