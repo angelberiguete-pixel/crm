@@ -249,20 +249,71 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
 }
 
 function Companies({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
-  const [rows, setRows] = useState<Company[]>([]);
-  const [name, setName] = useState(""); const [sector, setSector] = useState(""); const [city, setCity] = useState(""); const [phone, setPhone] = useState(""); const [email, setEmail] = useState("");
-  useEffect(() => { (async () => { const r = await supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500); if (r.error) notice(r.error.message); else setRows((r.data ?? []) as Company[]); })(); }, [tenantId, reloadKey, notice]);
-  async function add(e: FormEvent) { e.preventDefault(); const r = await supabase.from("companies").insert({ tenant_id: tenantId, name, sector: sector || null, city: city || null, phone: phone || null, whatsapp_phone: phone || null, email: email || null }); if (r.error) return notice(r.error.message); setName(""); setSector(""); setCity(""); setPhone(""); setEmail(""); refresh(); }
-  return <div className="stack gap-16"><form className="card" onSubmit={add}><h2>Nueva empresa</h2><div className="form-grid"><label>Nombre<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Sector<input value={sector} onChange={(e) => setSector(e.target.value)} /></label><label>Ciudad<input value={city} onChange={(e) => setCity(e.target.value)} /></label><label>WhatsApp / Teléfono<input value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label></div><div className="section-gap"><button className="button primary">Guardar empresa</button></div></form><div className="table-wrap"><table className="data-table"><thead><tr><th>Empresa</th><th>Sector</th><th>Ciudad</th><th>Contacto</th><th>Creada</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td><strong>{r.name}</strong></td><td>{r.sector ?? "—"}</td><td>{r.city ?? "—"}</td><td>{r.email ?? r.whatsapp_phone ?? r.phone ?? "—"}</td><td>{date.format(new Date(r.created_at))}</td></tr>)}</tbody></table>{rows.length === 0 && <Empty title="Sin empresas" text="Agrega tu primera empresa o activa prospectos desde Revenue." />}</div></div>;
+  const [rows,setRows]=useState<Company[]>([]);
+  const [name,setName]=useState("");const[sector,setSector]=useState("");const[city,setCity]=useState("");const[phone,setPhone]=useState("");const[email,setEmail]=useState("");
+  const [showForm,setShowForm]=useState(false),[saving,setSaving]=useState(false),[feedback,setFeedback]=useState("");
+  useEffect(()=>{setShowForm(new URLSearchParams(window.location.search).get("new")==="1");setFeedback("");},[tenantId]);
+  useEffect(()=>{let alive=true;(async()=>{const r=await supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(500);if(!alive)return;if(r.error)notice(r.error.message);else setRows((r.data??[]) as Company[]);})();return()=>{alive=false};},[tenantId,reloadKey,notice]);
+  async function add(e:FormEvent){
+    e.preventDefault();if(saving)return;setSaving(true);setFeedback("");
+    try{
+      const r=await supabase.from("companies").insert({tenant_id:tenantId,name:name.trim(),sector:sector||null,city:city||null,phone:phone||null,whatsapp_phone:phone||null,email:email||null});
+      if(r.error){setFeedback("No se pudo guardar: "+r.error.message);return;}
+      setName("");setSector("");setCity("");setPhone("");setEmail("");setShowForm(false);setFeedback("Empresa registrada correctamente.");refresh();
+    }catch{setFeedback("No se pudo conectar con el servidor. Intenta nuevamente.");}
+    finally{setSaving(false);}
+  }
+  return <div className="stack gap-16">
+    <section className="card crm-list-card">
+      <div className="crm-list-heading"><div><div className="eyebrow">Clientes y empresas</div><h2>Empresas registradas</h2></div>
+      <button type="button" className="button primary" aria-expanded={showForm} onClick={()=>{setShowForm(v=>!v);setFeedback("");}}>{showForm?"Cerrar formulario":"+ Nueva empresa"}</button></div>
+      {feedback&&<div className="notice" role="status" style={{marginTop:12}}>{feedback}</div>}
+      {rows.length===0?<Empty title="Aún no hay empresas" text="Pulsa Nueva empresa para registrar tu primer cliente. No hay datos de ejemplo."/>:
+      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table">
+        <thead><tr><th>Empresa</th><th>Sector</th><th>Ciudad</th><th>Contacto</th><th>Creada</th></tr></thead>
+        <tbody>{rows.map(r=><tr key={r.id}><td data-label="Empresa"><strong>{r.name}</strong></td><td data-label="Sector">{r.sector??"—"}</td><td data-label="Ciudad">{r.city??"—"}</td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td><td data-label="Creada">{date.format(new Date(r.created_at))}</td></tr>)}</tbody>
+      </table></div>}
+    </section>
+    {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nueva empresa</h2>
+      <div className="form-grid"><label>Nombre<input autoFocus value={name} onChange={e=>setName(e.target.value)} required /></label><label>Sector<input value={sector} onChange={e=>setSector(e.target.value)}/></label><label>Ciudad<input value={city} onChange={e=>setCity(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
+      <div className="top-actions section-gap"><button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar empresa"}</button><button className="button" type="button" disabled={saving} onClick={()=>setShowForm(false)}>Cancelar</button></div>
+    </form>}
+  </div>;
 }
 
 function Contacts({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
-  const [rows, setRows] = useState<Contact[]>([]); const [companies, setCompanies] = useState<Company[]>([]);
-  const [displayName, setDisplayName] = useState(""); const [companyId, setCompanyId] = useState(""); const [job, setJob] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
-  useEffect(() => { (async () => { const [c, co] = await Promise.all([supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500), supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("name")]); const err = c.error ?? co.error; if (err) notice(err.message); setRows((c.data ?? []) as Contact[]); setCompanies((co.data ?? []) as Company[]); })(); }, [tenantId, reloadKey, notice]);
-  const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
-  async function add(e: FormEvent) { e.preventDefault(); const r = await supabase.from("contacts").insert({ tenant_id: tenantId, company_id: companyId || null, display_name: displayName, job_title: job || null, email: email || null, phone: phone || null, whatsapp_phone: phone || null, source: "manual", status: "lead" }); if (r.error) return notice(r.error.message); setDisplayName(""); setCompanyId(""); setJob(""); setEmail(""); setPhone(""); refresh(); }
-  return <div className="stack gap-16"><form className="card" onSubmit={add}><h2>Nuevo contacto</h2><div className="form-grid"><label>Nombre<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required /></label><label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Cargo<input value={job} onChange={(e) => setJob(e.target.value)} /></label><label>WhatsApp / Teléfono<input value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label></div><div className="section-gap"><button className="button primary">Guardar contacto</button></div></form><div className="table-wrap"><table className="data-table"><thead><tr><th>Contacto</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td><strong>{r.display_name}</strong></td><td>{r.company_id ? companyMap.get(r.company_id) ?? "—" : "—"}</td><td>{r.job_title ?? "—"}</td><td><span className="pill">{r.status}</span></td><td>{r.email ?? r.whatsapp_phone ?? r.phone ?? "—"}</td></tr>)}</tbody></table>{rows.length === 0 && <Empty title="Sin contactos" text="Registra personas y relaciónalas con tus empresas." />}</div></div>;
+  const [rows,setRows]=useState<Contact[]>([]),[companies,setCompanies]=useState<Company[]>([]);
+  const [displayName,setDisplayName]=useState("");const[companyId,setCompanyId]=useState("");const[job,setJob]=useState("");const[email,setEmail]=useState("");const[phone,setPhone]=useState("");
+  const [showForm,setShowForm]=useState(false),[saving,setSaving]=useState(false),[feedback,setFeedback]=useState("");
+  useEffect(()=>{setShowForm(new URLSearchParams(window.location.search).get("new")==="1");setFeedback("");},[tenantId]);
+  useEffect(()=>{let alive=true;(async()=>{const[c,co]=await Promise.all([
+    supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(500),
+    supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("name")]);if(!alive)return;
+    const err=c.error??co.error;if(err)notice(err.message);setRows((c.data??[]) as Contact[]);setCompanies((co.data??[]) as Company[]);
+  })();return()=>{alive=false};},[tenantId,reloadKey,notice]);
+  const companyMap=useMemo(()=>new Map(companies.map(c=>[c.id,c.name])),[companies]);
+  async function add(e:FormEvent){
+    e.preventDefault();if(saving)return;setSaving(true);setFeedback("");
+    try{
+      const r=await supabase.from("contacts").insert({tenant_id:tenantId,company_id:companyId||null,display_name:displayName.trim(),job_title:job||null,email:email||null,phone:phone||null,whatsapp_phone:phone||null,source:"manual",status:"lead"});
+      if(r.error){setFeedback("No se pudo guardar: "+r.error.message);return;}
+      setDisplayName("");setCompanyId("");setJob("");setEmail("");setPhone("");setShowForm(false);setFeedback("Contacto registrado correctamente.");refresh();
+    }catch{setFeedback("No se pudo conectar con el servidor. Intenta nuevamente.");}
+    finally{setSaving(false);}
+  }
+  return <div className="stack gap-16">
+    <section className="card crm-list-card">
+      <div className="crm-list-heading"><div><div className="eyebrow">Personas y prospectos</div><h2>Contactos registrados</h2></div><button type="button" className="button primary" aria-expanded={showForm} onClick={()=>{setShowForm(v=>!v);setFeedback("");}}>{showForm?"Cerrar formulario":"+ Nuevo contacto"}</button></div>
+      {feedback&&<div className="notice" role="status" style={{marginTop:12}}>{feedback}</div>}
+      {rows.length===0?<Empty title="Aún no hay contactos" text="Pulsa Nuevo contacto para registrar tu primer prospecto. No hay contactos ficticios."/>:
+      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th></tr></thead>
+      <tbody>{rows.map(r=><tr key={r.id}><td data-label="Nombre"><strong>{r.display_name}</strong></td><td data-label="Empresa">{r.company_id?companyMap.get(r.company_id)??"—":"—"}</td><td data-label="Cargo">{r.job_title??"—"}</td><td data-label="Estado"><span className="pill">{r.status}</span></td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td></tr>)}</tbody></table></div>}
+    </section>
+    {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nuevo contacto</h2>
+      <div className="form-grid"><label>Nombre<input autoFocus value={displayName} onChange={e=>setDisplayName(e.target.value)} required /></label><label>Empresa<select value={companyId} onChange={e=>setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Cargo<input value={job} onChange={e=>setJob(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
+      <div className="top-actions section-gap"><button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar contacto"}</button><button className="button" type="button" disabled={saving} onClick={()=>setShowForm(false)}>Cancelar</button></div>
+    </form>}
+  </div>;
 }
 
 function Revenue({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
