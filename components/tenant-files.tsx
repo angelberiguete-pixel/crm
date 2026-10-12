@@ -67,6 +67,9 @@ export default function TenantFiles() {
   useEffect(() => { void reload(); },[reload]);
 
   const writeAllowed = allowed.length > 0;
+  const canWriteModule = (key: string) => allowed.some(m => m.key === key);
+  const canDelete = (row: FileRow) => canWriteModule(row.module_key) &&
+    (viewerId === row.uploaded_by || ["owner", "admin"].includes(tenant?.membership_role ?? ""));
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +118,20 @@ export default function TenantFiles() {
     } finally {setBusy(false);}
   }
 
+  async function retryFinalize(row: FileRow) {
+    if (row.status !== "reserved" || row.uploaded_by !== viewerId || activeAction || busy) return;
+    setActiveAction(row.id); setError(""); setNotice("");
+    try {
+      const result = await supabase.rpc("crm_finalize_tenant_file", { p_file_id: row.id });
+      if (result.error) throw result.error;
+      setNotice("Reserva recuperada: archivo verificado y disponible.");
+      await reload();
+    } catch {
+      setError("No se pudo verificar la reserva. Comprueba que el archivo original terminó de subirse. Puedes descartarla si ya no la necesitas.");
+      await reload();
+    } finally { setActiveAction(null); }
+  }
+
   async function download(row: FileRow) {
     if (row.status!=="ready" || activeAction) return;
     setActiveAction(row.id);setError("");
@@ -130,15 +147,17 @@ export default function TenantFiles() {
   }
 
   async function remove(row: FileRow) {
-    if (activeAction || busy) return;
-    if (!window.confirm("¿Eliminar este documento de forma permanente?")) return;
+    if (activeAction || busy || !canDelete(row)) return;
+    if (!window.confirm(row.status === "reserved"
+      ? "¿Descartar esta reserva y eliminar cualquier subida incompleta? Esta acción no se puede deshacer."
+      : "¿Eliminar este documento de forma permanente?")) return;
     setActiveAction(row.id);setError("");setNotice("");
     try {
       const removed=await supabase.storage.from(BUCKET).remove([row.object_path]);
       if (removed.error) throw removed.error;
       const cleared=await supabase.rpc("crm_cancel_tenant_file",{p_file_id:row.id});
       if (cleared.error) throw cleared.error;
-      setNotice("Documento eliminado.");
+      setNotice(row.status === "reserved" ? "Reserva incompleta descartada." : "Documento eliminado.");
       await reload();
     } catch (e) {setError(e instanceof Error ? e.message : "No se completó la eliminación.");await reload();}
     finally {setActiveAction(null);}
@@ -162,7 +181,7 @@ export default function TenantFiles() {
           <UploadCloud size={16}/>{busy?"Subiendo y verificando…":"Subir documento"}
         </button>
       </form>
-      {!writeAllowed && <p className="muted">No hay módulos con permiso de archivos en esta cuenta.</p>}
+      {!writeAllowed && <p className="muted">Tu cuenta no tiene permiso de subida en los módulos habilitados. Puedes descargar los documentos que tu rol tenga permitido consultar.</p>}
     </div>
     {error && <div role="alert" className="notice">{error}</div>}
     {notice && <div role="status" className="notice">{notice}</div>}
@@ -175,9 +194,10 @@ export default function TenantFiles() {
            <strong>{row.filename}</strong>
            <p className="muted">{row.module_key} · {(row.byte_size/1024).toFixed(1)} KB · {new Date(row.created_at).toLocaleDateString("es-DO")} · {row.status==="ready"?"Verificado":"Reserva incompleta"}</p>
            <div className="top-actions">
-             <button type="button" className="button" disabled={row.status!=="ready"||activeAction!==null} onClick={()=>void download(row)}><Download size={16}/> Descargar</button>
-             {(viewerId===row.uploaded_by || ["owner","admin"].includes(tenant?.membership_role ?? "")) && allowed.some(m=>m.key===row.module_key) &&
-             <button type="button" className="button" disabled={activeAction!==null} onClick={()=>void remove(row)}><Trash2 size={16}/> Eliminar</button>}
+             {row.status === "ready" && <button type="button" className="button" disabled={activeAction!==null||busy} onClick={()=>void download(row)}><Download size={16}/> Descargar</button>}
+             {row.status === "reserved" && row.uploaded_by === viewerId && canWriteModule(row.module_key) &&
+               <button type="button" className="button" disabled={activeAction!==null||busy} onClick={()=>void retryFinalize(row)}><RefreshCw size={16}/> Reintentar verificación</button>}
+             {canDelete(row) && <button type="button" className="button" disabled={activeAction!==null||busy} onClick={()=>void remove(row)}><Trash2 size={16}/> {row.status === "ready" ? "Eliminar" : "Descartar reserva"}</button>}
            </div>
          </div>)}
        </div>}
