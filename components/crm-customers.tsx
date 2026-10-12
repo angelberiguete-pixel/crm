@@ -6,10 +6,11 @@ import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, S
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "@/components/crm-commercial.module.css";
+import CustomerHistory from "@/components/customer-history";
 
 type Company = {id:string;name:string;sector:string|null;city:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;website:string|null;created_at:string};
 type Contact = {id:string;company_id:string|null;display_name:string;job_title:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;status:string;source:string|null;created_at:string};
-type LinkedOpportunity = {id:string;company_id:string|null;contact_id:string|null;status:string};
+type LinkedOpportunity = {id:string;company_id:string|null;contact_id:string|null;title:string;status:string;owner_user_id:string|null;next_action:string|null;next_action_at:string|null};
 type CompanyDraft = {name:string;sector:string;city:string;phone:string;whatsapp_phone:string;email:string};
 type ContactDraft = {display_name:string;company_id:string;job_title:string;phone:string;whatsapp_phone:string;email:string};
 const blankCompany:CompanyDraft={name:"",sector:"",city:"",phone:"",whatsapp_phone:"",email:""};
@@ -24,6 +25,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const [companies,setCompanies]=useState<Company[]>([]);
  const [contacts,setContacts]=useState<Contact[]>([]);
  const [opportunities,setOpportunities]=useState<LinkedOpportunity[]>([]);
+ const [activeRecord,setActiveRecord]=useState<{id:string;name:string;kind:"company"|"contact";companyId:string|null}|null>(null);
  const [search,setSearch]=useState("");
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -36,7 +38,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const [saving,setSaving]=useState(false);
  useEffect(()=>{
    const params=new URLSearchParams(window.location.search);
-   setCompanies([]);setContacts([]);setOpportunities([]);setSearch("");setError("");setFeedback("");
+   setCompanies([]);setContacts([]);setOpportunities([]);setActiveRecord(null);setSearch("");setError("");setFeedback("");
    setShowForm(params.get("new")==="1");
    setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});
  },[tenantId,kind]);
@@ -48,7 +50,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
        const [c,ct,o]=await Promise.all([
          supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000),
          supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(2000),
-         supabase.from("opportunities").select("id,company_id,contact_id,status").eq("tenant_id",tenantId).limit(2000)
+         supabase.from("opportunities").select("id,company_id,contact_id,title,status,owner_user_id,next_action,next_action_at").eq("tenant_id",tenantId).limit(2000)
        ]);
        if(!alive)return;
        if(c.error||ct.error||o.error){setError("No se pudieron cargar los registros: "+(c.error?.message??ct.error?.message??o.error?.message));return;}
@@ -148,6 +150,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
              <Link className="button" href={"/crm/revenue?new=1&companyId="+encodeURIComponent(c.id)} aria-label={"Crear oportunidad para "+c.name}>+ Oportunidad</Link>
              <Link className="button" href={"/crm/revenue?companyId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.name}>Ver oportunidades</Link>
            </div>
+           <button type="button" className="button" onClick={()=>setActiveRecord({id:c.id,name:c.name,kind:"company",companyId:null})}>Ver historial y tareas</button>
            <button type="button" className="button" onClick={()=>startCompanyEdit(c)}><Pencil size={15}/> Editar empresa</button>
          </article>):contactRows.map(c=><article key={c.id} className={"card "+styles.customerCard}>
            <h3>{c.display_name}</h3><p>{c.company_id?companyMap.get(c.company_id)??"Empresa no disponible":"Sin empresa"}{c.job_title?" · "+c.job_title:""}</p>
@@ -158,6 +161,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
              <Link className="button" href={"/crm/revenue?new=1&contactId="+encodeURIComponent(c.id)+(c.company_id?"&companyId="+encodeURIComponent(c.company_id):"")} aria-label={"Crear oportunidad para "+c.display_name}>+ Oportunidad</Link>
              <Link className="button" href={"/crm/revenue?contactId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.display_name}>Ver oportunidades</Link>
            </div>
+           <button type="button" className="button" onClick={()=>setActiveRecord({id:c.id,name:c.display_name,kind:"contact",companyId:c.company_id})}>Ver historial y tareas</button>
            <button type="button" className="button" onClick={()=>startContactEdit(c)}><Pencil size={15}/> Editar contacto</button>
          </article>)}
        </div>}
@@ -185,6 +189,9 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
        </form>
      </section>}
    </main>
+   {activeRecord&&tenantId&&<CustomerHistory key={tenantId+":"+activeRecord.kind+":"+activeRecord.id} tenantId={tenantId} record={activeRecord}
+     contacts={contacts.map(c=>({id:c.id,company_id:c.company_id,display_name:c.display_name}))}
+     opportunities={opportunities} onClose={()=>setActiveRecord(null)}/>}
    <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
  </div>;
 }
