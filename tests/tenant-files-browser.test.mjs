@@ -44,7 +44,7 @@ try {
         assert.equal(row.tenant_id,A,"new file belongs to current selected tenant A");
         assert.equal(row.uploaded_by,user.id);
         stored={...row,status:"reserved",created_at:new Date().toISOString(),object_path:A+"/"+row.id+".pdf"};
-        payload=[stored];
+        payload=stored; // PostgREST .single() requests a JSON object, not an array.
       }else{
         const tenant=url.searchParams.get("tenant_id");
         assert.equal(tenant,"eq."+active,"list is filtered to current tenant");
