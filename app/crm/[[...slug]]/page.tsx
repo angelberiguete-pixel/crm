@@ -3,6 +3,7 @@ import CrmSales360 from "@/components/crm-sales-360";
 import CrmCustomers from "@/components/crm-customers";
 import CrmCommercialDashboard from "@/components/crm-commercial-dashboard";
 import OmnichannelInbox from "@/components/omnichannel-inbox";
+import CrmChannelSetup from "@/components/crm-channel-setup";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 
 export default async function CrmPage({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -18,6 +19,8 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
           ? <CrmCustomers kind={section} />
           : section === "inbox"
             ? <OmnichannelInbox />
+            : section === "channels"
+              ? <CrmChannelSetup />
             : <CrmWorkspace slug={slug} />}
     </TenantPermissionGate>
   );
