@@ -1,0 +1,36 @@
+/* Vista de bandeja adaptada a dispositivos táctiles: dos vistas en lugar de tres columnas apiladas. */
+.inboxGrid { min-width:0; }
+.inboxList, .inboxThread, .inboxAside { min-width:0; }
+.threadHeader { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap; }
+.threadHeader h2 { overflow-wrap:anywhere; }
+.threadActions { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.threadActions select { min-width:120px; }
+.messageArea { margin-top:18px;max-height:470px;overflow-y:auto;overscroll-behavior:contain; }
+.messageBubble { max-width:min(82%,520px);align-self:flex-start;padding:12px;overflow-wrap:anywhere;white-space:pre-wrap; }
+.outgoingBubble { align-self:flex-end; }
+.mobileBack { display:none; }
+.listSummary { font-size:13px;color:var(--muted);margin:0 0 10px; }
+.threadItem { width:100%;text-align:left;padding:12px;cursor:pointer;min-height:72px; }
+.threadItem[aria-current="true"] { outline:2px solid var(--accent);outline-offset:-2px; }
+.filters { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+.filters select { min-width:0;flex:1; }
+.filterUnread { flex:0 0 auto;min-height:44px; }
+.statusRow { display:flex;flex-wrap:wrap;gap:9px;margin-top:12px; }
+.statusRow button { min-height:44px; }
+.messageMeta { margin-top:5px;display:block;overflow-wrap:anywhere; }
+@media(max-width:700px) {
+ .inboxGrid { display:block; }
+ .listVisible .inboxThread, .listVisible .inboxAside { display:none; }
+ .threadVisible .inboxList { display:none; }
+ .threadVisible .inboxAside { display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px; }
+ .inboxThread { min-height:280px!important;padding:14px; }
+ .mobileBack { display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:10px; }
+ .threadHeader { display:grid;gap:14px; }
+ .threadActions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px; }
+ .threadActions select { width:100%;min-height:44px;min-width:0; }
+ .threadActions button { grid-column:1/-1;min-height:44px; }
+ .threadItem { min-height:76px; }
+ .messageArea { max-height:min(47dvh,500px); }
+ .messageBubble { max-width:92%; }
+ .filters select { min-height:44px; }
+}
