@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock3, Mail, MessageCircle, RefreshCw, ShieldCheck, Instagram } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, Mail, MessageCircle, RefreshCw, ShieldCheck, AtSign } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "@/components/crm-channel-setup.module.css";
@@ -99,7 +99,7 @@ export default function CrmChannelSetup(){
         <h2>Registrar solicitud de conexión</h2>
         <div className={styles.providerTabs} role="group" aria-label="Tipo de canal">
           <button type="button" className={provider==="whatsapp"?styles.selected:""} aria-pressed={provider==="whatsapp"} onClick={()=>{setProvider("whatsapp");setName("WhatsApp comercial");setIdentifier("");setError("");setSuccess("");}}><MessageCircle size={18}/> WhatsApp</button>
-          <button type="button" className={provider==="instagram"?styles.selected:""} aria-pressed={provider==="instagram"} onClick={()=>{setProvider("instagram");setName("Instagram comercial");setIdentifier("");setError("");setSuccess("");}}><Instagram size={18}/> Instagram</button>
+          <button type="button" className={provider==="instagram"?styles.selected:""} aria-pressed={provider==="instagram"} onClick={()=>{setProvider("instagram");setName("Instagram comercial");setIdentifier("");setError("");setSuccess("");}}><AtSign size={18}/> Instagram</button>
           <button type="button" className={provider==="email"?styles.selected:""} aria-pressed={provider==="email"} onClick={()=>{setProvider("email");setName("Correo de ventas");setIdentifier("");setError("");setSuccess("");}}><Mail size={18}/> Correo</button>
         </div>
         <p className="muted">{selected.description}</p>
