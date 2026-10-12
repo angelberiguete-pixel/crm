@@ -26,7 +26,7 @@ try {
       access_token:token,refresh_token:"qa-refresh",expires_at:exp,expires_in:3600,token_type:"bearer",user
     }));
   },{user,token,exp});
-  let active=A, stored=null, uploads=0,downloads=0,deletes=0;
+  let active=A, stored=null, uploads=0,downloads=0,deletes=0,finalizations=0,readOnly=false;
   await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname;
     let payload=[], status=200, contentType="application/json";
@@ -34,7 +34,7 @@ try {
       tenant_id:id,tenant_name:i?"QA B":"QA A",tenant_slug:i?"qa-b":"qa-a",membership_role:"owner",is_active:active===id
     }));
     else if(path.endsWith("/set_active_tenant")){active=req.postDataJSON().p_tenant_id;payload={tenant_id:active};}
-    else if(path.endsWith("/tenant_current_permissions")) payload={all:true};
+    else if(path.endsWith("/tenant_current_permissions")) payload=readOnly?{dashboard:true}:{all:true};
     else if(path.endsWith("/tenant_effective_modules")) payload=[{module_key:"dashboard",enabled:true}];
     else if(path.endsWith("/platform_current_access")) payload={is_platform_admin:false};
     else if(path.endsWith("/user")) payload=user;
@@ -52,7 +52,7 @@ try {
       }
     }else if(path.endsWith("/crm_finalize_tenant_file")){
       assert.equal(req.postDataJSON().p_file_id,stored.id);
-      stored.status="ready";payload=stored;
+      finalizations++;stored.status="ready";payload=stored;
     }else if(path.endsWith("/crm_cancel_tenant_file")){
       assert.equal(req.postDataJSON().p_file_id,stored.id);
       stored=null;payload=true;
@@ -93,9 +93,42 @@ try {
   await page.getByText("Documento eliminado.").waitFor();
   await page.getByText("Todavía no hay documentos disponibles.").waitFor();
   assert.equal(deletes,1,"Storage object removed");
+  // Recover an incomplete reservation from the same owner, without uploading a duplicate.
+  stored={id:"22222222-2222-4222-8222-222222222222",tenant_id:A,uploaded_by:user.id,
+    filename:"recover.pdf",module_key:"general",mime_type:"application/pdf",byte_size:15,
+    object_path:A+"/22222222-2222-4222-8222-222222222222.pdf",
+    status:"reserved",created_at:new Date().toISOString()};
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
+  await page.getByText("recover.pdf",{exact:true}).waitFor();
+  assert.equal(await page.getByRole("button",{name:"Descargar"}).count(),0,"unfinished file is not downloadable");
+  await page.getByRole("button",{name:"Reintentar verificación"}).click();
+  await page.getByText("Reserva recuperada: archivo verificado y disponible.").waitFor();
+  assert.equal(finalizations,2,"existing reservation is finalized, without another upload");
+  assert.equal(uploads,1);
+  // User-initiated cleanup of a reservation with no uploaded object.
+  stored={...stored,id:"33333333-3333-4333-8333-333333333333",filename:"abandoned.pdf",
+    status:"reserved",object_path:A+"/33333333-3333-4333-8333-333333333333.pdf"};
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
+  await page.getByText("abandoned.pdf",{exact:true}).waitFor();
+  page.once("dialog",dialog=>dialog.accept());
+  await page.getByRole("button",{name:"Descartar reserva"}).click();
+  await page.getByText("Reserva incompleta descartada.").waitFor();
+  await page.getByText("Todavía no hay documentos disponibles.").waitFor();
+  assert.equal(deletes,2,"explicit cleanup attempts Storage deletion before deleting metadata");
+  // Read-only users can download, but cannot upload, delete, or recover documents.
+  readOnly=true;
+  stored={id:"44444444-4444-4444-8444-444444444444",tenant_id:A,
+    uploaded_by:user.id,filename:"readonly.pdf",module_key:"general",mime_type:"application/pdf",
+    byte_size:11,object_path:A+"/44444444-4444-4444-8444-444444444444.pdf",
+    status:"ready",created_at:new Date().toISOString()};
+  await page.locator('section[aria-label="Archivos privados de la empresa"]').getByRole("button",{name:"Actualizar"}).click();
+  await page.getByText("readonly.pdf",{exact:true}).waitFor();
+  assert.equal(await page.getByRole("button",{name:"Subir documento"}).isDisabled(),true);
+  assert.equal(await page.getByRole("button",{name:"Eliminar"}).count(),0);
+  assert.equal(await page.getByRole("button",{name:"Descargar"}).count(),1);
   const width=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(width.scroll<=width.viewport+1,"files page fits mobile");
-  console.log("PASS: files mobile UI, reservation, upload, finalization, tenant switch isolation, authenticated download and deletion (mocked API).");
+  console.log("PASS: files mobile UI, upload, recover pending, discard orphan, read-only permissions, tenant isolation, authenticated download and deletion (mocked API).");
 }finally{
   if(browser)await browser.close();
   if(server)server.kill();
