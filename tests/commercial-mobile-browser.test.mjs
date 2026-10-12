@@ -33,6 +33,13 @@ try {
   const channels = [{id:"ch-1",provider:"manual",name:"Canal de pruebas",status:"disconnected"}];
   const conversations = [{id:"conv-1",channel_id:"ch-1",contact_id:"ct-1",opportunity_id:"o-1",subject:"Consulta QA",status:"open",priority:"normal",assigned_to:null,unread_count:2,last_message_at:new Date().toISOString(),metadata:{}}];
   const messages = [{id:"msg-1",conversation_id:"conv-1",direction:"inbound",sender_type:"contact",message_type:"text",body:"Mensaje de prueba en español",status:"received",sent_at:new Date().toISOString(),delivered_at:null,read_at:null,created_at:new Date().toISOString()}];
+  const tasks=[
+    {id:"task-1",tenant_id:A,title:"Llamar a la empresa",description:null,status:"todo",priority:"normal",
+      due_at:"2026-10-09T12:00:00Z",completed_at:null,assigned_user_id:user.id,company_id:"co-1",contact_id:null,
+      opportunity_id:null,created_at:new Date().toISOString()}
+  ];
+  const activities=[{id:"act-1",contact_id:"ct-1",opportunity_id:null,type:"call",title:"Llamada inicial",
+    description:"Cliente interesado",completed_at:null,created_at:new Date().toISOString(),created_by:user.id}];
   const writes=[];
   await context.addInitScript(({ user,token }) => {
     localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token", JSON.stringify({ access_token:token,refresh_token:"qa-refresh",expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user }));
@@ -80,7 +87,26 @@ try {
       else if(req.method()==="PATCH"){const body=json(); assert.equal(url.searchParams.get("tenant_id"),"eq."+A); const id=url.searchParams.get("id")?.slice(3);Object.assign(opportunities.find(o=>o.id===id),body);writes.push(["opportunity-update",body]);data={id};}
       else data=opportunities;
     }
-    else if(path==="tasks") {writes.push(["task",json()]);data={};}
+    else if(path==="tasks") {
+      if(req.method()==="POST"){
+        const body=json();assert.equal(body.tenant_id,A);
+        writes.push(["task-insert",body]);
+        const task={...body,id:"task-"+(tasks.length+1),created_at:new Date().toISOString(),completed_at:null,description:null,opportunity_id:body.opportunity_id??null};
+        tasks.push(task);
+        data={id:task.id};
+      } else if(req.method()==="PATCH"){
+        assert.equal(url.searchParams.get("tenant_id"),"eq."+A);
+        const task=tasks.find(t=>t.id===url.searchParams.get("id")?.slice(3));assert.ok(task);
+        const body=json();Object.assign(task,body);writes.push(["task-update",body]);data={id:task.id};
+      } else {
+        const companyId=url.searchParams.get("company_id")?.slice(3),contactId=url.searchParams.get("contact_id")?.slice(3);
+        data=tasks.filter(t=>(!companyId||t.company_id===companyId)&&(!contactId||t.contact_id===contactId));
+      }
+    }
+    else if(path==="activities") {
+      if(req.method()==="POST"){const body=json();assert.equal(body.tenant_id,A);writes.push(["activity-insert",body]);const activity={...body,id:"act-"+(activities.length+1),created_at:new Date().toISOString(),created_by:user.id,completed_at:null,description:null,opportunity_id:null};activities.push(activity);data={id:activity.id};}
+      else data=activities;
+    }
     await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(data),headers:{"access-control-allow-origin":"*","content-range":"0-0/1"}});
   });
   const page=await context.newPage();
@@ -164,9 +190,39 @@ try {
   await page.getByRole("button",{name:/Contacto actualizado/}).waitFor({state:"visible"});
   await page.getByText("1 conversación con los filtros actuales").waitFor();
   assert.ok(await page.getByRole("button",{name:/Contacto actualizado/}).isVisible(),"manual refresh retains inbox list");
+  await page.goto(base+"/crm/companies");
+  await page.getByRole("article").filter({hasText:"Empresa QA editada"}).getByRole("button",{name:"Ver historial y tareas"}).click();
+  const companyHistory=page.getByRole("dialog",{name:"Empresa QA editada"});
+  await companyHistory.getByText("Llamar a la empresa").waitFor();
+  await companyHistory.getByText("Llamada inicial").waitFor();
+  assert.ok(await companyHistory.getByText("Tareas vencidas").isVisible(),"company dossier shows overdue tasks");
+  await companyHistory.getByLabel("Qué hay que hacer").fill("Preparar una propuesta");
+  await companyHistory.getByLabel("Responsable de tarea").selectOption(user.id);
+  await companyHistory.getByRole("button",{name:"Crear tarea"}).click();
+  await companyHistory.getByText("Tarea creada y vinculada correctamente.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="task-insert"&&body.company_id==="co-1"&&body.assigned_user_id===user.id&&body.source==="manual"),"seller task persisted for active tenant and selected company");
+  await companyHistory.getByText("Preparar una propuesta").waitFor();
+  await companyHistory.getByRole("article").filter({hasText:"Preparar una propuesta"}).getByRole("button",{name:"Marcar completada"}).click();
+  await companyHistory.getByText("Tarea completada.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="task-update"&&body.status==="done"&&body.completed_at),"task completed in Supabase");
+  await companyHistory.getByLabel("Contacto para la nota").selectOption("ct-1");
+  await companyHistory.getByLabel("Nota",{exact:true}).fill("Se confirmó interés en la propuesta");
+  await companyHistory.getByRole("button",{name:"Guardar nota"}).click();
+  await companyHistory.getByText("Se confirmó interés en la propuesta").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="activity-insert"&&body.contact_id==="ct-1"&&body.type==="note"),"note saved to related contact history");
+  await companyHistory.getByRole("button",{name:"Cerrar ficha comercial"}).click();
+  await page.goto(base+"/crm/contacts");
+  await page.getByRole("article").filter({hasText:"Contacto actualizado"}).getByRole("button",{name:"Ver historial y tareas"}).click();
+  const contactHistory=page.getByRole("dialog",{name:"Contacto actualizado"});
+  await contactHistory.getByText("Se confirmó interés en la propuesta").waitFor();
+  await contactHistory.getByLabel("Qué hay que hacer").fill("Responder al contacto");
+  await contactHistory.getByRole("button",{name:"Crear tarea"}).click();
+  await contactHistory.getByText("Tarea creada y vinculada correctamente.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="task-insert"&&body.company_id==="co-1"&&body.contact_id==="ct-1"),"contact task linked to correct company");
+  await contactHistory.getByRole("button",{name:"Cerrar ficha comercial"}).click();
   const dims=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(dims.scroll <= dims.viewport+1,"Android viewport does not overflow horizontally");
-  console.log("PASS: Android customers, opportunities and inbox list/detail, tenant-scoped conversation updates, unread filters, refresh, no overflow (controlled API).");
+  console.log("PASS: Android customer dossier, seller task assignment and completion, activity notes, sales and inbox, tenant-scoped writes, no overflow (controlled API).");
 } finally {
   if(browser) await browser.close();
   if(server) server.kill();
