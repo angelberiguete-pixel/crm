@@ -284,8 +284,8 @@ export default function CrmSales360() {
           <div className="form-grid">
             <label>Valor estimado en RD$<input type="number" min="0" step="0.01" inputMode="decimal" value={draft.value} onChange={e => setDraft(v => ({...v,value:e.target.value}))}/></label>
             <label>Fecha prevista de cierre<input type="date" value={draft.expectedClose} onChange={e => setDraft(v => ({...v,expectedClose:e.target.value}))}/></label>
-            <label>Empresa<select value={draft.companyId} onChange={e => setDraft(v => ({...v,companyId:e.target.value,contactId:""}))}><option value="">Sin empresa</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-            <label>Contacto<select value={draft.contactId} onChange={e => setDraft(v => ({...v,contactId:e.target.value}))}><option value="">Sin contacto</option>{contacts.filter(c=>!draft.companyId||c.company_id===draft.companyId).map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}</select></label>
+            <label>Empresa<select aria-label="Empresa" value={draft.companyId} onChange={e => setDraft(v => ({...v,companyId:e.target.value,contactId:""}))}><option value="">Sin empresa</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+            <label>Contacto<select aria-label="Contacto" value={draft.contactId} onChange={e => setDraft(v => ({...v,contactId:e.target.value}))}><option value="">Sin contacto</option>{contacts.filter(c=>!draft.companyId||c.company_id===draft.companyId).map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}</select></label>
             <label>Origen<input maxLength={80} value={draft.source} onChange={e => setDraft(v => ({...v,source:e.target.value}))} placeholder="Ej. Referido, Instagram"/></label>
           </div>
           <p className={styles.sectionIntro}>Se registrará en la primera etapa abierta del proceso seleccionado.</p>
