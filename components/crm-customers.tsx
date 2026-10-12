@@ -9,6 +9,7 @@ import styles from "@/components/crm-commercial.module.css";
 
 type Company = {id:string;name:string;sector:string|null;city:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;website:string|null;created_at:string};
 type Contact = {id:string;company_id:string|null;display_name:string;job_title:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;status:string;source:string|null;created_at:string};
+type LinkedOpportunity = {id:string;company_id:string|null;contact_id:string|null;status:string};
 type CompanyDraft = {name:string;sector:string;city:string;phone:string;whatsapp_phone:string;email:string};
 type ContactDraft = {display_name:string;company_id:string;job_title:string;phone:string;whatsapp_phone:string;email:string};
 const blankCompany:CompanyDraft={name:"",sector:"",city:"",phone:"",whatsapp_phone:"",email:""};
@@ -22,6 +23,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null,isCompany=kind==="companies";
  const [companies,setCompanies]=useState<Company[]>([]);
  const [contacts,setContacts]=useState<Contact[]>([]);
+ const [opportunities,setOpportunities]=useState<LinkedOpportunity[]>([]);
  const [search,setSearch]=useState("");
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -33,8 +35,9 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const [contactDraft,setContactDraft]=useState<ContactDraft>({...blankContact});
  const [saving,setSaving]=useState(false);
  useEffect(()=>{
-   setCompanies([]);setContacts([]);setSearch("");setError("");setFeedback("");
-   setShowForm(new URLSearchParams(window.location.search).get("new")==="1");
+   const params=new URLSearchParams(window.location.search);
+   setCompanies([]);setContacts([]);setOpportunities([]);setSearch("");setError("");setFeedback("");
+   setShowForm(params.get("new")==="1");
    setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});
  },[tenantId,kind]);
  useEffect(()=>{
@@ -42,18 +45,42 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
    let alive=true;setLoading(true);
    (async()=>{
      try{
-       const [c,ct]=await Promise.all([
+       const [c,ct,o]=await Promise.all([
          supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000),
-         isCompany?Promise.resolve({data:[],error:null}):supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000)
+         supabase.from("contacts").select("id,company_id,display_name,job_title,email,phone,whatsapp_phone,status,source,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(2000),
+         supabase.from("opportunities").select("id,company_id,contact_id,status").eq("tenant_id",tenantId).limit(2000)
        ]);
        if(!alive)return;
-       if(c.error||ct.error){setError("No se pudieron cargar los registros: "+(c.error?.message??ct.error?.message));return;}
-       setCompanies((c.data??[]) as Company[]);setContacts((ct.data??[]) as Contact[]);setError("");
+       if(c.error||ct.error||o.error){setError("No se pudieron cargar los registros: "+(c.error?.message??ct.error?.message??o.error?.message));return;}
+       const companyRows=(c.data??[]) as Company[];
+       const contactRows=(ct.data??[]) as Contact[];
+       setCompanies(companyRows);setContacts(contactRows);setOpportunities((o.data??[]) as LinkedOpportunity[]);
+       if(!isCompany){
+         const params=new URLSearchParams(window.location.search);
+         const companyId=params.get("companyId");
+         if(params.get("new")==="1"&&companyId&&companyRows.some(row=>row.id===companyId)){
+           setContactDraft(draft=>({...draft,company_id:companyId}));
+         }
+       }
+       setError("");
      }catch{if(alive)setError("No se pudo conectar al servidor. Intenta actualizar la página.");}
      finally{if(alive)setLoading(false);}
    })();return()=>{alive=false;};
  },[tenantId,kind,reload,isCompany]);
  const companyMap=useMemo(()=>new Map(companies.map(c=>[c.id,c.name])),[companies]);
+ const contactTotals=useMemo(()=>{
+   const counts=new Map<string,number>();
+   for(const contact of contacts)if(contact.company_id)counts.set(contact.company_id,(counts.get(contact.company_id)??0)+1);
+   return counts;
+ },[contacts]);
+ const opportunityTotals=useMemo(()=>{
+   const byCompany=new Map<string,number>(),byContact=new Map<string,number>();
+   for(const opportunity of opportunities){
+     if(opportunity.company_id)byCompany.set(opportunity.company_id,(byCompany.get(opportunity.company_id)??0)+1);
+     if(opportunity.contact_id)byContact.set(opportunity.contact_id,(byContact.get(opportunity.contact_id)??0)+1);
+   }
+   return {byCompany,byContact};
+ },[opportunities]);
  const companyRows=useMemo(()=>companies.filter(c=>[c.name,c.sector,c.city,c.email,c.phone,c.whatsapp_phone].join(" ").toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))),[companies,search]);
  const contactRows=useMemo(()=>contacts.filter(c=>[c.display_name,c.job_title,c.email,c.phone,c.whatsapp_phone,c.company_id?companyMap.get(c.company_id):""].join(" ").toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))),[contacts,search,companyMap]);
  function startNew(){setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setFeedback("");setShowForm(true);}
@@ -75,6 +102,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
      }else{
        const display_name=contactDraft.display_name.trim();
        if(!display_name)throw new Error("Escribe el nombre del contacto.");
+       if(contactDraft.company_id&&!companies.some(company=>company.id===contactDraft.company_id))throw new Error("Selecciona una empresa válida de esta cuenta.");
        const data={display_name,company_id:contactDraft.company_id||null,job_title:contactDraft.job_title.trim()||null,phone:contactDraft.phone.trim()||null,whatsapp_phone:contactDraft.whatsapp_phone.trim()||null,email:contactDraft.email.trim()||null};
        const result=editingId
          ? await supabase.from("contacts").update(data).eq("tenant_id",tenantId).eq("id",editingId).select("id").maybeSingle()
@@ -113,12 +141,23 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
          {isCompany?companyRows.map(c=><article key={c.id} className={"card "+styles.customerCard}>
            <h3>{c.name}</h3><p>{[c.sector,c.city].filter(Boolean).join(" · ")||"Sin sector ni ciudad"}</p>
            <span className={styles.customerBadge}>Creada: {dateLabel(c.created_at)}</span>
+           <p className={styles.recordCounts}>{contactTotals.get(c.id)??0} contactos · {opportunityTotals.byCompany.get(c.id)??0} oportunidades</p>
            <ContactLinks email={c.email} phone={c.whatsapp_phone??c.phone}/>
+           <div className={styles.recordActions}>
+             <Link className="button" href={"/crm/contacts?new=1&companyId="+encodeURIComponent(c.id)} aria-label={"Añadir contacto a "+c.name}>+ Añadir contacto</Link>
+             <Link className="button" href={"/crm/revenue?new=1&companyId="+encodeURIComponent(c.id)} aria-label={"Crear oportunidad para "+c.name}>+ Oportunidad</Link>
+             <Link className="button" href={"/crm/revenue?companyId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.name}>Ver oportunidades</Link>
+           </div>
            <button type="button" className="button" onClick={()=>startCompanyEdit(c)}><Pencil size={15}/> Editar empresa</button>
          </article>):contactRows.map(c=><article key={c.id} className={"card "+styles.customerCard}>
            <h3>{c.display_name}</h3><p>{c.company_id?companyMap.get(c.company_id)??"Empresa no disponible":"Sin empresa"}{c.job_title?" · "+c.job_title:""}</p>
            <span className={styles.customerBadge}>{statuses[c.status]??c.status}</span>
+           <p className={styles.recordCounts}>{opportunityTotals.byContact.get(c.id)??0} oportunidades vinculadas</p>
            <ContactLinks email={c.email} phone={c.whatsapp_phone??c.phone}/>
+           <div className={styles.recordActions}>
+             <Link className="button" href={"/crm/revenue?new=1&contactId="+encodeURIComponent(c.id)+(c.company_id?"&companyId="+encodeURIComponent(c.company_id):"")} aria-label={"Crear oportunidad para "+c.display_name}>+ Oportunidad</Link>
+             <Link className="button" href={"/crm/revenue?contactId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.display_name}>Ver oportunidades</Link>
+           </div>
            <button type="button" className="button" onClick={()=>startContactEdit(c)}><Pencil size={15}/> Editar contacto</button>
          </article>)}
        </div>}
