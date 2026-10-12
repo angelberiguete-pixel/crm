@@ -72,6 +72,8 @@ try {
     name:"qa.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-QA-file")
   });
   await page.getByRole("button",{name:"Subir documento"}).click();
+  await page.waitForTimeout(1200);
+  console.log("QA_FILES_UPLOAD",JSON.stringify({uploads,stored,alerts:await page.getByRole("alert").allTextContents(),notices:await page.locator(".notice").allTextContents()}));
   await page.getByText("Documento subido y verificado.").waitFor();
   assert.equal(uploads,1,"Storage upload requested exactly once");
   await page.getByText("qa.pdf",{exact:true}).waitFor();
