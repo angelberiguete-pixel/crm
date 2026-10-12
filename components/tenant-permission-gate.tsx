@@ -24,6 +24,7 @@ const sectionPermission: Record<string, string> = {
   calendar: "calendar",
   automations: "automations",
   settings: "settings",
+  files: "dashboard",
 };
 
 type TenantAccess = {

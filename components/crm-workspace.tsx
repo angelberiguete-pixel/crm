@@ -23,6 +23,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
+import TenantFiles from "@/components/tenant-files";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -52,6 +53,7 @@ const nav = [
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones / IA", Bot],
+  ["files", "Archivos", FileText],
   ["settings", "Configuración", Settings],
 ] as const;
 
@@ -150,6 +152,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "automations" && <AutomationStudio tenantId={tenantId} notice={setNotice} />}
+        {section === "files" && <TenantFiles />}
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
