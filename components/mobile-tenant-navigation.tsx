@@ -19,8 +19,8 @@ export default function MobileTenantNavigation() {
     router.replace("/login");
   }
   return <details className="mobile-tenant-navigation"><summary aria-label="Abrir todos los módulos">Módulos <span aria-hidden="true">☰</span></summary>
-    <nav aria-label={`Más módulos de ${tenant.tenant_name}`}>{links.map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
+    <div className="mobile-module-panel"><nav aria-label={`Más módulos de ${tenant.tenant_name}`}>{links.map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
     <button type="button" className="button" disabled={busy} onClick={logout}>{busy?"Cerrando sesión…":"Salir"}</button>
-    {error&&<p role="alert">{error}</p>}
+    {error&&<p role="alert">{error}</p>}</div>
   </details>;
 }
