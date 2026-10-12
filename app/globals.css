@@ -241,3 +241,30 @@ textarea{min-height:96px;resize:vertical}
  .crm-mobile-table td[data-label]::before{content:attr(data-label) ": ";color:var(--muted);font-size:12px}
  .crm-mobile-table td:first-child strong{font-size:15px}
 }
+
+/* Conversaciones: distribución multicanal legible en teléfono y escritorio. */
+.crm-inbox-grid{grid-template-columns:minmax(240px,.95fr) minmax(340px,1.5fr) minmax(225px,.76fr);gap:12px}
+.crm-inbox-grid>*{min-width:0}
+.crm-inbox-grid .card{min-width:0;overflow-wrap:anywhere}
+.crm-conversation-assignment{margin-top:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid var(--border);border-radius:12px;background:var(--panel2);padding:12px}
+.crm-conversation-assignment p{margin:5px 0 0;font-size:12px}
+.crm-conversation-assignment select{width:auto;max-width:100%;min-width:170px}
+.crm-assignment-filter{display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:13px}
+.crm-channel-connection-status{padding:15px}
+.crm-channel-connection-status>strong{font-size:14px}
+.crm-channel-pills{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.crm-channel-pills .pill{white-space:normal;font-weight:600}
+.crm-channel-connection-status p{font-size:12px;margin:8px 0 0}
+@media(max-width:1000px){
+ .crm-inbox-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}
+ .crm-inbox-grid>aside{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+ .crm-inbox-grid{grid-template-columns:minmax(0,1fr)}
+ .crm-inbox-grid>aside{grid-column:auto;display:grid;grid-template-columns:minmax(0,1fr)}
+ .crm-inbox-grid .card[style*="min-height: 620px"]{min-height:300px!important}
+ .crm-conversation-assignment{display:grid;gap:10px}
+ .crm-conversation-assignment select{width:100%}
+ .crm-inbox-grid .topbar{display:flex;flex-wrap:wrap;gap:8px}
+ .crm-inbox-grid .topbar select{max-width:140px}
+}
