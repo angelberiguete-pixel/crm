@@ -174,7 +174,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
            <label>Email<input type="email" value={companyDraft.email} onChange={e=>setCompanyDraft(v=>({...v,email:e.target.value}))}/></label>
          </div>:<div className="form-grid">
            <label>Nombre<input required maxLength={180} value={contactDraft.display_name} onChange={e=>setContactDraft(v=>({...v,display_name:e.target.value}))}/></label>
-           <label>Empresa<select value={contactDraft.company_id} onChange={e=>setContactDraft(v=>({...v,company_id:e.target.value}))}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+           <label>Empresa<select aria-label="Empresa" value={contactDraft.company_id} onChange={e=>setContactDraft(v=>({...v,company_id:e.target.value}))}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
            <label>Cargo<input maxLength={120} value={contactDraft.job_title} onChange={e=>setContactDraft(v=>({...v,job_title:e.target.value}))}/></label>
            <label>Teléfono<input type="tel" value={contactDraft.phone} onChange={e=>setContactDraft(v=>({...v,phone:e.target.value}))}/></label>
            <label>WhatsApp<input type="tel" value={contactDraft.whatsapp_phone} onChange={e=>setContactDraft(v=>({...v,whatsapp_phone:e.target.value}))}/></label>
