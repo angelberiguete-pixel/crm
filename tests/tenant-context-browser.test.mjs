@@ -74,7 +74,7 @@ try {
   const mobileHeader=await one.locator('.workspace-header').boundingBox();
   assert.ok(mobileHeader&&mobileHeader.height<=90,'tenant dropdown and mobile module menu fit in one compact header');
   await one.locator('.mobile-tenant-navigation summary').click();
-  assert.ok(await one.getByRole('navigation',{name:'Más módulos de QA B'}).getByRole('link',{name:'Cotizaciones'}).isVisible(),'secondary modules are reachable');
+  assert.ok(await one.getByRole('navigation',{name:'Otros módulos de QA B'}).getByRole('link',{name:'Cotizaciones'}).isVisible(),'secondary modules are reachable');
   await one.locator('.mobile-tenant-navigation summary').click();
   await one.getByLabel('Nombre',{exact:true}).fill('Empresa nueva QA');
   await one.getByRole('button',{name:'Guardar empresa'}).click();
