@@ -190,7 +190,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
      </section>}
    </main>
    {activeRecord&&tenantId&&<CustomerHistory key={tenantId+":"+activeRecord.kind+":"+activeRecord.id} tenantId={tenantId} record={activeRecord}
-     contacts={contacts.map(c=>({id:c.id,company_id:c.company_id,display_name:c.display_name}))}
+     contacts={contacts}
      opportunities={opportunities} onClose={()=>setActiveRecord(null)}/>}
    <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
  </div>;
