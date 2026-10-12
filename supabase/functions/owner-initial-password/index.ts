@@ -46,8 +46,7 @@ Deno.serve(async (req: Request) => {
     // Admin generateLink creates a recovery OTP without sending an email.
     const { data: recovery, error: recoveryError } = await admin.auth.admin.generateLink({
       type: "recovery",
-      email: account.user.email,
-      options: { redirectTo: origin + "/first-access" }
+      email: account.user.email
     });
     const otpHash = recovery?.properties?.hashed_token;
     if (recoveryError || typeof otpHash !== "string" || !otpHash) {
