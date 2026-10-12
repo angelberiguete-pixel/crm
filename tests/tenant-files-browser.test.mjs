@@ -56,8 +56,11 @@ try {
     }else if(path.endsWith("/crm_cancel_tenant_file")){
       assert.equal(req.postDataJSON().p_file_id,stored.id);
       stored=null;payload=true;
-    }else if(path.startsWith("/storage/v1/object/authenticated/crm-documents/")){
-      assert.equal(active,A);downloads++;contentType="application/pdf";payload="%PDF-qa";
+    }else if(path.startsWith("/storage/v1/object/") && req.method()==="GET"){
+      assert.equal(active,A);
+      assert.ok(path.includes("/crm-documents/") && !path.includes("/public/"),"private Storage download path");
+      assert.ok(req.headers().authorization?.startsWith("Bearer "),"authenticated download request");
+      downloads++;contentType="application/pdf";payload="%PDF-qa";
     }else if(path.startsWith("/storage/v1/object/crm-documents")){
       if(req.method()==="POST"){assert.ok(stored);uploads++;payload={Key:stored.object_path};}
       else if(req.method()==="DELETE"){assert.ok(stored);deletes++;payload=[{name:stored.object_path}];}
@@ -72,8 +75,6 @@ try {
     name:"qa.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-QA-file")
   });
   await page.getByRole("button",{name:"Subir documento"}).click();
-  await page.waitForTimeout(1200);
-  console.log("QA_FILES_UPLOAD",JSON.stringify({uploads,stored,alerts:await page.getByRole("alert").allTextContents(),notices:await page.locator(".notice").allTextContents()}));
   await page.getByText("Documento subido y verificado.").waitFor();
   assert.equal(uploads,1,"Storage upload requested exactly once");
   await page.getByText("qa.pdf",{exact:true}).waitFor();
