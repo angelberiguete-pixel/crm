@@ -49,41 +49,70 @@ export default function OmnichannelInbox() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!tenantId) { setLoading(false); setError("Selecciona una empresa para abrir Conversaciones."); return; }
-    (async () => {
-      setLoading(true); setError("");
-      const [channelRes, conversationRes, contactRes, companyRes, opportunityRes, assigneeRes,sessionRes] = await Promise.all([
-        supabase.from("channels").select("id,provider,name,status").eq("tenant_id", tenantId).order("name"),
-        supabase.from("conversations").select("id,channel_id,contact_id,opportunity_id,subject,status,priority,assigned_to,unread_count,last_message_at,metadata").eq("tenant_id", tenantId).order("last_message_at", { ascending: false, nullsFirst: false }).limit(200),
-        supabase.from("contacts").select("id,company_id,display_name,email,phone,whatsapp_phone,source,status").eq("tenant_id", tenantId),
-        supabase.from("companies").select("id,name").eq("tenant_id", tenantId),
-        supabase.from("opportunities").select("id,title,value,currency,status,next_action,next_action_at").eq("tenant_id", tenantId),
-        supabase.rpc("tenant_inbox_assignees",{p_tenant_id:tenantId}),
-        supabase.auth.getUser(),
-      ]);
-      const failed = [channelRes, conversationRes, contactRes, companyRes, opportunityRes,assigneeRes].find((r) => r.error);
-      if (failed?.error) setError(failed.error.message);
-      setChannels((channelRes.data ?? []) as Channel[]);
-      setConversations((conversationRes.data ?? []) as Conversation[]);
-      setContacts((contactRes.data ?? []) as Contact[]);
-      setCompanies((companyRes.data ?? []) as Company[]);
-      setOpportunities((opportunityRes.data ?? []) as Opportunity[]);
-      setAssignees((assigneeRes.data??[]) as Assignee[]);
-      setCurrentUserId(sessionRes.data.user?.id??null);
-      const first = (conversationRes.data?.[0]?.id as string | undefined) ?? null;
-      setSelectedId(first);
-      setLoading(false);
-    })();
+    // Reset the visible conversation immediately when the active company changes.
+    setChannels([]); setConversations([]); setContacts([]); setCompanies([]);
+    setOpportunities([]); setAssignees([]); setMessages([]); setSelectedId(null);
+    setCurrentUserId(null); setMobileThreadOpen(false); setQuery(""); setStatus("all");
+    setOnlyUnread(false); setAssignmentFilter("all"); setChannelFilter("all");
   }, [tenantId]);
 
   useEffect(() => {
-    if (!tenantId || !selectedId) { setMessages([]); return; }
+    if (!tenantId) { setLoading(false); setError("Selecciona una empresa para abrir Conversaciones."); return; }
+    let active = true;
+    setLoading(true); setError("");
     (async () => {
-      const result = await supabase.from("messages").select("id,conversation_id,direction,sender_type,message_type,body,status,sent_at,delivered_at,read_at,created_at").eq("tenant_id", tenantId).eq("conversation_id", selectedId).order("created_at", { ascending: true }).limit(500);
-      if (result.error) setError(result.error.message);
-      setMessages((result.data ?? []) as Message[]);
+      try {
+        const [channelRes, conversationRes, contactRes, companyRes, opportunityRes, assigneeRes, sessionRes] = await Promise.all([
+          supabase.from("channels").select("id,provider,name,status").eq("tenant_id", tenantId).order("name"),
+          supabase.from("conversations").select("id,channel_id,contact_id,opportunity_id,subject,status,priority,assigned_to,unread_count,last_message_at,metadata").eq("tenant_id", tenantId).order("last_message_at", { ascending: false, nullsFirst: false }).limit(200),
+          supabase.from("contacts").select("id,company_id,display_name,email,phone,whatsapp_phone,source,status").eq("tenant_id", tenantId),
+          supabase.from("companies").select("id,name").eq("tenant_id", tenantId),
+          supabase.from("opportunities").select("id,title,value,currency,status,next_action,next_action_at").eq("tenant_id", tenantId),
+          supabase.rpc("tenant_inbox_assignees", {p_tenant_id:tenantId}),
+          supabase.auth.getUser()
+        ]);
+        if (!active) return;
+        const failure = [channelRes, conversationRes, contactRes, companyRes, opportunityRes, assigneeRes].find(r => r.error)?.error;
+        if (failure) { setError("No se pudo actualizar la bandeja: " + failure.message); return; }
+        const rows = (conversationRes.data ?? []) as Conversation[];
+        setChannels((channelRes.data ?? []) as Channel[]);
+        setConversations(rows);
+        setContacts((contactRes.data ?? []) as Contact[]);
+        setCompanies((companyRes.data ?? []) as Company[]);
+        setOpportunities((opportunityRes.data ?? []) as Opportunity[]);
+        setAssignees((assigneeRes.data ?? []) as Assignee[]);
+        setCurrentUserId(sessionRes.data.user?.id ?? null);
+        setSelectedId(previous => rows.some(row => row.id === previous) ? previous : rows[0]?.id ?? null);
+      } catch {
+        if (active) setError("No se pudo actualizar la bandeja. Comprueba la conexión y vuelve a intentarlo.");
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-  }, [tenantId, selectedId]);
+    return () => { active = false; };
+  }, [tenantId, reload]);
+
+  useEffect(() => {
+    if (!tenantId || !selectedId) { setMessages([]); setMessagesLoading(false); return; }
+    let active = true;
+    setMessages([]);
+    setMessagesLoading(true);
+    (async () => {
+      try {
+        const result = await supabase.from("messages")
+          .select("id,conversation_id,direction,sender_type,message_type,body,status,sent_at,delivered_at,read_at,created_at")
+          .eq("tenant_id", tenantId).eq("conversation_id", selectedId).order("created_at", { ascending: true }).limit(500);
+        if (!active) return;
+        if (result.error) { setError("No se pudo cargar el historial: " + result.error.message); return; }
+        setMessages((result.data ?? []) as Message[]);
+      } catch {
+        if (active) setError("No se pudo cargar el historial. Pulsa Actualizar para volver a intentarlo.");
+      } finally {
+        if (active) setMessagesLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [tenantId, selectedId, reload]);
 
   const contactMap = useMemo(() => new Map(contacts.map((row) => [row.id, row])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((row) => [row.id, row])), [companies]);
@@ -118,11 +147,18 @@ export default function OmnichannelInbox() {
   }
 
   async function updateConversation(patch: Partial<Pick<Conversation, "status" | "priority" | "unread_count">>) {
-    if (!tenantId || !selected) return;
-    const before = conversations;
-    setConversations((rows) => rows.map((row) => row.id === selected.id ? { ...row, ...patch } : row));
-    const result = await supabase.from("conversations").update(patch).eq("tenant_id", tenantId).eq("id", selected.id);
-    if (result.error) { setConversations(before); setError(result.error.message); }
+    if (!tenantId || !selected || updating) return;
+    const conversationId = selected.id;
+    setError(""); setUpdating(true);
+    try {
+      const result = await supabase.from("conversations").update(patch)
+        .eq("tenant_id", tenantId).eq("id", conversationId).select("id").maybeSingle();
+      if (result.error) throw result.error;
+      if (!result.data) throw new Error("No se confirmó la actualización de la conversación.");
+      setConversations(rows => rows.map(row => row.id === conversationId ? {...row, ...patch} : row));
+    } catch (err) {
+      setError("No se pudieron guardar los cambios: " + (err instanceof Error ? err.message : "Intenta nuevamente."));
+    } finally { setUpdating(false); }
   }
 
   if (loading) return <div className="loading">Preparando conversaciones…</div>;
@@ -148,9 +184,22 @@ export default function OmnichannelInbox() {
       </div>
       <div className={`card ${styles.inboxThread}`} style={{ minHeight: 620 }}><button type="button" className={`button ${styles.mobileBack}`} onClick={()=>setMobileThreadOpen(false)}><ArrowLeft size={16}/> Volver a las conversaciones</button>
         {!selected ? <div className="empty"><Inbox/><strong>Selecciona una conversación</strong><div>El historial y el contexto aparecerán aquí.</div></div> : <>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}><div><div className="eyebrow">{channelLabel[channel?.provider??""]??"Canal"} · {channel?.name ?? ""}</div><h2>{contact?.display_name ?? selected.subject ?? "Conversación"}</h2></div><div style={{ display: "flex", gap: 8 }}><select value={selected.priority} onChange={(e) => updateConversation({ priority: e.target.value })}><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select><select value={selected.status} onChange={(e) => updateConversation({ status: e.target.value })}><option value="open">Abierta</option><option value="pending">Pendiente</option><option value="snoozed">Pospuesta</option><option value="closed">Cerrada</option></select>{selected.unread_count > 0 && <button className="button" onClick={() => updateConversation({ unread_count: 0 })}>Marcar leído</button>}</div></div>
+          <div className={styles.threadHeader}><div><div className="eyebrow">{channelLabel[channel?.provider??""]??"Canal"} · {channel?.name??""}</div><h2>{contact?.display_name??selected.subject??"Conversación"}</h2></div>
+            <div className={styles.threadActions}>
+              <select aria-label="Prioridad de la conversación" disabled={updating} value={selected.priority} onChange={e=>void updateConversation({priority:e.target.value})}><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select>
+              <select aria-label="Estado de la conversación" disabled={updating} value={selected.status} onChange={e=>void updateConversation({status:e.target.value})}><option value="open">Abierta</option><option value="pending">Pendiente</option><option value="snoozed">Pospuesta</option><option value="closed">Cerrada</option></select>
+              {selected.unread_count>0&&<button type="button" className="button" disabled={updating} onClick={()=>void updateConversation({unread_count:0})}>Marcar como leída</button>}
+            </div>
+          </div>
           <div className="crm-conversation-assignment"><div><strong>Responsable</strong><p className="muted">Asigna la conversación a un vendedor activo de esta empresa.</p></div>{isSupervisor?<select aria-label="Asignar conversación a vendedor" disabled={assigning} value={selected.assigned_to??""} onChange={e=>void assignConversation(e.target.value||null)}><option value="">Sin asignar</option>{assignees.map(a=><option value={a.user_id} key={a.user_id}>{a.display_name} · {a.team_role}</option>)}</select>:<div className="top-actions"><span className="pill">{assignedName(selected.assigned_to)}</span>{!selected.assigned_to&&currentUserId&&<button type="button" className="button primary" disabled={assigning} onClick={()=>void assignConversation(currentUserId)}>Tomar conversación</button>}{selected.assigned_to===currentUserId&&<button type="button" className="button" disabled={assigning} onClick={()=>void assignConversation(null)}>Devolver al equipo</button>}</div>}</div>
-          <div className="stack gap-8" style={{ marginTop: 18, maxHeight: 470, overflowY: "auto" }}>{messages.length === 0 && <div className="empty"><strong>Sin mensajes todavía</strong><div>La conversación existe, pero aún no tiene historial registrado.</div></div>}{messages.map((msg) => <div key={msg.id} className="card" style={{ maxWidth: "82%", alignSelf: msg.direction === "outbound" ? "flex-end" : "flex-start", padding: 12 }}><div className="eyebrow">{msg.direction === "outbound" ? "Equipo" : "Contacto"} · {msg.message_type}</div><div>{msg.body || "[Mensaje sin texto]"}</div><small className="muted">{when.format(new Date(msg.sent_at ?? msg.created_at))} · {msg.status}{msg.read_at ? " · leído" : msg.delivered_at ? " · entregado" : ""}</small></div>)}</div>
+          <div className={`stack gap-8 ${styles.messageArea}`} aria-label="Historial de la conversación">
+            {messagesLoading?<div className="loading" role="status">Cargando mensajes…</div>:messages.length===0&&<div className="empty"><strong>Sin mensajes todavía</strong><div>La conversación existe, pero aún no tiene historial registrado.</div></div>}
+            {!messagesLoading&&messages.map(msg=><div key={msg.id} className={`card ${styles.messageBubble} ${msg.direction==="outbound"?styles.outgoingBubble:""}`}>
+              <div className="eyebrow">{msg.direction==="outbound"?"Equipo":"Contacto"} · {messageTypeLabel[msg.message_type]??msg.message_type}</div>
+              <div>{msg.body||"[Mensaje sin texto]"}</div>
+              <small className={`muted ${styles.messageMeta}`}>{when.format(new Date(msg.sent_at??msg.created_at))} · {messageStatusLabel[msg.status]??msg.status}{msg.read_at?" · leído":msg.delivered_at?" · entregado":""}</small>
+            </div>)}
+          </div>
           <div className="notice" style={{ marginTop: 16 }}>Las respuestas externas seguirán desactivadas hasta conectar y comprobar oficialmente el canal de esta empresa. Las claves nunca se escriben aquí.</div>
         </>}
       </div>
