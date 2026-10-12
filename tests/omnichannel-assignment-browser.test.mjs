@@ -45,11 +45,11 @@ try{
  await page.getByText("WhatsApp: Sin conexión activa").waitFor();
  assert.ok(await page.getByText(/Las respuestas externas seguirán desactivadas/).isVisible(),"no mock message sending offered");
  await page.getByRole("combobox",{name:"Filtrar conversaciones por responsable"}).selectOption("unassigned");
- await page.getByText("Consulta de prueba").waitFor();
+ await page.getByRole("button",{name:/Consulta de prueba/}).waitFor();
  await page.getByRole("combobox",{name:"Filtrar conversaciones por canal"}).selectOption("instagram");
  await page.getByText("Sin conversaciones").waitFor();
  await page.getByRole("combobox",{name:"Filtrar conversaciones por canal"}).selectOption("whatsapp");
- await page.getByText("Consulta de prueba").waitFor();
+ await page.getByRole("button",{name:/Consulta de prueba/}).waitFor();
  await page.getByRole("combobox",{name:"Asignar conversación a vendedor"}).selectOption(seller);
  await page.getByText("Responsable: Vendedora QA").waitFor();
  assert.equal(assignmentCalls,1,"supervisor assigns once");
