@@ -27,8 +27,10 @@ const BUCKET = "crm-documents";
 const maxBytes = 10 * 1024 * 1024;
 
 export default function TenantFiles() {
-  const tenantId = useActiveTenant()?.tenant_id;
+  const tenant = useActiveTenant();
+  const tenantId = tenant?.tenant_id;
   const [rows, setRows] = useState<FileRow[]>([]);
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const [allowed, setAllowed] = useState<Module[]>([]);
   const [moduleKey, setModuleKey] = useState("general");
   const [file, setFile] = useState<File | null>(null);
@@ -41,16 +43,18 @@ export default function TenantFiles() {
   const reload = useCallback(async () => {
     if (!tenantId) { setRows([]); setAllowed([]); setLoading(false); return; }
     setLoading(true);
-    const [files, permissions, enabledModules] = await Promise.all([
+    const [files, permissions, enabledModules, viewer] = await Promise.all([
       supabase.from("tenant_files").select("id,tenant_id,filename,module_key,mime_type,byte_size,object_path,status,uploaded_by,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(100),
       supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
       supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId}),
+      supabase.auth.getUser(),
     ]);
     setLoading(false);
-    if (files.error || permissions.error || enabledModules.error) {
+    if (files.error || permissions.error || enabledModules.error || viewer.error || !viewer.data.user) {
       setError("No se pudieron validar los documentos y permisos. Reintenta.");
       setRows([]); setAllowed([]); return;
     }
+    setViewerId(viewer.data.user.id);
     const rights=(permissions.data ?? {}) as Record<string,boolean>;
     const enabled=(enabledModules.data ?? []) as Array<{module_key:string;enabled:boolean}>;
     const available=modules.filter(m => (rights.all === true || rights.write === true) && enabled.some(x=>x.module_key===m.activeModule&&x.enabled) &&
@@ -172,7 +176,8 @@ export default function TenantFiles() {
            <p className="muted">{row.module_key} · {(row.byte_size/1024).toFixed(1)} KB · {new Date(row.created_at).toLocaleDateString("es-DO")} · {row.status==="ready"?"Verificado":"Reserva incompleta"}</p>
            <div className="top-actions">
              <button type="button" className="button" disabled={row.status!=="ready"||activeAction!==null} onClick={()=>void download(row)}><Download size={16}/> Descargar</button>
-             <button type="button" className="button" disabled={activeAction!==null} onClick={()=>void remove(row)}><Trash2 size={16}/> Eliminar</button>
+             {(viewerId===row.uploaded_by || ["owner","admin"].includes(tenant?.membership_role ?? "")) && allowed.some(m=>m.key===row.module_key) &&
+             <button type="button" className="button" disabled={activeAction!==null} onClick={()=>void remove(row)}><Trash2 size={16}/> Eliminar</button>}
            </div>
          </div>)}
        </div>}
