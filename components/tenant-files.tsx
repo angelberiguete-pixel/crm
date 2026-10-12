@@ -84,6 +84,7 @@ export default function TenantFiles() {
       }).select("id,object_path").single();
       if (reservation.error || !reservation.data) throw new Error(reservation.error?.message ?? "No se pudo reservar el documento.");
       pendingId=reservation.data.id; pendingPath=reservation.data.object_path;
+      if (!pendingPath || !pendingId) throw new Error("Reserva sin ruta de almacenamiento.");
       const stored=await supabase.storage.from(BUCKET).upload(pendingPath,file,{
         contentType:file.type,upsert:false,cacheControl:"0",
       });
