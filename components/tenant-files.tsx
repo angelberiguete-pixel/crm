@@ -53,12 +53,11 @@ export default function TenantFiles() {
     }
     const rights=(permissions.data ?? {}) as Record<string,boolean>;
     const enabled=(enabledModules.data ?? []) as Array<{module_key:string;enabled:boolean}>;
-    const available=modules.filter(m => enabled.some(x=>x.module_key===m.activeModule&&x.enabled) &&
+    const available=modules.filter(m => (rights.all === true || rights.write === true) && enabled.some(x=>x.module_key===m.activeModule&&x.enabled) &&
       (rights.all === true || rights[m.permission] === true || (["orders","production"].includes(m.key) && rights.operations === true)));
     setAllowed(available);
     setModuleKey(previous => available.some(m=>m.key===previous) ? previous : (available[0]?.key ?? "general"));
     setRows((files.data ?? []) as FileRow[]);
-    setError("");
   },[tenantId]);
 
   useEffect(() => { void reload(); },[reload]);
