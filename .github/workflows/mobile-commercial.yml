@@ -1,0 +1,28 @@
+name: CRM mobile commercial QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "components/crm-sales-360.tsx"
+      - "components/crm-customers.tsx"
+      - "components/crm-commercial.module.css"
+      - "app/crm/[[...slug]]/page.tsx"
+      - "tests/commercial-mobile-browser.test.mjs"
+      - ".github/workflows/mobile-commercial.yml"
+  workflow_dispatch:
+
+jobs:
+  mobile-commercial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/commercial-mobile-browser.test.mjs
