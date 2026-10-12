@@ -54,6 +54,7 @@ const nav = [
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
   ["files", "Archivos", FileText],
+  ["channels", "Canales", Inbox],
   ["settings", "Configuración", Settings],
 ] as const;
 
