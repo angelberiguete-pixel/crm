@@ -20,6 +20,8 @@ begin
     values(a_id,a,ua,'qa-a.pdf','general','application/pdf',128);
   if (select count(*) from public.tenant_files where id=a_id)<>1
   then raise exception 'QA A cannot see own pending upload'; end if;
+  if not exists (select 1 from public.audit_logs where entity_id=a_id and action='tenant_file.reserved' and actor_user_id=ua)
+  then raise exception 'Reservation audit missing or incorrect actor'; end if;
   begin
     insert into public.tenant_files(tenant_id,uploaded_by,filename,module_key,mime_type,byte_size)
       values(b,ua,'wrong-tenant.pdf','general','application/pdf',128);
@@ -73,5 +75,5 @@ begin
   if not exists(select 1 from public.audit_logs where entity_id=cancelled_id and action='tenant_file.cancelled')
   then raise exception 'Cancelled reservation not audited'; end if;
 end $qa$;
-select 'PASS: 12+ tenant file security regression assertions; transaction rolls back' as result;
+select 'PASS: 13+ tenant file security regression assertions; transaction rolls back' as result;
 rollback;
