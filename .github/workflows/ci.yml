@@ -36,6 +36,8 @@ jobs:
         run: node tests/auth-browser.test.mjs
       - name: Owner initial password browser regression tests
         run: node tests/owner-first-access-browser.test.mjs
+      - name: Owner bootstrap live endpoint denial test
+        run: node tests/owner-first-access-edge-live.test.mjs
       - name: Super Admin mobile browser regression tests
         run: node tests/platform-admin-browser.test.mjs
       - name: Private tenant files browser regression tests
