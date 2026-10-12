@@ -46,13 +46,13 @@ const nav = [
   ["", "Inicio", Gauge],
   ["companies", "Empresas", Building2],
   ["contacts", "Contactos", Users],
-  ["revenue", "Pipeline", Target],
-  ["inbox", "Inbox", Inbox],
+  ["revenue", "Oportunidades", Target],
+  ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
-  ["automations", "Automatizaciones / IA", Bot],
+  ["automations", "Automatizaciones", Bot],
   ["files", "Archivos", FileText],
   ["settings", "Configuración", Settings],
 ] as const;
@@ -120,7 +120,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><strong>Look Social Media CRM</strong><span>{member.tenant_name ? `Workspace · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
+        <div className="brand"><strong>Look Social Media CRM</strong><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav">
           {nav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
@@ -135,9 +135,9 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       </aside>
       <main className="content">
         <header className="topbar">
-          <div><div className="eyebrow">CRM multi-tenant{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{titleFor(section)}</h1></div>
+          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{titleFor(section)}</h1></div>
           <div className="top-actions">
-            <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Revenue Command Center</Link>
+            <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
           </div>
         </header>
@@ -181,7 +181,7 @@ function Onboarding({ userId, done }: { userId: string; done: (tenant: { tenantI
     notifyTenantContextChanged();
     done({ tenantId, tenantName: name.trim(), tenantSlug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-") });
   }
-  return <main className="auth-shell"><section className="auth-panel"><div className="eyebrow">Primer acceso</div><h1>Crea tu workspace</h1><p className="muted">Esto prepara tu tenant, plan, pipeline y permisos.</p><form className="stack gap-16" onSubmit={submit}><label>Nombre del negocio<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Slug<input value={slug} onChange={(e) => setSlug(e.target.value)} required /></label>{error && <div className="notice">{error}</div>}<button className="button primary" disabled={busy}>{busy ? "Creando…" : "Crear workspace"}</button></form><small className="muted">Usuario {userId.slice(0, 8)}…</small></section></main>;
+  return <main className="auth-shell"><section className="auth-panel"><div className="eyebrow">Primer acceso</div><h1>Crea tu espacio de trabajo</h1><p className="muted">Esto prepara tu empresa, plan, oportunidades y permisos.</p><form className="stack gap-16" onSubmit={submit}><label>Nombre del negocio<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Identificador de la empresa<input value={slug} onChange={(e) => setSlug(e.target.value)} required /></label>{error && <div className="notice">{error}</div>}<button className="button primary" disabled={busy}>{busy ? "Creando…" : "Crear empresa"}</button></form><small className="muted">Usuario {userId.slice(0, 8)}…</small></section></main>;
 }
 
 function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
@@ -228,7 +228,7 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
       <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos registrados" />
       <Metric label="Pipeline abierto" value={money.format(Number(revenue?.open_pipeline_mrr ?? 0))} sub="Valor de oportunidades" />
       <Metric label="MRR registrado" value={money.format(Number(revenue?.current_mrr ?? 0))} sub="Según los datos del CRM" />
-      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Inbox de esta empresa" />
+      <Metric label="Conversaciones" value={String(counts.conversations)} sub="Mensajes de esta empresa" />
       <Metric label="Eventos" value={String(counts.events)} sub="Calendario" />
     </section>
     <section className="grid two-col">
@@ -240,9 +240,9 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
       </div>
       <div className="card">
         <div className="eyebrow">Herramienta adicional</div>
-        <h2>Revenue Command Center</h2>
+        <h2>Centro de ventas</h2>
         <p className="muted">Accede al seguimiento comercial avanzado. Las integraciones externas, la automatización de mensajes y el ERP requieren configuración y validación propias.</p>
-        <Link className="button" href="/revenue-command-center">Abrir centro comercial</Link>
+        <Link className="button" href="/revenue-command-center">Abrir centro de ventas</Link>
       </div>
     </section>
   </div>;
@@ -319,7 +319,7 @@ function Contacts({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
 function Revenue({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
   const [dash, setDash] = useState<RevenueDash | null>(null);
   useEffect(() => { (async () => { const r = await supabase.from("revenue_command_center_dashboard").select("current_mrr,open_pipeline_mrr,weighted_pipeline_mrr,cash_collected,open_opportunities,won_opportunities").eq("tenant_id", tenantId).maybeSingle(); if (r.error) notice(r.error.message); else setDash(r.data as RevenueDash | null); })(); }, [tenantId, reloadKey, notice]);
-  return <div className="stack gap-16"><section className="grid metrics"><Metric label="MRR actual" value={money.format(Number(dash?.current_mrr ?? 0))} sub="Objetivo RD$1M" /><Metric label="Pipeline abierto" value={money.format(Number(dash?.open_pipeline_mrr ?? 0))} sub={`${Number(dash?.open_opportunities ?? 0)} oportunidades`} /><Metric label="Ponderado" value={money.format(Number(dash?.weighted_pipeline_mrr ?? 0))} sub="Probabilidad aplicada" /><Metric label="Caja" value={money.format(Number(dash?.cash_collected ?? 0))} sub={`${Number(dash?.won_opportunities ?? 0)} ganadas`} /></section><section className="card"><h2>Pipeline comercial especializado</h2><p className="muted">Prospectos, kanban, actividades, tareas, forecast y analytics están concentrados en el Revenue Command Center para no duplicar lógica.</p><Link className="button primary" href="/revenue-command-center/pipeline">Abrir Pipeline</Link> <Link className="button" href="/revenue-command-center/prospects">Prospectos</Link> <Link className="button" href="/revenue-command-center/forecast">Forecast</Link></section></div>;
+  return <div className="stack gap-16"><section className="grid metrics"><Metric label="MRR actual" value={money.format(Number(dash?.current_mrr ?? 0))} sub="Objetivo RD$1M" /><Metric label="Pipeline abierto" value={money.format(Number(dash?.open_pipeline_mrr ?? 0))} sub={`${Number(dash?.open_opportunities ?? 0)} oportunidades`} /><Metric label="Ponderado" value={money.format(Number(dash?.weighted_pipeline_mrr ?? 0))} sub="Probabilidad aplicada" /><Metric label="Caja" value={money.format(Number(dash?.cash_collected ?? 0))} sub={`${Number(dash?.won_opportunities ?? 0)} ganadas`} /></section><section className="card"><h2>Seguimiento de oportunidades</h2><p className="muted">Prospectos, kanban, actividades, tareas, forecast y analytics están concentrados en el Revenue Command Center para no duplicar lógica.</p><Link className="button primary" href="/revenue-command-center/pipeline">Ver oportunidades</Link> <Link className="button" href="/revenue-command-center/prospects">Prospectos</Link> <Link className="button" href="/revenue-command-center/forecast">Pronóstico de ventas</Link></section></div>;
 }
 
 function InboxPanel({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {

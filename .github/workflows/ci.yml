@@ -42,3 +42,5 @@ jobs:
         run: node tests/platform-admin-browser.test.mjs
       - name: Private tenant files browser regression tests
         run: node tests/tenant-files-browser.test.mjs
+      - name: Spanish team conversations and assignment browser tests
+        run: node tests/omnichannel-assignment-browser.test.mjs
