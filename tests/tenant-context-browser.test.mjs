@@ -20,7 +20,7 @@ try {
   const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
   let activeId = null;
   let denyPipeline = false;
-  const reads = [];
+  const reads = [];let createdCompany=null,companyInsertCount=0;
   const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'qa@example.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
   const token = [Buffer.from('{}').toString('base64url'), Buffer.from(JSON.stringify({ sub: user.id, role: 'authenticated', exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url'), 'test-signature'].join('.');
   await context.addInitScript(({ user, token, B }) => {
@@ -37,8 +37,16 @@ try {
     else if (url.pathname.endsWith('/platform_current_access')) response={is_platform_admin:false};
     else if (url.pathname.endsWith('/user')) response=user;
     else if (url.pathname.endsWith('/companies')) {
-      const id=url.searchParams.get('tenant_id'); reads.push(id);
-      response=[{id:id==='eq.'+B?'company-b':'company-a',name:id==='eq.'+B?'Empresa B':'Empresa A',sector:null,city:null,email:null,phone:null,whatsapp_phone:null,website:null,created_at:new Date().toISOString()}];
+      const id=url.searchParams.get('tenant_id');
+      if(request.method()==='POST'){
+        companyInsertCount++;const input=request.postDataJSON();
+        assert.equal(input.tenant_id,B,'company creation must use selected tenant B');
+        createdCompany=input.name;
+        response={};
+      }else{
+        reads.push(id);
+        response=[{id:id==='eq.'+B?'company-b':'company-a',name:id==='eq.'+B?'Empresa B':'Empresa A',sector:null,city:null,email:null,phone:null,whatsapp_phone:null,website:null,created_at:new Date().toISOString()},...(createdCompany&&id==='eq.'+B?[{id:'company-qa-created',name:createdCompany,sector:null,city:null,email:null,phone:null,whatsapp_phone:null,website:null,created_at:new Date().toISOString()}]:[])];
+      }
     }
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response),headers:{'access-control-allow-origin':'*','content-range':'0-0/1'}});
   });
@@ -63,13 +71,27 @@ try {
   assert.equal(await one.getByLabel('Nombre',{exact:true}).inputValue(),'','tenant change discards previous form');
   assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'previous tenant rows are removed');
   assert.equal(await one.getByLabel('Empresa activa').inputValue(),B);
+  const mobileHeader=await one.locator('.workspace-header').boundingBox();
+  assert.ok(mobileHeader&&mobileHeader.height<=90,'tenant dropdown and mobile module menu fit in one compact header');
+  await one.locator('.mobile-tenant-navigation summary').click();
+  assert.ok(await one.getByRole('navigation',{name:'Más módulos de QA B'}).getByRole('link',{name:'Cotizaciones'}).isVisible(),'secondary modules are reachable');
+  await one.locator('.mobile-tenant-navigation summary').click();
+  await one.getByLabel('Nombre',{exact:true}).fill('Empresa nueva QA');
+  await one.getByRole('button',{name:'Guardar empresa'}).click();
+  await one.getByText('Empresa registrada correctamente.').waitFor();
+  await one.getByText('Empresa nueva QA',{exact:true}).waitFor();
+  assert.equal(companyInsertCount,1,'mobile save creates exactly one company');
+  await one.goto(base+'/crm');
+  await one.getByRole('heading',{name:'Resumen de QA B'}).waitFor();
+  await one.getByRole('link',{name:'Nueva empresa'}).click();
+  await one.getByLabel('Nombre',{exact:true}).waitFor();
   const width = await one.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(width.scroll <= width.viewport+1, 'mobile page has no horizontal page overflow');
   denyPipeline = true;
   await one.goto(base+'/crm/sales');
   await one.getByRole('heading',{name:'Esta función no está disponible'}).waitFor();
   assert.equal(await one.getByText('Pipeline',{exact:true}).count(),0,'sales alias cannot bypass pipeline permission');
-  console.log('PASS: explicit selection, stale-storage rejection, two-tab synchronization, form/data reset, mobile overflow and sales RBAC gate (stubbed API).');
+  console.log('PASS: tenant switching, responsive header/menu, mobile company save, dashboard quick action, overflow and sales RBAC gate (controlled API); SQL tenant CRUD validated separately.');
 } finally {
   if (browser) await browser.close();
   if (server) server.kill();
