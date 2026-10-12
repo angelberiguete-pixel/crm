@@ -109,6 +109,7 @@ try {
   assert.ok(writes.some(([type,body])=>type==="opportunity-update"&&body.stage_id==="st-2"),"touch stage selector persists");
   await page.goto(base+"/crm/inbox");
   await page.getByRole("heading",{name:"Conversaciones"}).waitFor();
+  await page.getByRole("button",{name:/Contacto actualizado/}).waitFor();
   assert.ok(await page.getByRole("button",{name:/Contacto actualizado/}).isVisible(),"mobile inbox starts on list");
   assert.equal(await page.getByRole("button",{name:"Volver a las conversaciones"}).isVisible(),false,"thread hidden until tapped");
   await page.getByRole("button",{name:/Contacto actualizado/}).click();
