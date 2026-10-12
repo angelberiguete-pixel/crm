@@ -146,7 +146,7 @@ export default function CrmSales360() {
         tenant_id: tenantId, title: action, status: "todo", priority: "normal", due_at: dueAt,
         assigned_user_id: selected.owner_user_id, contact_id: selected.contact_id,
         company_id: selected.company_id, opportunity_id: selected.id,
-        source: "crm_pipeline", metadata: { kind: "opportunity_followup" }
+        source: "manual", metadata: { kind: "opportunity_followup" }
       });
       setSelected(null);
       setNotice(task.error ? "Seguimiento guardado, pero no se creó la tarea: " + task.error.message : "Seguimiento guardado y tarea vinculada creada.");

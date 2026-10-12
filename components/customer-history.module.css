@@ -1,0 +1,27 @@
+.overlay{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:14px}
+.panel{width:min(840px,100%);max-height:94dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 20px 65px rgba(0,0,0,.35)}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
+.header h2{margin:4px 0 6px;overflow-wrap:anywhere}
+.header button{min-height:44px;flex-shrink:0}
+.muted{color:var(--muted);font-size:13px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.metric{border:1px solid var(--border);background:var(--panel2);border-radius:12px;padding:12px;min-width:0}
+.metric strong{font-size:22px;display:block}
+.sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.section{border:1px solid var(--border);border-radius:14px;padding:15px;min-width:0}
+.section h3{margin:0 0 12px;font-size:16px}
+.list{display:grid;gap:10px;margin:10px 0}
+.item{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:11px;min-width:0;overflow-wrap:anywhere}
+.item h4{margin:0 0 5px;font-size:14px}
+.item p{margin:0 0 6px;overflow-wrap:anywhere}
+.item small{color:var(--muted);font-size:12px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.actions button,.actions a{min-height:44px}
+.form{display:grid;gap:11px;padding:13px;margin-top:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
+.form label{display:grid;gap:6px;font-size:13px;font-weight:600;min-width:0}
+.form input,.form select,.form textarea{width:100%;min-width:0}
+.form textarea{min-height:88px;resize:vertical}
+.notice{margin:12px 0;border:1px solid var(--border);padding:12px;border-radius:10px;overflow-wrap:anywhere}
+.timeline{grid-column:1/-1}
+.timeline .item{border-left:3px solid var(--accent)}
+@media(max-width:760px){.overlay{align-items:end;padding:0}.panel{max-height:94dvh;border-radius:20px 20px 0 0;padding:17px 15px 28px}.sections{grid-template-columns:minmax(0,1fr)}.metrics{gap:7px}.metric{padding:9px}.metric strong{font-size:18px}.timeline{grid-column:auto}.header button{min-width:76px}}
