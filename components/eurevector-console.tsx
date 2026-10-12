@@ -29,13 +29,13 @@ export default function EurevectorConsole(){
  const[odooUrl,setOdooUrl]=useState(""); const[odooDb,setOdooDb]=useState(""); const[odooDirection,setOdooDirection]=useState("bidirectional");
  const[newName,setNewName]=useState(""); const[newSlug,setNewSlug]=useState(""); const[newPlan,setNewPlan]=useState("starter"); const[newVertical,setNewVertical]=useState(""); const[newTemplate,setNewTemplate]=useState(""); const[creating,setCreating]=useState(false);
  const selected=useMemo(()=>tenants.find(t=>t.tenant_id===selectedId)??null,[tenants,selectedId]);
- const chooseTenant=(id:string)=>{selectedRef.current=id;requestVersion.current++;setSelectedId(id);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setTenantLoading(true);setBrand("");setSupport("");setOdooUrl("");setOdooDb("");setCountry("");setCurrency("");setTimezone("");setLocale("");};
+ const chooseTenant=(id:string)=>{setNotice("");selectedRef.current=id;requestVersion.current++;setSelectedId(id);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setTenantLoading(true);setBrand("");setSupport("");setOdooUrl("");setOdooDb("");setCountry("");setCurrency("");setTimezone("");setLocale("");};
 
  const loadPlatform=useCallback(async()=>{setLoading(true);setNotice("");const{data:{session}}=await supabase.auth.getSession();if(!session){router.replace('/login');return}const access=await supabase.rpc('platform_current_access');if(access.error){setNotice(access.error.message);setLoading(false);return}if(!(access.data as any)?.is_platform_admin){setNotice('Tu usuario no tiene acceso de Platform Admin.');setLoading(false);return}const[t,p]=await Promise.all([supabase.rpc('platform_admin_tenants'),supabase.from('plans').select('id,code,name,monthly_price_cents,is_active').eq('is_active',true).order('monthly_price_cents')]);if(t.error||p.error){setNotice((t.error??p.error)?.message??'No se pudo cargar la plataforma');setLoading(false);return}const rows=(t.data??[]) as Tenant[];setTenants(rows);setPlans((p.data??[]) as Plan[]);setSelectedId(cur=>cur&&rows.some(x=>x.tenant_id===cur)?cur:rows[0]?.tenant_id??null);setLoading(false)},[router]);
  const loadTenant=useCallback(async(id:string)=>{
    if(selectedRef.current!==id)return;
    const ticket=++requestVersion.current;
-   setTenantLoading(true);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setNotice("");
+   setTenantLoading(true);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);
    const[s,m,u,readinessResult]=await Promise.all([
      supabase.rpc('platform_admin_tenant_snapshot',{p_tenant_id:id}),
      supabase.rpc('tenant_effective_modules',{p_tenant_id:id}),
