@@ -268,3 +268,24 @@ textarea{min-height:96px;resize:vertical}
  .crm-inbox-grid .topbar{display:flex;flex-wrap:wrap;gap:8px}
  .crm-inbox-grid .topbar select{max-width:140px}
 }
+
+/* Identidad oficial LOOK SOCIAL MEDIA. Conserva la marca original en todas las vistas. */
+.look-brand-logo{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;border-radius:12px;padding:5px;max-width:100%;overflow:hidden}
+.look-brand-logo img{display:block;height:auto;max-width:100%;object-fit:contain}
+.look-brand-logo--sidebar{width:155px}
+.look-brand-logo--sidebar img{width:100%;height:auto}
+.look-brand-logo--login{width:min(265px,90%);padding:10px;margin-inline:auto;margin-bottom:12px}
+.look-brand-logo--login img{width:100%}
+.look-brand-logo--compact{width:125px}
+.look-brand-logo--compact img{width:100%}
+.look-brand-logo--loading{width:165px;padding:9px}
+.look-brand-logo--loading img{width:100%}
+/* All existing screens with a global .loading placeholder show the real brand automatically. */
+.loading{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center}
+.loading::before{content:"";display:block;width:150px;height:122px;background:#fff url('/look-social-media-logo.svg') center/contain no-repeat;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+@media(prefers-reduced-motion:no-preference){.loading::before{animation:look-loading-pulse 1.8s ease-in-out infinite}}
+@keyframes look-loading-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.72;transform:scale(.97)}}
+.platform-brand-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.platform-brand-head h1{margin:0}
+.platform-technical-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:12px}
+.platform-technical-toggle input{width:auto}
