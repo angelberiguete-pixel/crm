@@ -23,7 +23,7 @@ test("browser code never publishes administrative environment variables or liter
 test("company channel requests reset stale UI and check tenant identity after a save",()=>{
   const content=source("components/crm-channel-setup.tsx");
   assert.match(content,/activeTenantId\.current!==requestTenantId/);
-  assert.match(content,/setIdentifier\(" "\.trim\(\)\)|setIdentifier\(" "\.slice\(1\)\)|setIdentifier\(""/);
+  assert.match(content,/setIdentifier\(""/);
   assert.match(content,/supabase\.rpc\("tenant_register_channel_request"/);
   assert.match(content,/No se pudo registrar la solicitud/);
 });
