@@ -25,3 +25,6 @@
 .timeline{grid-column:1/-1}
 .timeline .item{border-left:3px solid var(--accent)}
 @media(max-width:760px){.overlay{align-items:end;padding:0}.panel{max-height:94dvh;border-radius:20px 20px 0 0;padding:17px 15px 28px}.sections{grid-template-columns:minmax(0,1fr)}.metrics{gap:7px}.metric{padding:9px}.metric strong{font-size:18px}.timeline{grid-column:auto}.header button{min-width:76px}}
+
+/* Keep the active keyboard target visible against dark panels. */
+.panel :is(button,a,input,select,textarea):focus-visible{outline:3px solid var(--accent);outline-offset:3px}
