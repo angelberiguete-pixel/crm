@@ -8,10 +8,11 @@ import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import styles from "@/components/crm-commercial.module.css";
 
-type Counts = { companies:number; contacts:number; opportunities:number; conversations:number; quotations:number; events:number };
+type Counts = { companies:number|null; contacts:number|null; opportunities:number|null; conversations:number|null; quotations:number|null; events:number|null };
 type Deal = { id:string; title:string; status:string; next_action:string|null; next_action_at:string|null };
 type Revenue = { current_mrr:number|null; open_pipeline_mrr:number|null; weighted_pipeline_mrr:number|null };
-const blank:Counts={companies:0,contacts:0,opportunities:0,conversations:0,quotations:0,events:0};
+const blank:Counts={companies:null,contacts:null,opportunities:null,conversations:null,quotations:null,events:null};
+const countText=(n:number|null)=>n===null?"—":String(n);
 const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays]] as const;
 const money=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format(value||0);
 function Metric({label,value,sub}:{label:string;value:string;sub:string}){
@@ -42,11 +43,19 @@ export default function CrmCommercialDashboard(){
           supabase.from("revenue_command_center_dashboard").select("current_mrr,open_pipeline_mrr,weighted_pipeline_mrr").eq("tenant_id",tenantId).maybeSingle()
         ]);
         if(!alive)return;
-        const err=[companies,contacts,opportunities,conversations,quotations,events,openDeals,dashboard].find(x=>x.error)?.error;
-        if(err){setError("No se pudieron cargar algunos indicadores: "+err.message);return;}
-        setCounts({companies:companies.count??0,contacts:contacts.count??0,opportunities:opportunities.count??0,conversations:conversations.count??0,quotations:quotations.count??0,events:events.count??0});
-        setDeals((openDeals.data??[]) as Deal[]);
-        setRevenue((dashboard.data as Revenue|null)??null);
+        const requests=[companies,contacts,opportunities,conversations,quotations,events,openDeals,dashboard];
+        const failures=requests.filter(r=>r.error);
+        if(failures.length)setError("Algunos indicadores no pudieron cargarse. Los no disponibles se muestran con «—». Puedes pulsar Actualizar para intentarlo de nuevo.");
+        setCounts({
+          companies:companies.error?null:companies.count??0,
+          contacts:contacts.error?null:contacts.count??0,
+          opportunities:opportunities.error?null:opportunities.count??0,
+          conversations:conversations.error?null:conversations.count??0,
+          quotations:quotations.error?null:quotations.count??0,
+          events:events.error?null:events.count??0
+        });
+        setDeals(openDeals.error?[]:(openDeals.data??[]) as Deal[]);
+        setRevenue(dashboard.error?null:(dashboard.data as Revenue|null)??null);
       }catch{if(alive)setError("No se pudo cargar el panel. Verifica tu conexión.");}
       finally{if(alive)setLoading(false);}
     })();
@@ -76,15 +85,26 @@ export default function CrmCommercialDashboard(){
       </section>
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
         <section className="grid dashboard-kpis section-gap" aria-label="Indicadores de esta empresa">
-          <Metric label="Empresas" value={String(counts.companies)} sub="Registros de clientes"/>
-          <Metric label="Contactos" value={String(counts.contacts)} sub="Personas registradas"/>
-          <Metric label="Oportunidades" value={String(counts.opportunities)} sub="Todas las etapas"/>
-          <Metric label="Cotizaciones" value={String(counts.quotations)} sub="Documentos registrados"/>
-          <Metric label="Proceso abierto" value={money(Number(revenue?.open_pipeline_mrr??0))} sub="Valor registrado en el CRM"/>
-          <Metric label="Ingresos recurrentes" value={money(Number(revenue?.current_mrr??0))} sub="MRR registrado"/>
-          <Metric label="Conversaciones" value={String(counts.conversations)} sub="Mensajes de esta empresa"/>
-          <Metric label="Eventos" value={String(counts.events)} sub="Calendario de la empresa"/>
+          <Metric label="Empresas" value={countText(counts.companies)} sub="Registros de clientes"/>
+          <Metric label="Contactos" value={countText(counts.contacts)} sub="Personas registradas"/>
+          <Metric label="Oportunidades" value={countText(counts.opportunities)} sub="Todas las etapas"/>
+          <Metric label="Cotizaciones" value={countText(counts.quotations)} sub="Documentos registrados"/>
+          <Metric label="Proceso abierto" value={revenue?money(Number(revenue.open_pipeline_mrr??0)):"—"} sub="Valor registrado en el CRM"/>
+          <Metric label="Ingresos recurrentes" value={revenue?money(Number(revenue.current_mrr??0)):"—"} sub="MRR registrado"/>
+          <Metric label="Conversaciones" value={countText(counts.conversations)} sub="Mensajes de esta empresa"/>
+          <Metric label="Eventos" value={countText(counts.events)} sub="Calendario de la empresa"/>
         </section>
+        {counts.companies===0&&counts.contacts===0&&counts.opportunities===0&&<section className="card section-gap" aria-label="Primeros pasos comerciales">
+          <div className="eyebrow">Primeros pasos · {tenant?.tenant_name}</div>
+          <h2>Comienza a trabajar con clientes reales</h2>
+          <p className="muted">Todavía no existen empresas, contactos ni oportunidades en este espacio. Completa el primer recorrido comercial sin añadir datos ficticios.</p>
+          <div className="dashboard-actions">
+            <Link className="button primary" href="/crm/companies?new=1">1. Registrar empresa</Link>
+            <Link className="button" href="/crm/contacts?new=1">2. Registrar contacto</Link>
+            <Link className="button" href="/crm/revenue">3. Crear oportunidad</Link>
+            <Link className="button" href="/crm/quotations">4. Preparar cotización</Link>
+          </div>
+        </section>}
         <section className="grid two-col section-gap">
           <div className="card"><div className="eyebrow">Seguimiento comercial</div><h2>Próximas acciones</h2>
             {due.length>0&&<p className={styles.sectionIntro}>{due.length} acciones vencidas entre las primeras oportunidades consultadas.</p>}
