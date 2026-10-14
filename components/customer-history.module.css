@@ -28,3 +28,5 @@
 
 /* Keep the active keyboard target visible against dark panels. */
 .panel :is(button,a,input,select,textarea):focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+@media(prefers-reduced-motion:reduce){.panel{scroll-behavior:auto}}
