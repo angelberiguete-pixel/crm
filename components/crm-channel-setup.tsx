@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Clock3, Mail, MessageCircle, RefreshCw, ShieldCheck, AtSign } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
@@ -37,6 +37,9 @@ const formatDate=(value:string)=>{try{return new Intl.DateTimeFormat("es-DO",{da
 export default function CrmChannelSetup(){
   const tenant=useActiveTenant();
   const tenantId=tenant?.tenant_id;
+  // Track the selected company across asynchronous requests to avoid stale UI updates.
+  const activeTenantId=useRef(tenantId);
+  activeTenantId.current=tenantId;
   const role=tenant?.membership_role??"";
   const isManager=["owner","admin","manager"].includes(role);
   const [rows,setRows]=useState<RequestRow[]>([]);
@@ -52,7 +55,7 @@ export default function CrmChannelSetup(){
 
   useEffect(()=>{
     let active=true;
-    setRows([]);setLoading(true);setError("");
+    setRows([]);setLoading(true);setError("");setSuccess("");
     if(!tenantId||!isManager){setLoading(false);return;}
     (async()=>{
       try{
@@ -66,22 +69,34 @@ export default function CrmChannelSetup(){
     return()=>{active=false};
   },[tenantId,isManager,refresh]);
 
+  useEffect(()=>{
+    // A channel belongs to a single company. Never retain another company's draft or confirmation.
+    setProvider("whatsapp");
+    setName("WhatsApp comercial");
+    setIdentifier("");
+    setSuccess("");
+    setError("");
+    setSaving(false);
+  },[tenantId]);
+
   async function submit(e:FormEvent){
     e.preventDefault();
     if(!tenantId||!isManager||saving)return;
+    const requestTenantId=tenantId;
     setError("");setSuccess("");setSaving(true);
     try{
       const result=await supabase.rpc("tenant_register_channel_request",{
         p_tenant_id:tenantId,p_provider:provider,p_channel_name:name.trim(),
         p_identifier:identifier.trim()
       });
+      if(activeTenantId.current!==requestTenantId)return;
       if(result.error)throw result.error;
       if(typeof result.data!=="string")throw new Error("No se confirmó el registro de la solicitud.");
       setSuccess("Solicitud registrada. El canal está pendiente de autorización y NO puede enviar ni recibir mensajes todavía.");
       setIdentifier("");
       setRefresh(v=>v+1);
-    }catch(e){setError("No se pudo registrar la solicitud: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
-    finally{setSaving(false);}
+    }catch(e){if(activeTenantId.current===requestTenantId)setError("No se pudo registrar la solicitud: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
+    finally{if(activeTenantId.current===requestTenantId)setSaving(false);}
   }
 
   if(!tenant)return <main className="content"><div className="loading">Selecciona una empresa para preparar sus canales.</div></main>;
