@@ -82,7 +82,7 @@ try {
   await one.getByText('Empresa nueva QA',{exact:true}).waitFor();
   assert.equal(companyInsertCount,1,'mobile save creates exactly one company');
   await one.goto(base+'/crm');
-  await one.getByRole('heading',{name:'Resumen de QA B'}).waitFor();
+  await one.getByRole('heading',{name:'Portal de QA B'}).waitFor();
   await one.getByRole('link',{name:'Nueva empresa'}).click();
   await one.getByLabel('Nombre',{exact:true}).waitFor();
   const width = await one.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
