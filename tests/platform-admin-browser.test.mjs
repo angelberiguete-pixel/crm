@@ -48,7 +48,7 @@ try {
   });
   const page = await context.newPage();
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'LOOK SOCIAL MEDIA · Super Admin'}).waitFor();
+  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
   const row=page.getByRole('row').filter({has:page.getByText('QA A',{exact:true})});
   const rowB=page.getByRole('row').filter({has:page.getByText('QA B',{exact:true})});
   await row.getByRole('button',{name:'Gestionar',exact:true}).click();
@@ -78,10 +78,10 @@ try {
   assert.deepEqual(supportEntries,[A],'support entry uses the explicitly selected client');
   assert.equal(await page.getByLabel('Empresa activa').inputValue(),A);
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'LOOK SOCIAL MEDIA · Super Admin'}).waitFor();
-  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Nuevo cliente'})});
+  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
+  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Agregar empresa cliente'})});
   await onboarding.getByLabel('Nombre').fill('Nuevo Cliente QA');
-  await onboarding.getByLabel('Slug').fill('nuevo-cliente-qa');
+  await onboarding.getByLabel('Identificador interno').fill('nuevo-cliente-qa');
   await onboarding.getByRole('button',{name:'Crear cliente'}).click();
   await page.getByRole('heading',{name:'Nuevo Cliente QA',exact:true}).waitFor();
   await page.getByText('Cliente creado; abre su verificación de activación y completa los pendientes.').waitFor();
