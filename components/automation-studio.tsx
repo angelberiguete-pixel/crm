@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { validateWebhookDraftUrl } from "@/lib/automation-webhook-validation";
 
 type Rule = {
   id: string;
@@ -83,7 +84,7 @@ type PaletteItem = {
 };
 
 const EVENTS = [
-  ["lead_created", "Lead creado"],
+  ["lead_created", "Prospecto creado"],
   ["contact_created", "Contacto creado"],
   ["form_received", "Formulario recibido"],
   ["message_received", "Mensaje recibido"],
@@ -336,6 +337,8 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
     } else if (selectedNode.node_type === "delay") {
       config.minutes = Math.max(1, Number(inspectorMinutes) || 1);
     } else if (selectedNode.action_type === "call_webhook") {
+      const validationError=validateWebhookDraftUrl(inspectorValue);
+      if(validationError){notice(validationError);return;}
       config.url = inspectorValue.trim();
     } else if (selectedNode.node_type === "ai") {
       config.instruction = inspectorValue.trim();
@@ -529,7 +532,7 @@ export default function AutomationStudio({ tenantId, notice }: { tenantId: strin
               <label>Campo<input value={inspectorField} onChange={(e) => setInspectorField(e.target.value)} placeholder="Ej. lead_score" /></label>
               <label>Operador<select value={inspectorOperator} onChange={(e) => setInspectorOperator(e.target.value)}><option value="equals">Es igual a</option><option value="not_equals">No es igual</option><option value="contains">Contiene</option><option value="gt">Mayor que</option><option value="gte">Mayor o igual</option><option value="lt">Menor que</option><option value="exists">Existe</option></select></label>
               <label>Valor<input value={inspectorCompare} onChange={(e) => setInspectorCompare(e.target.value)} /></label>
-            </> : selectedNode.node_type === "delay" ? <label>Esperar (minutos)<input type="number" min={1} max={525600} value={inspectorMinutes} onChange={(e) => setInspectorMinutes(e.target.value)} /></label> : selectedNode.node_type !== "trigger" && <label>{selectedNode.action_type === "call_webhook" ? "URL" : selectedNode.node_type === "ai" ? "Instrucción de IA" : "Mensaje / valor"}<textarea value={inspectorValue} onChange={(e) => setInspectorValue(e.target.value)} placeholder={selectedNode.action_type === "send_whatsapp" ? "Hola {{contact.first_name}}…" : "Configura este bloque"} /></label>}
+            </> : selectedNode.node_type === "delay" ? <label>Esperar (minutos)<input type="number" min={1} max={525600} value={inspectorMinutes} onChange={(e) => setInspectorMinutes(e.target.value)} /></label> : selectedNode.node_type !== "trigger" && <label>{selectedNode.action_type === "call_webhook" ? "Dirección HTTPS del webhook" : selectedNode.node_type === "ai" ? "Instrucción de IA" : "Mensaje / valor"}<textarea value={inspectorValue} onChange={(e) => setInspectorValue(e.target.value)} placeholder={selectedNode.action_type === "send_whatsapp" ? "Hola {{contact.first_name}}…" : "Configura este bloque"} /></label>}
             <button className="button primary"><Save size={14}/> Guardar bloque</button>
           </form> : <div><div className="eyebrow">Inspector</div><h3>Selecciona un bloque</h3><p className="muted">Haz clic en un bloque para editar su nombre y configuración sin tocar código.</p></div>}
 
