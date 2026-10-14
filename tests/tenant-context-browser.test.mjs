@@ -52,11 +52,11 @@ try {
   });
   const one = await context.newPage();
   await one.goto(base+'/crm/companies');
-  await one.getByRole('heading',{name:'Selecciona tu empresa'}).waitFor();
+  await one.getByRole('heading',{name:'Acceso a tu portal'}).waitFor();
   assert.equal(reads.length,0,'ambiguous tenant must not load company data');
   const two = await context.newPage();
   await two.goto(base+'/crm/companies');
-  await two.getByRole('heading',{name:'Selecciona tu empresa'}).waitFor();
+  await two.getByRole('heading',{name:'Acceso a tu portal'}).waitFor();
   await one.getByRole('button',{name:'QA A',exact:true}).click();
   await one.getByText('Empresa A',{exact:true}).waitFor();
   await two.getByText('Empresa A',{exact:true}).waitFor();
@@ -82,7 +82,7 @@ try {
   await one.getByText('Empresa nueva QA',{exact:true}).waitFor();
   assert.equal(companyInsertCount,1,'mobile save creates exactly one company');
   await one.goto(base+'/crm');
-  await one.getByRole('heading',{name:'Resumen de QA B'}).waitFor();
+  await one.getByRole('heading',{name:'Portal de QA B'}).waitFor();
   await one.getByRole('link',{name:'Nueva empresa'}).click();
   await one.getByLabel('Nombre',{exact:true}).waitFor();
   const width = await one.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));

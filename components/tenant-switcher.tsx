@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import { useActiveTenant, type ActiveTenant } from "@/components/tenant-context";
+import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 
 export default function TenantSwitcher() {
   const tenant = useActiveTenant();
@@ -15,7 +16,22 @@ export default function TenantSwitcher() {
     supabase.rpc("list_my_tenants").then(({ data, error }) => {
       if (!alive) return;
       if (error) setError("No pudimos cargar tus empresas.");
-      else setChoices((data ?? []) as ActiveTenant[]);
+      else {
+        const all=(data??[]) as ActiveTenant[];
+        const commercial=all.filter(t=>isCommercialClientTenant(t.tenant_slug));
+        setChoices(commercial.length?commercial:all);
+        // If the owner left a QA/demo space active earlier, return to the
+        // commercial workspace through the verified server-side switch RPC.
+        if (commercial.length && tenant && !isCommercialClientTenant(tenant.tenant_slug)) {
+          const target=commercial.find(t=>t.tenant_slug==="eurevector")??commercial[0];
+          void supabase.rpc("set_active_tenant",{p_tenant_id:target.tenant_id})
+            .then(({error:changeError})=>{
+              if(!alive)return;
+              if(changeError)setError(changeError.message);
+              else notifyTenantContextChanged();
+            });
+        }
+      }
     });
     return () => { alive = false; };
   }, [tenant?.tenant_id]);

@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
 import TenantSwitcher from "@/components/tenant-switcher";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
+import BrandLogo from "@/components/brand-logo";
+import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 import { TenantContextProvider, type ActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged, TENANT_CONTEXT_EVENT, TENANT_CONTEXT_REVISION } from "@/lib/tenant-context-events";
 
@@ -79,7 +81,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const resolved = resolveTenantContext(memberships);
       if (!resolved) {
         setState("loading");
-        setChoices(memberships);
+        const commercial=memberships.filter(t=>isCommercialClientTenant(t.tenant_slug));
+        setChoices(commercial.length?commercial:memberships);
         return;
       }
       let activeTenant = resolved;
@@ -172,8 +175,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
   }
 
   if (choices.length > 0) return <main className="auth-shell"><section className="auth-panel">
-    <div className="eyebrow">Look Social Media CRM</div><h1>Selecciona tu empresa</h1>
-    <p className="muted">Elige el workspace que deseas abrir.</p>
+    <BrandLogo size="login"/><div className="eyebrow">Selecciona tu empresa</div><h1>Acceso a tu portal</h1>
+    <p className="muted">Verás únicamente los espacios a los que tu cuenta tiene acceso autorizado.</p>
     <div className="stack gap-16">{choices.map(tenant => <button type="button" className="button" key={tenant.tenant_id} disabled={selecting} onClick={() => selectTenant(tenant)}>{tenant.tenant_name}</button>)}</div>
     {reason && <div className="notice" role="alert">{reason}</div>}
   </section></main>;
@@ -183,11 +186,11 @@ export default function TenantPermissionGate({ section, children }: { section: s
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <ShieldAlert size={32} />
+      <BrandLogo size="compact"/><ShieldAlert size={32} />
       <div className="eyebrow" style={{ marginTop: 12 }}>Acceso restringido</div>
       <h1>Esta función no está disponible</h1>
       <p className="muted">{reason}</p>
-      <Link className="button primary" href="/crm">Volver al dashboard</Link>
+      <Link className="button primary" href="/crm">Volver al inicio</Link>
     </section>
   </main>;
 }

@@ -6,6 +6,7 @@ import { Building2, CalendarDays, FileText, Gauge, Inbox, RefreshCw, Target, Use
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
+import BrandLogo from "@/components/brand-logo";
 import styles from "@/components/crm-commercial.module.css";
 
 type Counts = { companies:number|null; contacts:number|null; opportunities:number|null; conversations:number|null; quotations:number|null; events:number|null };
@@ -20,6 +21,8 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
 }
 export default function CrmCommercialDashboard(){
   const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null;
+  const roleLabel=tenant?.membership_role==="owner"?"Propietario":tenant?.membership_role==="admin"?"Administrador":tenant?.membership_role==="manager"?"Gerente":tenant?.membership_role==="agent"?"Vendedor":"Equipo";
+  const canManage=["owner","admin","manager"].includes(tenant?.membership_role??"");
   const [counts,setCounts]=useState<Counts>({...blank});
   const [deals,setDeals]=useState<Deal[]>([]);
   const [revenue,setRevenue]=useState<Revenue|null>(null);
@@ -65,11 +68,11 @@ export default function CrmCommercialDashboard(){
   if(!tenantId)return <CrmWorkspace slug={[]} />;
   const due=deals.filter(d=>d.next_action_at&&new Date(d.next_action_at).getTime()<Date.now());
   return <div className="shell">
-    <aside className="sidebar"><div className="brand"><strong>Look Social Media CRM</strong><span>{tenant?.tenant_name}</span></div>
+    <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name} · {roleLabel}</span></div>
       <nav className="nav" aria-label="Módulos del CRM">{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Panel principal · LOOK SOCIAL MEDIA CRM</div><h1>Resumen de {tenant?.tenant_name}</h1></div>
+      <header className="topbar"><div><div className="eyebrow">Panel principal · LOOK SOCIAL MEDIA CRM</div><h1>Portal de {tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>
         <div className="top-actions"><button className="button" type="button" onClick={()=>setReload(n=>n+1)}><RefreshCw size={16}/> Actualizar</button></div>
       </header>
       {error&&<div className="notice" role="alert">{error}</div>}
@@ -77,10 +80,10 @@ export default function CrmCommercialDashboard(){
         <h2>Organiza clientes y convierte oportunidades en ventas.</h2>
         <p className="muted">Los indicadores corresponden únicamente a los registros de esta empresa.</p>
         <div className="dashboard-actions">
-          <Link className="button primary" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>
+          {canManage&&<Link className="button primary" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>}
           <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
           <Link className="button" href="/crm/revenue"><Target size={16}/> Ver oportunidades</Link>
-          <Link className="button" href="/crm/inbox"><Inbox size={16}/> Conversaciones</Link>
+          <Link className="button" href="/crm/inbox"><Inbox size={16}/> {canManage?"Conversaciones":"Mis conversaciones"}</Link>
         </div>
       </section>
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
@@ -94,7 +97,7 @@ export default function CrmCommercialDashboard(){
           <Metric label="Conversaciones" value={countText(counts.conversations)} sub="Mensajes de esta empresa"/>
           <Metric label="Eventos" value={countText(counts.events)} sub="Calendario de la empresa"/>
         </section>
-        {counts.companies===0&&counts.contacts===0&&counts.opportunities===0&&<section className="card section-gap" aria-label="Primeros pasos comerciales">
+        {canManage&&counts.companies===0&&counts.contacts===0&&counts.opportunities===0&&<section className="card section-gap" aria-label="Primeros pasos comerciales">
           <div className="eyebrow">Primeros pasos · {tenant?.tenant_name}</div>
           <h2>Comienza a trabajar con clientes reales</h2>
           <p className="muted">Todavía no existen empresas, contactos ni oportunidades en este espacio. Completa el primer recorrido comercial sin añadir datos ficticios.</p>
@@ -117,7 +120,7 @@ export default function CrmCommercialDashboard(){
           </div>
           <div className="card"><div className="eyebrow">Accesos rápidos</div><h2>Continúa trabajando</h2>
             <div className="stack gap-12">
-              <Link className="button" href="/crm/companies">Gestionar empresas</Link>
+              {canManage&&<Link className="button" href="/crm/companies">Gestionar empresas</Link>}
               <Link className="button" href="/crm/contacts">Gestionar contactos</Link>
               <Link className="button" href="/crm/quotations">Abrir cotizaciones</Link>
               <Link className="button" href="/crm/calendar">Abrir calendario</Link>

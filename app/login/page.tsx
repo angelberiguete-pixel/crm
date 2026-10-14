@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import BrandLogo from "@/components/brand-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,9 +57,10 @@ export default function LoginPage() {
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <div className="eyebrow">Look Social Media · CRM</div>
+      <BrandLogo size="login"/>
+      <div className="eyebrow">Acceso seguro al CRM</div>
       <h1>Iniciar sesión</h1>
-      <p className="muted">Una sola plataforma para Super Admin, dueños de negocio, administradores, gerentes, vendedores y usuarios autorizados.</p>
+      <p className="muted">Cada empresa y cada vendedor accede a su propio espacio de trabajo. El administrador de plataforma gestiona a sus clientes por separado.</p>
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
