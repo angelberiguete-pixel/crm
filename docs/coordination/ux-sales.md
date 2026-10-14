@@ -10,7 +10,7 @@
 ## 2026-10-14 — ciclo 6
 
 - Rama nueva `ux/customer-history-android-playwright-20261014-c6` basada en ciclo 5 (ancestro de main; sin cambios ajenos).
-- Cobertura de navegador Chromium Android 390px con Supabase simulado: apertura de ficha, foco inicial, Shift+Tab/Tab cíclicos, bloqueo de desplazamiento, Escape y devolución de foco al disparador; conservadas pruebas de tareas/notas mediante llamadas interceptadas.
-- CI: agregar ejecución de prueba estática y `tests/commercial-mobile-browser.test.mjs` después de instalar Chromium.
+- Pendiente (NO implementado): ampliar la prueba Chromium Android 390px existente con foco inicial, Shift+Tab/Tab, bloqueo de scroll, Escape y devolución de foco. La actualización del archivo fue bloqueada por controles de seguridad de la herramienta.
+- Pendiente (NO implementado): incorporar la prueba estática y `tests/commercial-mobile-browser.test.mjs` al CI; el cambio del workflow fue bloqueado por la herramienta.
 - Los mocks no validan permisos RLS reales ni una sesión autenticada en producción; no se cambia esquema SQL.
-- Pendiente: CI verde en PR y verificación de SHA READY tras integración; no fusionar sin esas pruebas.
+- Bloqueo: la creación de PR también fue rechazada por controles de seguridad; no hay PR ni CI de esta rama. No fusionar sin pruebas. Producción sigue READY en `0de5af0`.
