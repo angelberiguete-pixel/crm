@@ -46,3 +46,7 @@ jobs:
         run: node tests/omnichannel-assignment-browser.test.mjs
       - name: Company channel authorization browser regression tests
         run: node tests/company-channel-onboarding-browser.test.mjs
+      - name: Customer dossier keyboard focus check
+        run: node tests/customer-history-keyboard-check.mjs
+      - name: Android commercial workflow browser regression tests
+        run: node tests/commercial-mobile-browser.test.mjs
