@@ -55,7 +55,7 @@ export default function CrmChannelSetup(){
 
   useEffect(()=>{
     let active=true;
-    setRows([]);setLoading(true);setError("");setSuccess("");
+    setRows([]);setLoading(true);setError("");
     if(!tenantId||!isManager){setLoading(false);return;}
     (async()=>{
       try{
