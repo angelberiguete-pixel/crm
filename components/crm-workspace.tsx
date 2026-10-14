@@ -24,6 +24,7 @@ import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
+import BrandLogo from "@/components/brand-logo";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -109,11 +110,12 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
 
   if (loading) return <div className="loading">Cargando CRM…</div>;
   if (onboarding && userId) {
-    return <Onboarding userId={userId} done={({ tenantId, tenantName, tenantSlug }) => {
-      setMember({ tenant_id: tenantId, role: "owner", tenant_name: tenantName, tenant_slug: tenantSlug });
-      setOnboarding(false);
-      refresh();
-    }} />;
+    return <main className="auth-shell"><section className="auth-panel">
+      <BrandLogo size="login"/>
+      <h1>No tienes una empresa asignada</h1>
+      <p className="muted">El propietario de la plataforma debe vincular tu cuenta a una empresa y asignarte un rol. No se crea una empresa automáticamente al registrarte.</p>
+      <button type="button" className="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login");}}>Volver a iniciar sesión</button>
+    </section></main>;
   }
   if (!member) return <div className="loading" role="alert">{notice || "No se pudo preparar el workspace."}</div>;
 
@@ -121,7 +123,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><strong>Look Social Media CRM</strong><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
+        <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav">
           {nav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
