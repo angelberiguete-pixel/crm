@@ -20,3 +20,22 @@ Preparar y revisar una migración mínima que agregue el control interno a la fu
 
 ### Criterio de aceptación
 Usuario no administrador rechazado por la implementación privilegiada con SQLSTATE 42501 antes de cualquier escritura; Super Admin autorizado conserva la creación por el envoltorio; ningún cliente real modificado; PR sin conflictos, CI verde y producción apuntando al commit fusionado.
+
+## Seguimiento — 2026-10-15
+
+### HECHO
+- PR #74 abierto en borrador: https://github.com/angelberiguete-pixel/crm/pull/74; prueba de regresión `tests/security/tenant-creation-guard-regression.sql` incorporada (commit `a083e2fc014d0aa33ab70038bd9ba60f58036396`).
+- Nueva consulta de catálogo de Supabase confirmó `SECURITY DEFINER=true`, `authenticated EXECUTE=true` y ausencia del patrón `crm_is_platform_admin(` en `private.create_tenant_impl(text,text)`.
+- Sin cambios en producción, usuarios, privilegios ni datos de clientes.
+
+### BLOQUEOS Y RIESGOS
+- La regresión es estática y aún no está integrada en CI; no demuestra por sí sola explotabilidad ni autorización efectiva.
+- No se obtuvo el cuerpo íntegro de la función para preparar un `CREATE OR REPLACE FUNCTION` seguro.
+- Faltan pruebas de vendedor denegado, Super Admin autorizado y aislamiento A/B en base desechable.
+- PR #74 debe permanecer como borrador y sin fusionar.
+
+### PRÓXIMO PASO
+Recuperar la implementación exacta de la función, preparar cambio mínimo que verifique autorización antes de escribir, ensayar con identidades sintéticas y `ROLLBACK`, conectar regresiones a CI y revisar conflictos.
+
+### Criterio de aceptación
+Denegación SQLSTATE 42501 a vendedor, éxito autorizado para Super Admin, aislamiento entre empresas A/B, CI verde y verificación del SHA de despliegue antes de declarar cierre.
