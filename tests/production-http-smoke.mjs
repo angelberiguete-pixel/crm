@@ -1,6 +1,7 @@
 // Public-production HTTP checks: no passwords, service keys, or simulated sessions.
 // This proves routes respond over HTTPS; it does NOT prove authenticated CRM flows.
 import assert from "node:assert/strict";
+import { fetchSameOrigin } from "./production-http-redirects.mjs";
 
 const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
 const expectedOrigin=new URL(base).origin;
@@ -9,8 +10,8 @@ for(const route of routes){
  let finalError=null,passed=false;
  for(let attempt=1;attempt<=3;attempt++){
   try{
-   const response=await fetch(new URL(route,base),{
-    method:"GET",redirect:"follow",
+   const response=await fetchSameOrigin(new URL(route,base),{
+    method:"GET",
     headers:{"User-Agent":"LOOK-SOCIAL-MEDIA-readonly-qa/1.0","Accept":"text/html"},
     signal:AbortSignal.timeout(14000)
    });
