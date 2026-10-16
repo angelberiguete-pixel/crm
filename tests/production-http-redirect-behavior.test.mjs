@@ -3,7 +3,9 @@ import http from "node:http";
 import { fetchSameOrigin } from "./production-http-redirects.mjs";
 
 // Local-only redirect behavior regression: no external network or real CRM credentials.
+let foreignRequests = 0;
 const target = http.createServer((req, res) => {
+  foreignRequests += 1;
   res.writeHead(200, { "content-type": "text/html" });
   res.end("CRM");
 });
@@ -24,7 +26,8 @@ async function verify(path) {
 try {
   assert.equal(await verify("/internal"), 200);
   await assert.rejects(verify("/external"), /unexpected redirect origin/);
-  console.log("PASS same-origin accepted and cross-origin rejected");
+  assert.equal(foreignRequests, 0, "rejected redirect must never contact foreign origin");
+  console.log("PASS same-origin accepted; cross-origin rejected without any foreign request");
 } finally {
   origin.close();
   target.close();
