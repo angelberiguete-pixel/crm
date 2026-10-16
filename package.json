@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test:browser:tenant": "node tests/tenant-context-browser.test.mjs && node tests/commercial-mobile-browser.test.mjs",
     "test:browser:commercial": "node tests/commercial-mobile-browser.test.mjs",
-    "test:qa:smoke-origin": "node --test tests/production-http-smoke-origin.test.mjs"
+    "test:qa:smoke-origin": "node --test tests/production-http-smoke-origin.test.mjs && node tests/production-http-redirect-behavior.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
