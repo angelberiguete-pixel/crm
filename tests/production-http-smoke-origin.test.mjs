@@ -1,9 +1,11 @@
-// Regression guard for production HTTP smoke: redirects must not leave the configured origin.
-// Read-only static assertion; does not contact production or send credentials.
+// Static wiring guard complements functional redirect tests.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-
-const source = readFileSync(new URL("./production-http-smoke.mjs", import.meta.url), "utf8");
-assert.match(source, /finalUrl\.origin\s*,\s*expectedOrigin/, "smoke must assert final response origin");
-assert.match(source, /redirect\s*:\s*["']manual["']|redirect\s*:\s*["']follow["']/, "redirect behavior must be explicit");
-console.log("PASS: production smoke declares same-origin redirect gate");
+const smoke = readFileSync(new URL("./production-http-smoke.mjs", import.meta.url), "utf8");
+const helper = readFileSync(new URL("./production-http-redirects.mjs", import.meta.url), "utf8");
+assert.match(smoke, /import\s*\{\s*fetchSameOrigin\s*\}\s*from\s*["']\.\/production-http-redirects\.mjs["']/, "smoke must import guarded fetch");
+assert.match(smoke, /await\s+fetchSameOrigin\s*\(/, "smoke must call guarded fetch");
+assert.doesNotMatch(smoke, /redirect\s*:\s*["']follow["']/, "smoke must not follow redirects automatically");
+assert.match(helper, /redirect\s*:\s*["']manual["']/, "guarded fetch must inspect redirects manually");
+assert.match(helper, /target\.origin\s*!==\s*initial\.origin/, "guarded fetch must reject foreign origins");
+console.log("PASS: smoke uses manual same-origin redirect guard");
