@@ -4,7 +4,9 @@ import assert from "node:assert/strict";
 import { fetchSameOrigin } from "./production-http-redirects.mjs";
 
 const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
-const expectedOrigin=new URL(base).origin;
+const baseUrl = new URL(base);
+if (baseUrl.protocol !== "https:") throw new Error("CRM_PRODUCTION_URL must use HTTPS");
+const expectedOrigin = baseUrl.origin;
 const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels"];
 for(const route of routes){
  let finalError=null,passed=false;
