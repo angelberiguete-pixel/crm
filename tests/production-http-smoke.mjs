@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 
 const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
+const expectedOrigin=new URL(base).origin;
 const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels"];
 for(const route of routes){
  let finalError=null,passed=false;
@@ -16,6 +17,7 @@ for(const route of routes){
    const finalUrl=new URL(response.url);
    const body=await response.text();
    assert.equal(finalUrl.protocol,"https:","must stay on HTTPS");
+   assert.equal(finalUrl.origin,expectedOrigin,`${route} redirected to an unexpected origin: ${finalUrl.origin}`);
    assert.equal(response.status,200,`${route} should return HTTP 200, actual ${response.status}`);
    assert.match(response.headers.get("content-type")??"",/text\/html/i,"HTML required");
    assert.match(body,/(look social media|crm)/i,"branded application response expected");
