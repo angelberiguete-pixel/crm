@@ -10,7 +10,7 @@ const walk = path => readdirSync(join(root,path),{withFileTypes:true}).flatMap(e
   return entry.isDirectory()?walk(child):[child];
 });
 const applicationFiles = ["app","components","lib","supabase/functions"].flatMap(folder=>walk(folder))
-  .filter(path=>/\.(ts|tsx|js|jsx|mjs)$/.test(path)));
+  .filter(path=>/\.(ts|tsx|js|jsx|mjs)$/.test(path));
 const secretPattern = /(?:sb_secret_[a-zA-Z0-9_-]{8,}|sk_live_[a-zA-Z0-9]{8,}|ghp_[a-zA-Z0-9]{28,})/;
 
 test("server and browser application source contains no literal secret tokens",()=>{
