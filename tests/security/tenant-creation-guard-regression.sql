@@ -19,7 +19,7 @@ BEGIN
     RAISE EXCEPTION 'Expected SECURITY DEFINER implementation; review architecture';
   END IF;
   IF can_authenticated_execute AND
-     definition !~* 'crm_is_platform_admin[[:space:]]*\\(' THEN
+     definition !~* 'crm_is_platform_admin[[:space:]]*[(]' THEN
     RAISE EXCEPTION 'SECURITY FAILURE: authenticated can execute privileged tenant creation without an internal admin guard';
   END IF;
 END $$;
