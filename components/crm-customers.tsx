@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, Search, Target, Users } from "lucide-react";
+import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, Search, Target, Users, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "@/components/crm-commercial.module.css";
 import CustomerHistory from "@/components/customer-history";
+import { contactVCardFilename, exportContactToVCard } from "@/lib/contact-vcard";
 
 type Company = {id:string;name:string;sector:string|null;city:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;website:string|null;created_at:string};
 type Contact = {id:string;company_id:string|null;display_name:string;job_title:string|null;email:string|null;phone:string|null;whatsapp_phone:string|null;status:string;source:string|null;created_at:string};
@@ -88,6 +89,18 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  function startNew(){setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setFeedback("");setShowForm(true);}
  function startCompanyEdit(c:Company){setEditingId(c.id);setFeedback("");setCompanyDraft({name:c.name,sector:c.sector??"",city:c.city??"",phone:c.phone??"",whatsapp_phone:c.whatsapp_phone??"",email:c.email??""});setShowForm(true);}
  function startContactEdit(c:Contact){setEditingId(c.id);setFeedback("");setContactDraft({display_name:c.display_name,company_id:c.company_id??"",job_title:c.job_title??"",phone:c.phone??"",whatsapp_phone:c.whatsapp_phone??"",email:c.email??""});setShowForm(true);}
+ function downloadContact(c:Contact){
+   try{
+     const vcard=exportContactToVCard({display_name:c.display_name,job_title:c.job_title,email:c.email,phone:c.phone,whatsapp_phone:c.whatsapp_phone,company_name:c.company_id?companyMap.get(c.company_id):null});
+     const blob=new Blob([vcard],{type:"text/vcard;charset=utf-8"});
+     const url=URL.createObjectURL(blob);
+     const link=document.createElement("a");
+     link.href=url;link.download=contactVCardFilename(c.display_name);
+     document.body.appendChild(link);
+     try{link.click();setError("");setFeedback("Archivo vCard generado para "+c.display_name+".");}
+     finally{link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+   }catch{setError("No se pudo exportar este contacto.");}
+ }
  async function save(e:FormEvent<HTMLFormElement>){
    e.preventDefault();if(!tenantId||saving)return;
    setSaving(true);setFeedback("");setError("");
@@ -162,6 +175,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
              <Link className="button" href={"/crm/revenue?contactId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.display_name}>Ver oportunidades</Link>
            </div>
            <button type="button" className="button" onClick={()=>setActiveRecord({id:c.id,name:c.display_name,kind:"contact",companyId:c.company_id})}>Ver historial y tareas</button>
+           <button type="button" className="button" onClick={()=>downloadContact(c)} aria-label={"Exportar contacto "+c.display_name+" a vCard"}><Download size={15}/> Exportar vCard</button>
            <button type="button" className="button" onClick={()=>startContactEdit(c)}><Pencil size={15}/> Editar contacto</button>
          </article>)}
        </div>}
