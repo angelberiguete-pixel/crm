@@ -184,12 +184,18 @@ try {
   await page.getByRole("button",{name:"No leídos"}).click();
   await page.getByText("0 conversaciones con los filtros actuales").waitFor();
   await page.getByRole("button",{name:"No leídos"}).click();
+  // Confirm a *new* conversations GET completed after clicking refresh.
+  // Without this, the old list and summary can satisfy waits before reload starts,
+  // then vanish briefly and make an immediate isVisible assertion flaky.
+  const refreshResponse=page.waitForResponse(response=>{
+    const url=new URL(response.url());
+    return url.pathname.endsWith("/conversations")&&response.request().method()==="GET";
+  });
   await page.getByRole("button",{name:"Actualizar"}).click();
-  // The summary may still display the previous count while the reload is in flight.
-  // Wait for the actual refreshed list item rather than checking visibility immediately.
+  const refreshed=await refreshResponse;
+  assert.equal(refreshed.status(),200,"manual refresh successfully requests tenant conversations");
+  await page.getByText("1 conversación con los filtros actuales").waitFor({state:"visible"});
   await page.getByRole("button",{name:/Contacto actualizado/}).waitFor({state:"visible"});
-  await page.getByText("1 conversación con los filtros actuales").waitFor();
-  assert.ok(await page.getByRole("button",{name:/Contacto actualizado/}).isVisible(),"manual refresh retains inbox list");
   await page.goto(base+"/crm/companies");
   await page.getByRole("article").filter({hasText:"Empresa QA editada"}).getByRole("button",{name:"Ver historial y tareas"}).click();
   const companyHistory=page.getByRole("dialog",{name:"Empresa QA editada"});
