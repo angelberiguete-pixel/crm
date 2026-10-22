@@ -18,6 +18,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Production smoke redirect origin regression
+        run: npm run test:qa:smoke-origin
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
       - name: Automation execution regression tests
