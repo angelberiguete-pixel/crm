@@ -6,6 +6,7 @@
 - Supabase project `ygipjqgyreeahslzorik`: `INACTIVE` confirmado por el conector el 26 de octubre.
 - Supabase `list_tables`: `Database is possibly not accessible at the moment`.
 - Captura del propietario: Android muestra `Failed to fetch` al iniciar sesión. No se cuenta con traza de red del dispositivo, credenciales ni sesión real.
+- GitHub Actions CI PR #79, ejecución 40329554143: test `owner-first-access-edge-live.test.mjs` falló con `TypeError: fetch failed`, causa `getaddrinfo ENOTFOUND ygipjqgyreeahslzorik.supabase.co` (26/10). Prueba directa de que al menos el runner no resuelve el dominio Auth configurado. No sustituye una traza del móvil.
 - Logo `public/look-social-media-logo.svg`: solo 220 × 182 px de WebP incrustado en SVG. SVG no equivale a logo vectorial.
 - PR #77 para deduplicación de formularios sigue sin fusionar. No se toca en esta rama.
 
@@ -33,7 +34,7 @@ Las correcciones en este PR:
 9. Integrar una rama revisada y autorizada, publicar solo tras permiso y realizar validación posdespliegue.
 
 ## Estado de aceptación
-- CI unitario/browser en rama: **PENDIENTE DE VALIDAR POR CI**.
+- CI unitario/browser en rama: pruebas de error, typecheck, build y browser offline pasaron en ejecución inicial; CI completo con test de backend real FALLÓ por DNS ENOTFOUND. Comprobación posterior está separada en job `live-backend-auth` para no ocultar el bloqueo ni impedir las demás pruebas.
 - Restauración, RLS real, propietario real, sesiones, persistencia: **BLOQUEADO — BACKEND INACTIVE**.
 - Cambio visual nítido final: **PENDIENTE — LOGO MAESTRO**.
 - Captura y conciliación de 931 prospectos: **NO INICIADA EN PRODUCCIÓN**.
