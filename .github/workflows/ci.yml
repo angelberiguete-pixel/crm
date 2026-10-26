@@ -42,14 +42,19 @@ jobs:
         run: node tests/look-brand-browser.test.mjs
       - name: Login offline mobile and desktop browser regression
         run: node tests/login-connection-browser.test.mjs
+      - name: Save login QA screenshots (390px / 1440px)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-visual-qa
+          path: artifacts/login-qa/*.png
+          if-no-files-found: ignore
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
       - name: Password recovery browser regression tests
         run: node tests/auth-browser.test.mjs
       - name: Owner initial password browser regression tests
         run: node tests/owner-first-access-browser.test.mjs
-      - name: Owner bootstrap live endpoint denial test
-        run: node tests/owner-first-access-edge-live.test.mjs
       - name: Super Admin mobile browser regression tests
         run: node tests/platform-admin-browser.test.mjs
       - name: Private tenant files browser regression tests
@@ -58,3 +63,15 @@ jobs:
         run: node tests/omnichannel-assignment-browser.test.mjs
       - name: Company channel authorization browser regression tests
         run: node tests/company-channel-onboarding-browser.test.mjs
+
+  live-backend-auth:
+    name: Supabase live Auth availability (blocking until recovery)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Owner bootstrap endpoint live denial check (no credentials)
+        run: node tests/owner-first-access-edge-live.test.mjs
