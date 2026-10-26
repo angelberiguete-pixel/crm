@@ -1,5 +1,6 @@
 // Auth outage path is simulated. No real credentials, database or tenant records are used.
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 
@@ -35,6 +36,8 @@ try {
     });
     const page = await context.newPage();
     await page.goto(base + "/login");
+    await mkdir("artifacts/login-qa", { recursive: true });
+    await page.screenshot({ path: `artifacts/login-qa/login-ready-${width}.png`, fullPage: true });
     await page.getByLabel("Email").fill("qa@example.invalid");
     await page.getByLabel("Contraseña").fill("qa-test-password-123");
     await page.getByRole("button", { name: "Entrar", exact: true }).click();
@@ -49,6 +52,7 @@ try {
     assert.ok(!geometry.overflow, "mobile/desktop should not overflow horizontally");
     assert.ok(geometry.logoWidth > 80 && geometry.logoWidth <= 181, "embedded 220 px source must not be stretched");
     assert.ok(geometry.imageVisible, "official logo remains present");
+    await page.screenshot({ path: `artifacts/login-qa/offline-message-${width}.png`, fullPage: true });
     await context.close();
   }
   console.log("PASS offline login UI, controlled 390/1440 layouts, official unaltered brand image.");
