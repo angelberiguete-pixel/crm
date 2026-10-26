@@ -18,6 +18,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Login network failure regressions
+        run: node --experimental-strip-types --test tests/login-error.test.mjs
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
       - name: Automation execution regression tests
@@ -38,6 +40,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Official logo browser rendering and loading test
         run: node tests/look-brand-browser.test.mjs
+      - name: Login offline mobile and desktop browser regression
+        run: node tests/login-connection-browser.test.mjs
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
       - name: Password recovery browser regression tests
