@@ -54,7 +54,10 @@ export async function verifyMetaWebhookSignature(
   const digest = new Uint8Array(32);
   for (let i = 0; i < digest.length; i++) digest[i] = parseInt(signature.slice(7 + i * 2, 9 + i * 2), 16);
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  return crypto.subtle.verify("HMAC", key, digest, bytes);
+  // Materialize a dedicated ArrayBuffer: DOM crypto typings reject shared ArrayBufferLike views.
+  const bodyBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(bodyBuffer).set(bytes);
+  return crypto.subtle.verify("HMAC", key, digest, bodyBuffer);
 }
 
 /**
