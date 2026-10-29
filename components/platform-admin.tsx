@@ -73,6 +73,11 @@ export default function PlatformAdmin() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("viewer");
   const [invitingMember, setInvitingMember] = useState(false);
+  const [localUsername,setLocalUsername]=useState("");
+  const [localFullName,setLocalFullName]=useState("");
+  const [localPassword,setLocalPassword]=useState("");
+  const [localRole,setLocalRole]=useState("owner");
+  const [creatingLocal,setCreatingLocal]=useState(false);
   const [odooUrl, setOdooUrl] = useState("");
   const [odooDb, setOdooDb] = useState("");
   const [odooApiKey, setOdooApiKey] = useState("");
@@ -314,6 +319,23 @@ export default function PlatformAdmin() {
     setNotice(`Invitación enviada a ${invited}. El acceso quedará activo cuando la persona acepte el enlace.`);
   }
 
+  async function createManagedUser(e:FormEvent){
+    e.preventDefault();
+    if(!selectedId || selected?.tenant_slug!=="family-power" || creatingLocal)return;
+    const target=selectedId;
+    setNotice("");setCreatingLocal(true);
+    try{
+      const result=await supabase.functions.invoke("platform-create-managed-user",{
+        body:{tenant_id:target,username:localUsername.trim().toLowerCase(),display_name:localFullName.trim(),
+          password:localPassword,role_key:localRole}
+      });
+      if(result.error||!result.data?.ok){setNotice("No se pudo crear el acceso: "+(result.data?.error??result.error?.message??"Error de autorización"));return}
+      setLocalUsername("");setLocalFullName("");setLocalPassword("");
+      await loadTenant(target);
+      setNotice("Usuario "+result.data.username+" creado con rol "+localRole+". Entrega las credenciales por un canal privado y prueba su sesión.");
+    }finally{setLocalPassword("");setCreatingLocal(false)}
+  }
+
   if (loading) return <div className="loading">Cargando Platform Admin…</div>;
 
   if (!access?.is_platform_admin) {
@@ -452,6 +474,15 @@ export default function PlatformAdmin() {
           <div className="card">
             <div className="eyebrow">Acceso del cliente</div>
             <h2>Usuarios e invitaciones</h2>
+            {selected.tenant_slug==="family-power"&&<form className="stack gap-12" onSubmit={createManagedUser} style={{padding:15,border:"1px solid #6b728055",borderRadius:12,marginBottom:18}}>
+              <strong>Crear acceso por usuario, sin correo — Family Power</strong>
+              <p className="muted">Solo el administrador global puede crear estas cuentas. La contraseña se introduce aquí, no se envía por correo y nunca se muestra después. Si se pierde, será necesaria una recuperación administrativa verificada.</p>
+              <label>Nombre del colaborador<input value={localFullName} onChange={e=>setLocalFullName(e.target.value)} required minLength={3} maxLength={100} autoComplete="off" placeholder="Dr. Emerson Familia"/></label>
+              <label>Usuario acordado<input value={localUsername} onChange={e=>setLocalUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g,""))} required pattern="[a-z][a-z0-9._-]{2,31}" minLength={3} maxLength={32} autoComplete="off" placeholder="emerson.familia"/></label>
+              <label>Contraseña inicial (mínimo 12 caracteres)<input type="password" value={localPassword} onChange={e=>setLocalPassword(e.target.value)} required minLength={12} maxLength={128} autoComplete="new-password"/></label>
+              <label>Rol<select value={localRole} onChange={e=>setLocalRole(e.target.value)}>{roles.filter(r=>["owner","admin","manager","sales","viewer"].includes(r.role_key)).map(r=><option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
+              <button type="submit" className="button primary" disabled={creatingLocal||localPassword.length<12||!localUsername||!localFullName}>{creatingLocal?"Creando cuenta…":"Crear acceso privado"}</button>
+            </form>
             <form className="stack gap-12" onSubmit={inviteMember} style={{ marginBottom: 16 }}>
               <label>Email del usuario<input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="persona@empresa.com" required /></label>
               <label>Rol inicial<select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} required>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
