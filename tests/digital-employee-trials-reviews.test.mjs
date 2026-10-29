@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 
 const migration=readFileSync(new URL("../supabase/migrations/20261028235000_ai_employee_atomic_trials_and_reviews.sql",import.meta.url),"utf8");
 const worker=readFileSync(new URL("../supabase/functions/ai-employee-draft/index.ts",import.meta.url),"utf8");
+const budgetMigration=readFileSync(new URL("../supabase/migrations/20261029041000_ai_employee_budget_reservations.sql",import.meta.url),"utf8");
 const queue=readFileSync(new URL("../components/digital-employee-review-queue.tsx",import.meta.url),"utf8");
 const studio=readFileSync(new URL("../components/digital-employee-studio.tsx",import.meta.url),"utf8");
 
@@ -14,9 +15,17 @@ test("paid AI trials reserve usage atomically per tenant before calling the prov
  assert.match(migration,/insert into public\.ai_agent_runs/i);
  assert.match(migration,/security invoker/i);
  assert.match(migration,/grant execute on function public\.reserve_ai_employee_trial.*to service_role;/i);
- assert.match(worker,/service\.rpc\("reserve_ai_employee_trial"/);
+ assert.match(worker,/service\.rpc\("reserve_ai_employee_budgeted_trial"/);
+ assert.match(budgetMigration,/create table if not exists public\.ai_employee_monthly_budget/);
+ assert.match(budgetMigration,/create table if not exists public\.ai_employee_global_monthly_budget/);
+ assert.match(budgetMigration,/raise exception 'global_budget_exhausted'/);
+ assert.match(budgetMigration,/raise exception 'tenant_budget_exhausted'/);
+ assert.match(budgetMigration,/p_max_cost_micros/);
+ assert.match(budgetMigration,/revoke all on function public\.reserve_ai_employee_budgeted_trial/);
+ assert.match(worker,/AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD/);
+ assert.match(worker,/AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD/);
  assert.doesNotMatch(worker,/soft quota for sandbox/i);
- assert.ok(worker.indexOf('service.rpc("reserve_ai_employee_trial"')<worker.indexOf('fetch("https://api.openai.com/v1/responses"'));
+ assert.ok(worker.indexOf('service.rpc("reserve_ai_employee_budgeted_trial"')<worker.indexOf('fetch("https://api.openai.com/v1/responses"'));
 });
 
 test("review ledger is tenant-scoped, append-only and restricted to authorized humans",()=>{
