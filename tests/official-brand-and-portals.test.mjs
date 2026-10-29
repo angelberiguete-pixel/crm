@@ -26,6 +26,20 @@ test("actual uploaded logo rendition is bundled as a working first-party SVG res
   assert.equal(hash,3018367565);
 });
 
+test("transparent branded variants retain the exact original embedded artwork",()=>{
+  const original=read("public/look-social-media-logo.svg").match(/href="data:image\/webp;base64,([^"]+)"/)?.[1];
+  assert.ok(original,"original official logo exists");
+  for(const file of ["public/look-social-media-logo-transparent.svg","public/look-social-media-logo-on-dark.svg"]){
+    const svg=read(file);
+    assert.ok(!svg.includes('<rect width="220" height="182" fill="#fff"/>'),file+" must have no white rectangle");
+    assert.match(svg,/id="removeWhite"/);
+    assert.ok(svg.includes(original),file+" must preserve original embedded art");
+  }
+  assert.ok(read("components/brand-logo.tsx").includes("look-social-media-logo-on-dark.svg"));
+  assert.ok(read("components/brand-logo.tsx").includes("look-social-media-logo-transparent.svg"));
+  assert.ok(read("app/globals.css").includes("background:transparent url('/look-social-media-logo-transparent.svg')"));
+});
+
 test("branding is shown on sign-in, owner control center, member portals and loading",()=>{
   assert.match(read("app/login/page.tsx"),/<BrandLogo size="login"/);
   assert.match(read("components/eurevector-console.tsx"),/<BrandLogo size="sidebar"/);

@@ -270,19 +270,21 @@ textarea{min-height:96px;resize:vertical}
 }
 
 /* Identidad oficial LOOK SOCIAL MEDIA. Conserva la marca original en todas las vistas. */
-.look-brand-logo{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;border-radius:12px;padding:5px;max-width:100%;overflow:hidden}
+.look-brand-logo{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent;border-radius:0;padding:0;max-width:100%;overflow:visible}
 .look-brand-logo img{display:block;height:auto;max-width:100%;object-fit:contain}
+.look-brand-logo picture{display:block;width:100%;max-width:100%}
 .look-brand-logo--sidebar{width:155px}
 .look-brand-logo--sidebar img{width:100%;height:auto}
-.look-brand-logo--login{width:min(265px,90%);padding:10px;margin-inline:auto;margin-bottom:12px}
+.look-brand-logo--login{width:min(265px,90%);margin-inline:auto;margin-bottom:12px}
 .look-brand-logo--login img{width:100%}
 .look-brand-logo--compact{width:125px}
 .look-brand-logo--compact img{width:100%}
-.look-brand-logo--loading{width:165px;padding:9px}
+.look-brand-logo--loading{width:165px}
 .look-brand-logo--loading img{width:100%}
 /* All existing screens with a global .loading placeholder show the real brand automatically. */
 .loading{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center}
-.loading::before{content:"";display:block;width:150px;height:122px;background:#fff url('/look-social-media-logo.svg') center/contain no-repeat;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+.loading::before{content:"";display:block;width:150px;height:122px;background:transparent url('/look-social-media-logo-transparent.svg') center/contain no-repeat}
+@media(prefers-color-scheme:dark){.loading::before{background-image:url('/look-social-media-logo-on-dark.svg')}}
 @media(prefers-reduced-motion:no-preference){.loading::before{animation:look-loading-pulse 1.8s ease-in-out infinite}}
 @keyframes look-loading-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.72;transform:scale(.97)}}
 .platform-brand-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -297,7 +299,9 @@ textarea{min-height:96px;resize:vertical}
 /* Authenticated white-label workspace: variables are scoped per tenant,
    never stored on :root and never shared with the login / platform admin UI. */
 .tenant-brand-scope{min-height:100vh;background:var(--bg);color:var(--text)}
-.tenant-customer-logo{min-height:72px}
+.tenant-customer-logo{min-height:72px;background:#fff;border-radius:12px;padding:5px;overflow:hidden}
+.tenant-customer-logo.look-brand-logo--login{padding:10px}
+.tenant-customer-logo.look-brand-logo--loading{padding:9px}
 .tenant-customer-initials{
   display:grid;place-items:center;width:100%;min-height:70px;
   padding:10px 16px;border-radius:8px;color:#fff;font-weight:800;
