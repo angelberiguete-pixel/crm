@@ -61,10 +61,11 @@ export default function CrmIntegrationCenter(){
  const [revision,setRevision]=useState(0);
  const refresh=useCallback(()=>setRevision(v=>v+1),[]);
 
+ useEffect(()=>{setProvider(null);setIdentifier("");setNotice("");setError("");},[id]);
  useEffect(()=>{
   let alive=true;
-  setHealth(null);setRequests([]);setProvider(null);setIdentifier("");
-  setLoading(true);setError("");setNotice("");
+  setHealth(null);setRequests([]);
+  setLoading(true);setError("");
   if(!id||!admin){setLoading(false);return;}
   (async()=>{
    const [h,r]=await Promise.all([
