@@ -67,3 +67,22 @@ Un solo repositorio principal `angelberiguete-pixel/crm` y esquema multiempresa 
 **Puerta de aceptación:** respaldar fuente legada con hash y conteos; probar asignación de tenant y RLS de cada tabla, dos usuarios con permisos distintos, escritorio/móvil, marca sin fondos cuadrados, privacidad, recuperación, rollback y conformidad del cliente. El \`family-power-crm-staging\` antiguo permanece intacto; apagarlo únicamente cuando la nueva solución sea aceptada y confirmada.
 
 **Estado de esta rama:** preparada para revisión, **NO** es evidencia de que Family Power haya sido creado en la BD, ni de importación, transferencia de contratos o despliegue completado. No ejecutar la función de creación ni cambiar producción sin validación de alcance y acceso.
+
+
+### Acceso privado oficial de Family Power — portal de roles
+
+**Diseño:** \`/family-power/login\` es una ruta dedicada del despliegue del CRM principal. Usa el **logo maestro a color que coincide exactamente** con el archivo de Drive \`01 Logotipo Maestro Color.svg\` (Google Drive ID \`15aAiNOpDyPGzd0K-RpiiP_TRRBKkjLqY\`) y la versión \`logo-negativo.svg\` aprobada para uso sobre grafito oscuro desde el repo privado. Rojo \`#D20A14\`, grafito \`#101115\`, plata \`#DFE1E3\`. Sin recuadro blanco.
+
+**No clonar identidades ni backend**: se reutilizaron código, diseño y funcionalidades del repositorio histórico \`angelberiguete-pixel/family-power-crm\`; el backend FastAPI propio de la PR #1 sigue conservado como fuente de referencia y no se instala como segundo sistema. Las credenciales existentes no se extraen ni trasladan.
+
+**Flujo de acceso:**
+1. El propietario de la plataforma crea explícitamente el tenant con la configuración de Family Power en \`/platform-admin\`; no hay tenant ni usuarios hasta que se confirme el alta.
+2. Se invitan cuentas de dueño, administrador y vendedores por email usando \`platform-invite-user\`, con rol autorizado y activación en \`/accept-invite\`.
+3. En \`/family-power/login\` el usuario inicia sesión por \`supabase.auth.signInWithPassword\`. El servidor comprueba \`list_my_tenants\`, exige membresía activa del slug exacto \`family-power\`, y \`set_active_tenant\`. Solo entonces se entra en \`/crm\`.
+4. Una cuenta de otra empresa **no puede activar Family Power** ni navegar por sus datos. El guardián \`TenantPermissionGate\` revalida permisos/módulos y RLS en servidor. La URL, los colores y las etiquetas de roles no conceden permisos. No existe auto-registro en el acceso Family Power.
+5. La ruta comercial del panel usa etiquetas de rol comprensibles: Propietario, Administrador, Supervisor comercial, Vendedor y Consulta. La navegación lateral/móvil de Family Power se filtra por permisos y módulos efectivos del servidor. Salir regresa a \`/family-power/login\`.
+6. Recuperación de contraseña usa el flujo global seguro \`/reset-password\` existente para evitar duplicación y nuevos dominios sin lista de redirección; se debe completar QA real antes de invitar usuarios.
+
+**Pruebas:** \`tests/family-power-unified-tenant.test.mjs\` verifica white-label, rol y seguridad de no gastar; \`tests/family-power-login-browser.test.mjs\` comprueba branding real móvil a 390px, sin autorregistro, y rechazo de una sesión válida de otra empresa sin ejecutar \`set_active_tenant\`. La aceptación de cada invitación con usuarios reales, permisos A/B y prueba de transacciones debe realizarse antes de la entrega externa.
+
+**Pendientes estrictos:** respaldo/inventario de código y datos del prototipo Family Power si los hubiera, equivalencia de cotización/orden del backend V0.48, posible aprobación de propiedad y alcance comercial, sesiones MFA según la política contractual, invitaciones con correos confirmados, DNS propio si el cliente lo requiere. **No hay WhatsApp, OpenAI ni Make activados por este PR.**
