@@ -125,6 +125,7 @@ export default function CrmCommercialDashboard(){
               {canManage&&<Link className="button" href="/crm/companies">Gestionar empresas</Link>}
               <Link className="button" href="/crm/contacts">Gestionar contactos</Link>
               {canManage&&<Link className="button" href="/crm/employees"><Bot size={16}/> Empleados digitales IA</Link>}
+              {canManage&&<Link className="button" href="/crm/integrations">Integraciones de la empresa</Link>}
               <Link className="button" href="/crm/quotations">Abrir cotizaciones</Link>
               <Link className="button" href="/crm/calendar">Abrir calendario</Link>
             </div>

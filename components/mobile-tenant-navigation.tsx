@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["channels", "Canales"], ["settings", "Configuración"]];
+const links = [["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
