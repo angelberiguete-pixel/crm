@@ -27,6 +27,7 @@ import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
+import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -38,7 +39,7 @@ type Quotation = { id: string; quote_number: string; company_id: string | null; 
 type CalendarEvent = { id: string; title: string; description: string | null; event_type: string; status: string; starts_at: string; ends_at: string; location: string | null; created_at: string };
 type AutomationRule = { id: string; name: string; description: string | null; status: string; trigger_type: string; trigger_event: string | null; created_at: string };
 type Agent = { id: string; name: string; purpose: string | null; status: string; model_provider: string; model_name: string; approval_mode: string; created_at: string };
-type TenantSettings = { tenant_id: string; brand_name: string | null; logo_url: string | null; favicon_url: string | null; primary_color: string | null; secondary_color: string | null; accent_color: string | null; custom_domain: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean };
+type TenantSettings = { tenant_id: string; brand_name: string | null; logo_url: string | null; favicon_url: string | null; primary_color: string | null; secondary_color: string | null; accent_color: string | null; custom_domain: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean; settings: Record<string, unknown> | null };
 type RevenueDash = { current_mrr: number | null; open_pipeline_mrr: number | null; weighted_pipeline_mrr: number | null; cash_collected: number | null; open_opportunities: number | null; won_opportunities: number | null };
 type ErpStatus = { tenant_id:string; connection_id:string; provider:string; status:string; sync_direction:string; last_healthcheck_at:string|null; last_error:string|null; source_of_truth:Record<string,unknown>|null; inventory_synced_at:string|null; odoo_products:number };
 type ProductPublication = { product_id:string; is_published:boolean; show_exact_stock:boolean; show_price:boolean; public_label:string|null };
@@ -62,6 +63,18 @@ const nav = [
   ["settings", "Configuración", Settings],
 ] as const;
 
+const familyLabels:Record<string,string>={
+ "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
+ products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
+ automations:"Automatizaciones",files:"Archivos",channels:"Canales",
+ integrations:"Conexiones",settings:"Configuración"
+};
+const permissionForSection:Record<string,string>={
+ "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
+ products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
+ automations:"automations",files:"dashboard",channels:"settings",
+ integrations:"settings",settings:"settings"
+};
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);
 
@@ -75,8 +88,29 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [familyMenuPermissions,setFamilyMenuPermissions]=useState<Record<string,unknown>|null>(null);
+  const [familyEnabledModules,setFamilyEnabledModules]=useState<Record<string,boolean>>({});
 
   const refresh = useCallback(() => setReloadKey((v) => v + 1), []);
+  useEffect(()=>{
+    let alive=true;
+    setFamilyMenuPermissions(null);setFamilyEnabledModules({});
+    if(activeTenant?.tenant_slug!=="family-power")return()=>{alive=false;};
+    const tenantId=activeTenant.tenant_id;
+    void Promise.all([
+      supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
+      supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId}),
+    ]).then(([p,m])=>{
+      if(!alive||p.error||m.error)return;
+      setFamilyMenuPermissions((p.data??{}) as Record<string,unknown>);
+      const enabled:Record<string,boolean>={};
+      for(const mod of (m.data??[]) as Array<{module_key:string;enabled:boolean}>)
+        enabled[mod.module_key]=mod.enabled;
+      setFamilyEnabledModules(enabled);
+    }).catch(()=>{if(alive)setFamilyMenuPermissions(null);});
+    return()=>{alive=false;};
+  },[activeTenant?.tenant_id,activeTenant?.tenant_slug]);
+
 
   useEffect(() => {
     let alive = true;
@@ -123,25 +157,33 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   if (!member) return <div className="loading" role="alert">{notice || "No se pudo preparar el workspace."}</div>;
 
   const tenantId = member.tenant_id;
+  const isFamilyPower=member.tenant_slug==="family-power";
+  const permittedNav=nav.filter(([key])=>{
+    if(!isFamilyPower)return true;
+    if(!familyMenuPermissions)return false; // fail closed while waiting
+    const permission=permissionForSection[key]??key;
+    return (familyMenuPermissions.all===true||familyMenuPermissions[permission]===true)
+      &&familyEnabledModules[permission]!==false;
+  });
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav">
-          {nav.map(([key, label, Icon]) => (
+          {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
-              <Icon size={17} />{label}
+              <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
             </Link>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="muted">Rol: {member.role}</div>
-          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); }}><LogOut size={14} /> Salir</button>
+          <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
+          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
         </div>
       </aside>
       <main className="content">
         <header className="topbar">
-          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{titleFor(section)}</h1></div>
+          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
             <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
@@ -162,7 +204,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
-        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{label}</span></Link>)}
+        {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
       </nav>
     </div>
   );
@@ -490,6 +532,8 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
   const [secondary,setSecondary]=useState("#7C3AED");
   const [accent,setAccent]=useState("#00D4FF");
   const [logo,setLogo]=useState("");
+  const [logoOnLight,setLogoOnLight]=useState("");
+  const [logoOnDark,setLogoOnDark]=useState("");
   const [favicon,setFavicon]=useState("");
   const [saving,setSaving]=useState(false);
   useEffect(()=>{
@@ -497,7 +541,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
     (async()=>{
       const [r,e]=await Promise.all([
         supabase.from("tenant_settings")
-          .select("tenant_id,brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,custom_domain,support_email,timezone,currency,hide_platform_branding")
+          .select("tenant_id,brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,custom_domain,support_email,timezone,currency,hide_platform_branding,settings")
           .eq("tenant_id",tenantId).maybeSingle(),
         supabase.from("tenant_erp_status")
           .select("tenant_id,connection_id,provider,status,sync_direction,last_healthcheck_at,last_error,source_of_truth,inventory_synced_at,odoo_products")
@@ -514,6 +558,9 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
       setSecondary(safeHex(item?.secondary_color,"#7C3AED"));
       setAccent(safeHex(item?.accent_color,"#00D4FF"));
       setLogo(item?.logo_url??"");
+      const branding=(item?.settings?.branding??{}) as Record<string,unknown>;
+      setLogoOnLight(typeof branding.logo_on_light_url==="string"?branding.logo_on_light_url:"");
+      setLogoOnDark(typeof branding.logo_on_dark_url==="string"?branding.logo_on_dark_url:"");
       setFavicon(item?.favicon_url??"");
       setErp(e.data as ErpStatus|null);
     })().catch(()=>{if(alive)notice("No se pudo leer la configuración del negocio.");});
@@ -524,13 +571,25 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
     if(saving)return;
     if(logo.trim()&&!safeTenantAsset(logo))return notice("El logotipo debe ser HTTPS o una ruta local válida.");
     if(favicon.trim()&&!safeTenantAsset(favicon))return notice("El ícono debe ser HTTPS o una ruta local válida.");
+    if(logoOnLight.trim()&&!safeTenantAsset(logoOnLight))return notice("La variante para fondo claro necesita URL HTTPS o ruta válida.");
+    if(logoOnDark.trim()&&!safeTenantAsset(logoOnDark))return notice("La variante para fondo oscuro necesita URL HTTPS o ruta válida.");
     if(!brand.trim()||brand.trim().length>100)return notice("Introduce un nombre comercial de 1 a 100 caracteres.");
     setSaving(true);
+    const brandingSettings=(settings?.settings?.branding??{}) as Record<string,unknown>;
+    const nextSettings={
+      ...(settings?.settings??{}),
+      branding:{
+        ...brandingSettings,
+        logo_on_light_url:safeTenantAsset(logoOnLight),
+        logo_on_dark_url:safeTenantAsset(logoOnDark),
+      },
+    };
     const response=await supabase.from("tenant_settings").update({
       brand_name:brand.trim(),
       support_email:support.trim()||null,
       primary_color:primary,secondary_color:secondary,accent_color:accent,
       logo_url:safeTenantAsset(logo),favicon_url:safeTenantAsset(favicon),
+      settings:nextSettings,
     }).eq("tenant_id",tenantId).select("tenant_id").maybeSingle();
     setSaving(false);
     if(response.error)return notice(response.error.message);
@@ -547,7 +606,10 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
         <p className="muted">Estos cambios solo se aplican al CRM de la empresa activa. Ningún otro negocio comparte tu imagen o configuración.</p>
         <div className="stack gap-12">
           <label>Nombre comercial<input value={brand} maxLength={100} required onChange={e=>setBrand(e.target.value)}/></label>
-          <label>Logo (URL HTTPS o ruta local)<input value={logo} placeholder="https://ejemplo.com/logo.png" maxLength={1200} onChange={e=>setLogo(e.target.value)}/></label>
+          <label>Logo principal sin fondo (URL HTTPS o ruta local)<input value={logo} placeholder="https://ejemplo.com/logo.png" maxLength={1200} onChange={e=>setLogo(e.target.value)}/></label>
+          <label>Logo para fondo claro<input value={logoOnLight} placeholder="/client-brands/family-power/logo-color.svg" maxLength={1200} onChange={e=>setLogoOnLight(e.target.value)}/></label>
+          <label>Logo para fondo oscuro<input value={logoOnDark} placeholder="/client-brands/family-power/logo-negativo.svg" maxLength={1200} onChange={e=>setLogoOnDark(e.target.value)}/></label>
+          <p className="muted">Selecciona las variantes aprobadas y sin fondo cuadrado. El CRM usa la versión clara sobre superficies oscuras y la versión a color en superficies claras.</p>
           <label>Ícono de pestaña (opcional)<input value={favicon} placeholder="https://ejemplo.com/favicon.png" maxLength={1200} onChange={e=>setFavicon(e.target.value)}/></label>
           <label>Color principal<input type="color" value={primary} onChange={e=>setPrimary(e.target.value)}/></label>
           <label>Color secundario<input type="color" value={secondary} onChange={e=>setSecondary(e.target.value)}/></label>

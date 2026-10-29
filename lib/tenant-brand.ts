@@ -3,9 +3,11 @@ export type TenantBrandSettings = {
   brand_name?:string|null;logo_url?:string|null;favicon_url?:string|null;
   primary_color?:string|null;secondary_color?:string|null;accent_color?:string|null;
   custom_domain?:string|null;
+  settings?:{branding?:{logo_on_light_url?:string|null;logo_on_dark_url?:string|null}}|null;
 };
 export type TenantBrand = {
   name:string;slug:string;logoUrl:string|null;faviconUrl:string|null;
+  logoOnLightUrl:string|null;logoOnDarkUrl:string|null;
   primaryColor:string;secondaryColor:string;accentColor:string;
   initials:string;officialLookBrand:boolean;
 };
@@ -36,6 +38,8 @@ export function resolveTenantBrand(identity:TenantIdentity,settings?:TenantBrand
   return {
     name,slug:identity.tenant_slug,
     logoUrl:safeTenantAsset(settings?.logo_url),
+    logoOnLightUrl:safeTenantAsset(settings?.settings?.branding?.logo_on_light_url)??safeTenantAsset(settings?.logo_url),
+    logoOnDarkUrl:safeTenantAsset(settings?.settings?.branding?.logo_on_dark_url)??safeTenantAsset(settings?.logo_url),
     faviconUrl:safeTenantAsset(settings?.favicon_url),
     primaryColor:safeHex(settings?.primary_color,defaults.primary),
     secondaryColor:safeHex(settings?.secondary_color,defaults.secondary),

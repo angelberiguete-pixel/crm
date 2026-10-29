@@ -167,13 +167,22 @@ export default function PlatformAdmin() {
     const slug = newSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "");
     if (slug.length < 3) return setNotice("El slug debe tener al menos 3 caracteres.");
     setCreatingTenant(true);
-    const result = await supabase.rpc("platform_create_client_tenant", {
-      p_name: newName.trim(),
-      p_slug: slug,
-      p_plan_code: newPlan,
-      p_vertical: newVertical.trim() || null,
-      p_template_key: newTemplate || null,
-    });
+    const familyPreset=slug==="family-power";
+    if(familyPreset&&newName.trim()!=="Family Power"){
+      setNotice("Para esta configuración usa el nombre Family Power y su logotipo aprobado.");return;
+    }
+    if(familyPreset&&tenants.some(t=>t.tenant_slug==="family-power")){
+      const existing=tenants.find(t=>t.tenant_slug==="family-power");
+      setSelectedId(existing?.tenant_id??null);
+      setNotice("Family Power ya existe en el CRM. Se abrirá su espacio sin duplicarlo.");
+      return;
+    }
+    const result = familyPreset
+      ? await supabase.rpc("platform_create_family_power_tenant",{p_plan_code:newPlan})
+      : await supabase.rpc("platform_create_client_tenant", {
+          p_name: newName.trim(),p_slug:slug,p_plan_code:newPlan,
+          p_vertical:newVertical.trim() || null,p_template_key:newTemplate || null,
+        });
     setCreatingTenant(false);
     if (result.error) return setNotice(result.error.message);
     const tenantId = result.data as string;
@@ -327,7 +336,7 @@ export default function PlatformAdmin() {
     <aside className="sidebar">
       <div className="brand"><strong>Look Social Media</strong><span>Super Admin · {access.role}</span></div>
       <nav className="nav">
-        <a className="active" href="#tenants"><Building2 size={17} /> Espacios / Tenants</a>
+        <a className="active" href="#tenants"><Building2 size={17} /> Empresas y espacios</a>
         <a href="#modules"><Layers3 size={17} /> Planes y módulos</a>
         <a href="#team"><Users size={17} /> Usuarios y roles</a>
         <a href="#templates"><Stethoscope size={17} /> Templates</a>
@@ -342,7 +351,7 @@ export default function PlatformAdmin() {
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <section className="grid metrics" style={{ marginBottom: 16 }}>
-        <div className="metric"><div className="metric-label">Tenants</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Espacios creados, no clientes de pago</div></div>
+        <div className="metric"><div className="metric-label">Empresas</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Espacios creados, no clientes de pago</div></div>
         <div className="metric"><div className="metric-label">Usuarios activos</div><div className="metric-value">{tenants.reduce((n, t) => n + Number(t.member_count ?? 0), 0)}</div><div className="metric-sub">Membresías activas</div></div>
         <div className="metric"><div className="metric-label">Planes</div><div className="metric-value">{plans.length}</div><div className="metric-sub">Catálogo actual</div></div>
         <div className="metric"><div className="metric-label">Control</div><div className="metric-value"><ShieldCheck size={26} /></div><div className="metric-sub">Platform Owner activo</div></div>
@@ -359,8 +368,30 @@ export default function PlatformAdmin() {
           <p className="muted">Crea el workspace aislado, asigna el plan y aplica una plantilla vertical opcional en una sola operación.</p>
           <p className="notice">La creación de un espacio y un plan manual no constituye un contrato firmado, pago confirmado ni cliente de pago. Verifica identidad y autorización antes de invitar usuarios.</p>
           <div className="stack gap-12">
+            <section className="card" aria-label="Preparar Family Power como cliente">
+              <div className="eyebrow">Cliente · Energía alternativa</div>
+              <h3>Family Power dentro del CRM general</h3>
+              <p className="muted">Usa su logotipo original rojo, plata y blanco, módulos de productos, cotizaciones, instalaciones y seguimiento. Sin crear otro CRM ni transferir información privada.</p>
+              <div className="grid two-col">
+                <div style={{background:"#101115",borderRadius:9,padding:10,textAlign:"center"}}>
+                  <img src="/client-brands/family-power/logo-negativo.svg" width="190" height="90" alt="Family Power, logo para fondos oscuros" style={{maxWidth:"100%",height:"auto"}}/>
+                </div>
+                <div style={{background:"#F7F8FA",borderRadius:9,padding:10,textAlign:"center"}}>
+                  <img src="/client-brands/family-power/logo-color.svg" width="190" height="90" alt="Family Power, logo para fondos claros" style={{maxWidth:"100%",height:"auto"}}/>
+                </div>
+              </div>
+              <button type="button" className="button" onClick={()=>{
+                 const existing=tenants.find(t=>t.tenant_slug==="family-power");
+                 if(existing){setSelectedId(existing.tenant_id);setNotice("Family Power ya está registrado: revisa su configuración sin crear duplicados.");return;}
+                 setNewName("Family Power");setNewSlug("family-power");
+                 setNewVertical("Energía e instalaciones");
+                 setNewTemplate("energia-instalaciones");
+                 setNotice("Configuración Family Power preparada. Verifica el plan y pulsa Crear cliente solo cuando corresponda. No se han importado datos ni generado cobros.");
+               }}>Preparar Family Power</button>
+              <p className="muted">La preparación no crea contactos ni importa el prototipo anterior. Un contrato y permisos vigentes deben verificarse antes de habilitar accesos del cliente.</p>
+            </section>
             <label>Empresa / cliente<input value={newName} onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")); }} required /></label>
-            <label>Slug<input value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} required minLength={3} /></label>
+            <label>Identificador interno<input value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} required minLength={3} /></label>
             <label>Sector / nicho<input value={newVertical} onChange={(e) => setNewVertical(e.target.value)} placeholder="Ej. clínica dental, rent-a-car, dealer, restaurante" /></label>
             <label>Plan<select value={newPlan} onChange={(e) => setNewPlan(e.target.value)} required>{plans.map((p, i) => <option key={String(p.id ?? p.code ?? i)} value={String(p.code ?? "")}>{String(p.name ?? p.code ?? "Plan")}</option>)}</select></label>
             <label>Plantilla inicial<select value={newTemplate} onChange={(e) => setNewTemplate(e.target.value)}><option value="">Core general · sin plantilla vertical</option>{templates.map((t) => <option key={t.template_key} value={t.template_key}>{t.name}</option>)}</select></label>
@@ -402,7 +433,7 @@ export default function PlatformAdmin() {
           <p className="notice">No se certifican cobros ni ingresos desde esta pantalla. Las suscripciones «manual» habilitan el uso del CRM, pero requieren contrato, factura y comprobante externo antes de contabilizar ingresos. No se inicia facturación automática.</p>
         </section>
         <section className="card">
-          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
+          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions">{selected.tenant_slug==="family-power"&&<Link className="button" href="/family-power/login" target="_blank" rel="noopener noreferrer">Ver acceso de Family Power</Link>}<button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
         </section>
 
         <section className="grid two-col" id="modules">
@@ -435,7 +466,7 @@ export default function PlatformAdmin() {
             </div>
           </div>
           <div className="card">
-            <h2>Perfiles de acceso</h2>
+            <h2>Perfiles de acceso</h2>{selected.tenant_slug==="family-power"&&<p className="notice">Family Power: el propietario, los administradores y los vendedores usan <strong>/family-power/login</strong> con cuentas individuales. La invitación se envía desde este panel y los permisos se asignan según su rol; no se crean cuentas públicas ni se copian contraseñas del CRM anterior.</p>}
             <p className="muted">Cada rol se traduce a un rol base seguro y conserva permisos específicos del tenant. Roles personalizados como Producción o Entregas no necesitan tocar código.</p>
             {roles.map((r) => <div className="priority-item" key={r.role_key}><div><strong>{r.role_name}</strong><div className="muted">{r.description ?? r.role_key}</div></div><span className="pill">{r.is_system ? "Base" : "Custom"}</span></div>)}
           </div>
