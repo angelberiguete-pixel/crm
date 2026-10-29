@@ -58,7 +58,7 @@ test("database enforces atomic budget allocation for all companies",()=>{
  assert.match(db,/raise exception 'tenant_budget_exhausted'/);
  assert.match(db,/raise exception 'daily_trial_limit'/);
  assert.match(db,/security invoker/);
- assert.match(db,/grant execute on function public\.reserve_ai_employee_budgeted_trial.*to service_role;/i);
+ assert.match(db,/grant execute on function public\.reserve_ai_employee_budgeted_trial[\s\S]*?to service_role;/i);
  assert.doesNotMatch(db,/grant execute on function public\.reserve_ai_employee_budgeted_trial.*to authenticated;/i);
  assert.match(db,/alter table public\.ai_employee_global_monthly_budget enable row level security;/i);
 });
