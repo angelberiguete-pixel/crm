@@ -54,6 +54,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Official logo browser rendering and loading test
         run: node tests/look-brand-browser.test.mjs
+      - name: Family Power official branded login, mobile and membership denial
+        run: node tests/family-power-login-browser.test.mjs
       - name: Tenant white-label mobile branding and cross-company switching
         run: node tests/tenant-white-label-browser.test.mjs
       - name: Digital employee mobile onboarding and safe provider fallback
