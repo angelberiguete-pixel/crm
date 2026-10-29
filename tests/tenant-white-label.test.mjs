@@ -43,5 +43,5 @@ test("tenant branding is loaded behind membership gate and never writes global r
  assert.match(logo,/tenantBrand\.logoUrl/);
  assert.match(settings,/TENANT_BRAND_UPDATED/);
  assert.match(settings,/\.eq\("tenant_id",tenantId\)\.select\("tenant_id"\)\.maybeSingle\(\)/);
- assert.match(settings,/Logo \(URL HTTPS o ruta local\)/);
+ assert.match(settings,/Logo principal sin fondo \(URL HTTPS o ruta local\)/);
 });
