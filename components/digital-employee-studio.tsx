@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Bot, Plus, Save, Sparkles, RefreshCw, ShieldCheck, ClipboardCopy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +26,8 @@ const fresh=():EmployeeKnowledge=>normalizeEmployeeKnowledge({});
 
 export default function DigitalEmployeeStudio(){
   const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null;
+  const currentTenant=useRef(tenantId);
+  currentTenant.current=tenantId;
   const permitted=["owner","admin"].includes(tenant?.membership_role??"");
   const [agents,setAgents]=useState<AgentRow[]>([]);
   const [selectedId,setSelectedId]=useState<string|null>(null);
@@ -95,12 +97,12 @@ export default function DigitalEmployeeStudio(){
         supabase.from("ai_agents").insert({...payload,tenant_id:tenantId}).select("id").single();
       const result=await query;
       if(result.error)throw result.error;
-      if(tenantId!==originalTenant)return;
+      if(currentTenant.current!==originalTenant)return;
       if(!result.data?.id)throw new Error("No se confirmó el guardado.");
       setSelectedId(result.data.id);setNotice("Configuración guardada. El empleado sigue en borrador y no envía mensajes.");
       setReload(v=>v+1);
-    }catch(e){if(tenantId===originalTenant)setError("Error al guardar: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
-    finally{if(tenantId===originalTenant)setBusy(false);}
+    }catch(e){if(currentTenant.current===originalTenant)setError("Error al guardar: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
+    finally{if(currentTenant.current===originalTenant)setBusy(false);}
   }
   async function generate(e:FormEvent){
     e.preventDefault();
@@ -111,13 +113,13 @@ export default function DigitalEmployeeStudio(){
       const response=await supabase.functions.invoke("ai-employee-draft",{
         body:{tenant_id:tenantId,agent_id:selectedId,request_id:crypto.randomUUID(),question:sample.trim()}
       });
-      if(tenantId!==originalTenant)return;
+      if(currentTenant.current!==originalTenant)return;
       if(response.error||response.data?.ok!==true)throw new Error(String(response.data?.error??"El proveedor de IA no está conectado o no respondió."));
       if(typeof response.data.draft!=="string")throw new Error("Respuesta no verificada.");
       setDraft(response.data.draft);
       setNotice("Borrador generado por IA y registrado para revisión. No se envió ningún mensaje.");
-    }catch(e){if(tenantId===originalTenant)setError("No se pudo generar el borrador: "+(e instanceof Error?e.message:"Intenta más tarde."));}
-    finally{if(tenantId===originalTenant)setTesting(false);}
+    }catch(e){if(currentTenant.current===originalTenant)setError("No se pudo generar el borrador: "+(e instanceof Error?e.message:"Intenta más tarde."));}
+    finally{if(currentTenant.current===originalTenant)setTesting(false);}
   }
 
   if(!tenant)return <main className="content"><p>Selecciona una empresa antes de configurar empleados digitales.</p></main>;
