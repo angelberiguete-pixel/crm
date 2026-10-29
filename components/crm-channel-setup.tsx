@@ -51,6 +51,11 @@ export default function CrmChannelSetup(){
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const [success,setSuccess]=useState("");
+  const [testMessage,setTestMessage]=useState("Hola, esta es una prueba autorizada de WhatsApp desde Look Social Media CRM.");
+  const [testSending,setTestSending]=useState(false);
+  const [testResult,setTestResult]=useState("");
+  const whatsappChannelVerified=rows.some(r=>r.provider==="whatsapp"&&r.record_status==="connected");
+  const canTestWhatsApp=tenant?.tenant_slug==="eurevector"&&role==="owner"&&whatsappChannelVerified;
   const selected=providers[provider];
 
   useEffect(()=>{
@@ -77,6 +82,8 @@ export default function CrmChannelSetup(){
     setSuccess("");
     setError("");
     setSaving(false);
+    setTestSending(false);
+    setTestResult("");
   },[tenantId]);
 
   async function submit(e:FormEvent){
@@ -97,6 +104,25 @@ export default function CrmChannelSetup(){
       setRefresh(v=>v+1);
     }catch(e){if(activeTenantId.current===requestTenantId)setError("No se pudo registrar la solicitud: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
     finally{if(activeTenantId.current===requestTenantId)setSaving(false);}
+  }
+
+  async function sendWhatsAppTest(e:FormEvent){
+    e.preventDefault();
+    if(!tenantId||!canTestWhatsApp||testSending)return;
+    const originalTenant=tenantId;
+    setTestResult("");setTestSending(true);
+    try{
+      const result=await supabase.functions.invoke("whatsapp-test-send",{
+        body:{tenant_id:originalTenant,message:testMessage.trim(),request_id:crypto.randomUUID()}
+      });
+      if(activeTenantId.current!==originalTenant)return;
+      if(result.error||result.data?.ok!==true){
+        const code=result.data?.error??"provider_unavailable";
+        throw new Error(String(code));
+      }
+      setTestResult(result.data?.provider_accepted===true?"Meta aceptó el envío de prueba. La entrega al destinatario todavía requiere el recibo del webhook.":"No se confirmó el envío.");
+    }catch(err){if(activeTenantId.current===originalTenant)setTestResult("No se confirmó el envío: "+(err instanceof Error?err.message:"Intenta revisar la configuración."));}
+    finally{if(activeTenantId.current===originalTenant)setTestSending(false);}
   }
 
   if(!tenant)return <main className="content"><div className="loading">Selecciona una empresa para preparar sus canales.</div></main>;
@@ -142,5 +168,16 @@ export default function CrmChannelSetup(){
         </div>)}</div>}
       </section>
     </section>
+    {tenant.tenant_slug==="eurevector"&&role==="owner"&&<section className="card section-gap" aria-label="Prueba real de WhatsApp" style={{marginTop:16}}>
+      <div className="eyebrow">Meta WhatsApp Business Platform</div>
+      <h2>Enviar una prueba real</h2>
+      <p className="muted">La prueba utiliza exclusivamente un destinatario autorizado y guardado en el servidor. No introduce tokens ni destinatarios desde el navegador, no envía campañas y no sustituye la verificación del webhook de entrega.</p>
+      <form className="stack gap-12" onSubmit={sendWhatsAppTest}>
+        <label>Mensaje de prueba<textarea value={testMessage} onChange={e=>setTestMessage(e.target.value)} rows={3} maxLength={1000} required disabled={testSending||!canTestWhatsApp}/></label>
+        <button type="submit" className="button primary" disabled={testSending||!canTestWhatsApp||!testMessage.trim()}>{testSending?"Enviando mediante Meta…":"Enviar prueba real por WhatsApp"}</button>
+      </form>
+      {!canTestWhatsApp&&<p className="muted" role="status">Envío bloqueado: falta la verificación real del WhatsApp de Look Social Media por el proveedor.</p>}
+      {testResult&&<p className="notice" role="status">{testResult}</p>}
+    </section>}
   </main>;
 }
