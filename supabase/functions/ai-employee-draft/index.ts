@@ -39,7 +39,7 @@ Deno.serve(async req=>{
   const publicKey=Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const apiKey=Deno.env.get("OPENAI_API_KEY");
-  const model=Deno.env.get("AI_EMPLOYEE_MODEL");
+  const model=Deno.env.get("AI_EMPLOYEE_MODEL")??EMPLOYEE_AI_MODEL;
   const tenantMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD")??"5.00");
   const globalMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD")??"5.00");
   if(!url||!publicKey||!serviceKey)return error(origin,"server_not_configured",503);
