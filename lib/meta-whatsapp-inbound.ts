@@ -19,7 +19,8 @@ export function normalizeVerifiedWhatsAppTexts(value:unknown):WhatsAppInboundTex
       if(change.field!=="messages"||!change.value||typeof change.value!=="object")continue;
       const val=change.value as Record<string,unknown>;
       const meta=val.metadata as Record<string,unknown>|undefined;
-      if(!numeric(meta?.phone_number_id,6,30)||!Array.isArray(val.messages))continue;
+      const phoneId=meta?.phone_number_id;
+      if(!numeric(phoneId,6,30)||!Array.isArray(val.messages))continue;
       const names=new Map<string,string>();
       if(Array.isArray(val.contacts)){
         for(const c of val.contacts.slice(0,50)){
@@ -39,7 +40,7 @@ export function normalizeVerifiedWhatsAppTexts(value:unknown):WhatsAppInboundTex
         if(typeof text?.body!=="string"||!text.body.trim()||text.body.length>1600)continue;
         out.push({
           wabaId:entry.id as string,
-          phoneNumberId:meta.phone_number_id as string,
+          phoneNumberId:phoneId as string,
           externalMessageId:msg.id,sender:msg.from as string,
           contactName:names.get(msg.from as string)??"",
           body:text.body.trim(),
