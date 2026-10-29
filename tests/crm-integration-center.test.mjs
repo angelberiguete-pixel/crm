@@ -1,0 +1,43 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const center=readFileSync(new URL("../components/crm-integration-center.tsx",import.meta.url),"utf8");
+const route=readFileSync(new URL("../app/crm/[[...slug]]/page.tsx",import.meta.url),"utf8");
+const gate=readFileSync(new URL("../components/tenant-permission-gate.tsx",import.meta.url),"utf8");
+const workspace=readFileSync(new URL("../components/crm-workspace.tsx",import.meta.url),"utf8");
+const mobile=readFileSync(new URL("../components/mobile-tenant-navigation.tsx",import.meta.url),"utf8");
+const sql=readFileSync(new URL("../supabase/migrations/20261029230000_tenant_integration_health.sql",import.meta.url),"utf8");
+test("Integrations route is inside existing tenant permission gate, with settings-only access",()=>{
+ assert.match(route,/TenantPermissionGate section=\{section\}/);
+ assert.match(route,/section === "integrations"[\s\S]*?<CrmIntegrationCenter/);
+ assert.match(gate,/integrations: "settings"/);
+ assert.match(workspace,/Configuración · Integraciones/);
+ assert.match(workspace,/href="\/crm\/integrations"/);
+ assert.match(mobile,/\["integrations", "Integraciones"\]/);
+});
+test("live request entries are tenant-scoped and never interpreted as connected credentials",()=>{
+ assert.match(center,/tenant_integration_health/);
+ assert.match(center,/tenant_channel_requests_overview/);
+ assert.match(center,/tenant_register_channel_request/);
+ assert.match(center,/activeId\.current!==sourceTenant/);
+ assert.match(center,/data\.tenant_id!==id/);
+ assert.match(center,/record_status/);
+ assert.match(center,/whatsapp_verified_route/);
+ assert.match(center,/Pendiente de autorización/);
+ assert.match(center,/no equivalen a una API conectada/);
+ assert.doesNotMatch(center,/type="password"|name="api_key"|name="access_token"/);
+ assert.doesNotMatch(center,/graph\.facebook\.com|api\.openai\.com|sendMessage\(/);
+});
+test("only tenant admins can read verified metadata, never tokens or other tenants",()=>{
+ assert.match(sql,/security definer set search_path=''/i);
+ assert.match(sql,/auth\.uid\(\) is null/);
+ assert.match(sql,/private\.is_tenant_admin\(p_tenant_id\)/);
+ assert.match(sql,/private\.is_platform_admin\(\)/);
+ assert.match(sql,/where r\.tenant_id=p_tenant_id/);
+ assert.match(sql,/where c\.tenant_id=p_tenant_id/);
+ assert.match(sql,/where a\.tenant_id=p_tenant_id/);
+ assert.match(sql,/from PUBLIC,anon,authenticated/);
+ assert.match(sql,/to authenticated;/);
+ assert.doesNotMatch(sql,/access_token|api_key|decrypted_secret|vault\.secrets/);
+ assert.match(sql,/ai_spending_blocked/);
+});
