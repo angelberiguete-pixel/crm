@@ -85,3 +85,17 @@ Se fusionó PR #80 (contrato HMAC y envío de prueba BLOQUEADO). La recepción f
 ### Otras capacidades NO verificadas
 
 Un registro \`custom_domain\` no asigna automáticamente DNS/certificado; hace falta dominio propiedad del cliente y configuración explícita en Vercel. Ni las cuentas Facebook/Instagram/ads, ni el cobro recurrente ni Odoo se integran por el mero hecho de que existan tablas o componentes. Cada una requiere verificación y aceptación E2E.
+
+
+## Centro de Integraciones por tenant (PR #86, 29 oct 2026)
+
+Ruta del CRM: \`/crm/integrations\`, accesible desde CRM → Configuración → Integraciones, menú móvil y Canales.
+- Vista real per-tenant desde RPC \`tenant_integration_health\`: el estado verificado de WhatsApp exige ruta Meta firmada registrada en \`meta_whatsapp_routes\`, \`is_enabled=true\` y canal \`connected\`. Un registro en \`channels\` por sí solo no se presenta como autorización oficial.
+- WhatsApp, Instagram, correo: permite presentar solicitudes al CRM usando \`tenant_register_channel_request\` (auditable, con permisos de propietario/admin), sin registrar secretos ni activar mensajería.
+- OpenAI aparece **bloqueado para gasto** por la decisión de Ángel Berigüete. Los agentes se configuran en \`/crm/employees\`, las conversaciones se consultan en \`/crm/inbox\`.
+- La futura autorización integrada debe seguir la vía oficial **Meta Embedded Signup / Facebook Login for Business** para WhatsApp, Instagram Professional Login para mensajes y Google OAuth para Gmail. Requiere app IDs, secretos del servidor, redirect URIs aprobados y revisión/permisos. No declarar operativo un botón OAuth hasta completar la infraestructura OAuth verificada en las plataformas.
+- Los tokens de las empresas nunca deben ir en \`channels.settings\`, variables \`NEXT_PUBLIC_*\`, URLs ni logs; deben guardarse cifrados en el servidor con separación por empresa, renovación y revocación.
+- Si el usuario introdujo \`+1 849 570 6550\` para Look Social Media, el formulario normaliza espacios/separadores antes de registrar la solicitud. Preservar la app WhatsApp Business existente y verificar coexistencia antes de cualquier migración.
+
+### Prueba obligatoria de habilitación por canal
+Meta/Google deben completar consentimiento real, identidad y tenant verificados, recibir un evento firmado legítimo, almacenar una sola conversación/contacto, enviar a un destinatario de prueba autorizado, almacenar recibo real, probar reintentos sin duplicados y confirmar entrega. Ningún canal pasa a operativo ni se habilita \`auto_reply\` por el hecho de registrar una solicitud.
