@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Building2, CalendarDays, FileText, Gauge, Inbox, RefreshCw, Target, Users } from "lucide-react";
+import { Building2, CalendarDays, FileText, Gauge, Inbox, Bot, RefreshCw, Target, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
@@ -122,6 +122,7 @@ export default function CrmCommercialDashboard(){
             <div className="stack gap-12">
               {canManage&&<Link className="button" href="/crm/companies">Gestionar empresas</Link>}
               <Link className="button" href="/crm/contacts">Gestionar contactos</Link>
+              {canManage&&<Link className="button" href="/crm/employees"><Bot size={16}/> Empleados digitales IA</Link>}
               <Link className="button" href="/crm/quotations">Abrir cotizaciones</Link>
               <Link className="button" href="/crm/calendar">Abrir calendario</Link>
             </div>
