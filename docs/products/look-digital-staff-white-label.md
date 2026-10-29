@@ -37,3 +37,33 @@ Un solo repositorio principal `angelberiguete-pixel/crm` y esquema multiempresa 
 - **Suscripciones:** niveles/entitlements de `plans`, `tenant_subscriptions` ya presentes; cobros reales y facturas requieren autorización e integración verificada.
 
 **Estado:** código en PR #82 (borrador). No está fusionado ni desplegado en `main`. El resultado de CI debe comprobarse contra el commit vigente antes de anunciar listo para producción.
+
+
+## Family Power — consolidación en el CRM multiempresa (29 octubre 2026)
+
+**Modelo deseado confirmado por Ángel Berigüete:** Inversores & Paneles Family Power, E.I.R.L. será un cliente con espacio privado y marca propia dentro del CRM de Look Social Media. No se mantendrán forks separados por defecto.
+
+**Evidencia auditada:** el proyecto Vercel separado \`family-power-crm-staging\` está marcado READY, pero es un prototipo/demostración y **no prueba CRM operativo con datos de clientes**. El repositorio privado \`angelberiguete-pixel/family-power-crm\` contiene branding y demos en \`main\`; PR #1 (rama \`crm-v048-integration\`) conserva un backend FastAPI/SQLite/PostgreSQL V0.48 no fusionado. Ninguna conexión de Meta, Odoo o IA está verificada; la aprobación contractual de un CRM exclusivo es un punto pendiente del Documento Maestro Family Power V2.
+
+**Lo que incorpora este PR del CRM principal:**
+- Sin duplicación de CRM ni alta automática: función admin-only \`platform_create_family_power_tenant\` con ejecución explícita, única por slug \`family-power\`, usa \`platform_create_client_tenant\` original y configura tenant_settings en la misma transacción.
+- Las variantes **existentes** de Family Power, aprobadas para uso digital, se copiaron sin alterar sus trazos originales de \`family-power-crm/web/assets/branding/\` a \`public/client-brands/family-power/\` (color, negativa, compacta).
+- Logo contrastado en el cliente: \`logo_on_dark_url\` y \`logo_on_light_url\` guardados bajo \`tenant_settings.settings.branding\` (por empresa); la barra lateral elimina el recuadro blanco CSS. El componente \`BrandLogo\` elige por superficie solicitada. No cambiar el logo original de otra empresa.
+- Paleta de fuente aprobada: rojo \`#D20A14\`, grafito \`#101115\`, plata \`#DFE1E3\`; es-DO, DOP y America/Santo_Domingo. No cambiar dominios del cliente.
+- Plantilla técnica reutilizable \`energia-instalaciones\`: pipeline de consulta, diagnóstico, cotización, aprobación, programación, cierre; módulos de contactos, empresas, productos, cotizaciones, operaciones, informes. \`automations\` y \`ai_agents\` **deshabilitados** al preparar; no pagos ni acciones externas.
+
+**Diferencias que deben verificarse antes de migrar datos:**
+| CRM Family Power V0.48 | CRM multiempresa central | Acción |
+|---|---|---|
+| Clientes/prospectos | contacts/companies | Mapeo de campos, consentimiento, ID origen, duplicados por empresa |
+| Productos/servicios | products | Catálogo real y precios solo autorizados; no llenar con datos sintéticos |
+| Oportunidades y pipeline | opportunities/pipelines | Etapas de negocio aprobadas |
+| Cotizaciones, aprobaciones | quotations, approvals | Comparar cálculo de centavos, auditoría y controles humanos |
+| Órdenes e instalaciones | orders, operations y tasks | Validar asignación de técnicos y roles antes de aceptación |
+| Usuarios y sesiones FastAPI | Supabase Auth y memberships | **Nunca copiar hashes de contraseña ni sesiones**; invitar usuarios con permisos nuevos |
+| Documentos del legado | Storage privado por tenant | Copiar solo con autorización y evidencias de integridad |
+| WhatsApp, Odoo, IA | Conectores por tenant | Verificación oficial y prueba real independientes; gasto OpenAI bloqueado |
+
+**Puerta de aceptación:** respaldar fuente legada con hash y conteos; probar asignación de tenant y RLS de cada tabla, dos usuarios con permisos distintos, escritorio/móvil, marca sin fondos cuadrados, privacidad, recuperación, rollback y conformidad del cliente. El \`family-power-crm-staging\` antiguo permanece intacto; apagarlo únicamente cuando la nueva solución sea aceptada y confirmada.
+
+**Estado de esta rama:** preparada para revisión, **NO** es evidencia de que Family Power haya sido creado en la BD, ni de importación, transferencia de contratos o despliegue completado. No ejecutar la función de creación ni cambiar producción sin validación de alcance y acceso.
