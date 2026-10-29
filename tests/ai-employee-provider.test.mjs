@@ -12,6 +12,9 @@ test("price and model cannot drift silently on the provider gateway",()=>{
  assert.equal(EMPLOYEE_AI_MODEL,"gpt-5.4-mini-2026-03-17");
  assert.equal(EMPLOYEE_AI_MAX_OUTPUT_TOKENS,450);
  assert.match(worker,/model!==EMPLOYEE_AI_MODEL/);
+ assert.match(worker,/AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD"\)\?\?"5\.00"/);
+ assert.match(worker,/AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD"\)\?\?"5\.00"/);
+ assert.match(worker,/globalMonthlyBudget>5_000_000/);
  assert.match(worker,/reasoning:\{effort:"none"\}/);
  assert.match(worker,/store:false/);
  assert.match(worker,/text:\{format:EMPLOYEE_AI_FORMAT\}/);
