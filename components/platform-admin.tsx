@@ -482,7 +482,7 @@ export default function PlatformAdmin() {
               <label>Contraseña inicial (mínimo 12 caracteres)<input type="password" value={localPassword} onChange={e=>setLocalPassword(e.target.value)} required minLength={12} maxLength={128} autoComplete="new-password"/></label>
               <label>Rol<select value={localRole} onChange={e=>setLocalRole(e.target.value)}>{roles.filter(r=>["owner","admin","manager","sales","viewer"].includes(r.role_key)).map(r=><option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
               <button type="submit" className="button primary" disabled={creatingLocal||localPassword.length<12||!localUsername||!localFullName}>{creatingLocal?"Creando cuenta…":"Crear acceso privado"}</button>
-            </form>
+            </form>}
             <form className="stack gap-12" onSubmit={inviteMember} style={{ marginBottom: 16 }}>
               <label>Email del usuario<input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="persona@empresa.com" required /></label>
               <label>Rol inicial<select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} required>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
