@@ -42,6 +42,8 @@ jobs:
         run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Branding and tenant portal regression tests
         run: node --experimental-strip-types --test tests/official-brand-and-portals.test.mjs
+      - name: Family Power unified tenant and approved brand variants
+        run: node --experimental-strip-types --test tests/family-power-unified-tenant.test.mjs
       - name: Tenant white-label identity and input safety tests
         run: node --experimental-strip-types --test tests/tenant-white-label.test.mjs
       - name: Typecheck
