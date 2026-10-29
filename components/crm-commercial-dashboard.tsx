@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
+import EnergyServiceDashboard from "@/components/energy-service-dashboard";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
 
@@ -21,6 +22,11 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>;
 }
 export default function CrmCommercialDashboard(){
+  const tenant=useActiveTenant();
+  if(tenant?.tenant_slug==="family-power")return <EnergyServiceDashboard/>;
+  return <GeneralCommercialDashboard/>;
+}
+function GeneralCommercialDashboard(){
   const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null;
   const tenantBrand=useTenantBrand();
   const roleLabel=tenant?.membership_role==="owner"?"Propietario":tenant?.membership_role==="admin"?"Administrador":tenant?.membership_role==="manager"?"Gerente":tenant?.membership_role==="agent"?"Vendedor":"Equipo";
