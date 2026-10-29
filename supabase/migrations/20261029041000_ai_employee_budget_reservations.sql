@@ -1,5 +1,8 @@
 -- Look Digital Staff — transactional monetary reservations, UTC calendar month.
--- VERSIONED ONLY: no live deployment without authorized spend limit and test credentials.
+-- Approved pilot hard ceiling: US$5.00 across every tenant / UTC calendar month.
+-- This restriction lives INSIDE PostgreSQL: even incorrect function secrets
+-- cannot authorize a budget above US$5.00 without a reviewed migration.
+-- Deployment of a paid provider still requires separate credentials and billing setup.
 -- Follow-up to 20261028235000_ai_employee_atomic_trials_and_reviews.sql.
 create table if not exists public.ai_employee_monthly_budget (
   tenant_id uuid not null references public.tenants(id) on delete cascade,
@@ -52,7 +55,7 @@ begin
     or p_global_month_limit_micros is null
     or p_tenant_month_limit_micros < p_max_cost_micros
     or p_global_month_limit_micros < p_tenant_month_limit_micros
-    or p_global_month_limit_micros > 10000000000 then
+    or p_global_month_limit_micros > 5000000 then
     return 'budget_configuration_invalid';
   end if;
   if not exists (
