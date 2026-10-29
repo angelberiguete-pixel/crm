@@ -19,12 +19,12 @@ try {
    return {complete:element.complete,naturalWidth:element.naturalWidth,naturalHeight:element.naturalHeight,src:element.getAttribute("src")};
  });
  assert.ok(img.complete&&img.naturalWidth>0&&img.naturalHeight>0,JSON.stringify(img));
- assert.equal(img.src,"/look-social-media-logo.svg");
+ assert.equal(img.src,"/look-social-media-logo-transparent.svg");
  const loading=await page.evaluate(()=>{
    const div=document.createElement("div");div.className="loading";div.textContent="Cargando…";document.body.appendChild(div);
    const background=getComputedStyle(div,"::before").backgroundImage;
    div.remove();return background;
  });
- assert.ok(loading.includes("look-social-media-logo.svg"),"global loading state uses official logo");
- console.log("PASS Android mobile: original logo asset rendered on login and displayed by loading indicator.");
+ assert.ok(loading.includes("look-social-media-logo-transparent.svg"),"global loading state uses official logo");
+ console.log("PASS Android mobile: transparent official logo asset rendered on login and displayed by loading indicator.");
 } finally {if(browser)await browser.close();if(server)server.kill()}
