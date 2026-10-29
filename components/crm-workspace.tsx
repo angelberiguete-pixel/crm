@@ -27,6 +27,7 @@ import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
+import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -62,6 +63,18 @@ const nav = [
   ["settings", "Configuración", Settings],
 ] as const;
 
+const familyLabels:Record<string,string>={
+ "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
+ products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
+ automations:"Automatizaciones",files:"Archivos",channels:"Canales",
+ integrations:"Conexiones",settings:"Configuración"
+};
+const permissionForSection:Record<string,string>={
+ "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
+ products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
+ automations:"automations",files:"dashboard",channels:"settings",
+ integrations:"settings",settings:"settings"
+};
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);
 
@@ -75,8 +88,29 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [familyMenuPermissions,setFamilyMenuPermissions]=useState<Record<string,unknown>|null>(null);
+  const [familyEnabledModules,setFamilyEnabledModules]=useState<Record<string,boolean>>({});
 
   const refresh = useCallback(() => setReloadKey((v) => v + 1), []);
+  useEffect(()=>{
+    let alive=true;
+    setFamilyMenuPermissions(null);setFamilyEnabledModules({});
+    if(activeTenant?.tenant_slug!=="family-power")return()=>{alive=false;};
+    const tenantId=activeTenant.tenant_id;
+    void Promise.all([
+      supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
+      supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId}),
+    ]).then(([p,m])=>{
+      if(!alive||p.error||m.error)return;
+      setFamilyMenuPermissions((p.data??{}) as Record<string,unknown>);
+      const enabled:Record<string,boolean>={};
+      for(const mod of (m.data??[]) as Array<{module_key:string;enabled:boolean}>)
+        enabled[mod.module_key]=mod.enabled;
+      setFamilyEnabledModules(enabled);
+    }).catch(()=>{if(alive)setFamilyMenuPermissions(null);});
+    return()=>{alive=false;};
+  },[activeTenant?.tenant_id,activeTenant?.tenant_slug]);
+
 
   useEffect(() => {
     let alive = true;
@@ -123,25 +157,33 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   if (!member) return <div className="loading" role="alert">{notice || "No se pudo preparar el workspace."}</div>;
 
   const tenantId = member.tenant_id;
+  const isFamilyPower=member.tenant_slug==="family-power";
+  const permittedNav=nav.filter(([key])=>{
+    if(!isFamilyPower)return true;
+    if(!familyMenuPermissions)return false; // fail closed while waiting
+    const permission=permissionForSection[key]??key;
+    return (familyMenuPermissions.all===true||familyMenuPermissions[permission]===true)
+      &&familyEnabledModules[permission]!==false;
+  });
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav">
-          {nav.map(([key, label, Icon]) => (
+          {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
-              <Icon size={17} />{label}
+              <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
             </Link>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="muted">Rol: {member.role}</div>
-          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); }}><LogOut size={14} /> Salir</button>
+          <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
+          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
         </div>
       </aside>
       <main className="content">
         <header className="topbar">
-          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{titleFor(section)}</h1></div>
+          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
             <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
@@ -162,7 +204,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
       <nav className="mobile-nav">
-        {nav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{label}</span></Link>)}
+        {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
       </nav>
     </div>
   );
