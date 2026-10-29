@@ -59,3 +59,29 @@ SEGURIDAD Y ALCANCE:
 - Sin credenciales autorizadas y aceptación del proveedor no hay integración productiva. No enviar mensajes ni registrar conversaciones como enviadas por simple click o HTTP 200.
 
 PRUEBA DE ACEPTACIÓN: login propietario → canal Meta configurado/verificado → destinatario voluntario → un solo POST real con idempotencia → Meta responde message ID → webhook confirma entrega → resultados auditados. No interpretar un estado READY o CI success como confirmación de entrega.
+
+
+## 29 octubre 2026 — receptor multiempresa desplegado, sin cuentas Meta vinculadas
+
+Se fusionó PR #80 (contrato HMAC y envío de prueba BLOQUEADO). La recepción firmada y enrutamiento por empresa se incorporaron con PR #83:
+
+- Edge Function Supabase \`meta-whatsapp-inbound\` v1: endpoint HTTPS público Meta (sin JWT, obligatoria firma HMAC \`X-Hub-Signature-256\` y secreto \`META_APP_SECRET\`), verificaciones GET por \`META_WHATSAPP_VERIFY_TOKEN\`. Si faltan secretos: HTTP 503, sin procesar contenido.
+- DB \`meta_whatsapp_routes\` (cada número \`phone_number_id\` y WABA \`waba_id\` verificados, un tenant y canal, bloqueado por defecto), \`meta_whatsapp_inbound_receipts\` (deduplicación global). RPC transaccional \`ingest_verified_whatsapp_text\` de servidor: crea/localiza contacto y conversación, mensaje inbound, sugiere el agente vinculado y exige revisión humana. Un número no autorizado, suspendido, desconectado o sin WABA coincidente no crea contactos.
+- Disparador de \`tasks\`: una sola tarea interna de seguimiento por conversación validada, sin notificar por WhatsApp, sin crear dinero ni oportunidades sin calificación.
+- CRM \`/crm/employees\`: configuración de empleado por empresa, asociación a canal WhatsApp concreto mediante \`ai_agent_bindings\` con \`auto_reply=false\`; ningún empleado se crea o activa automáticamente.
+- **Sin credenciales Meta** del portafolio autorizado, no hay números en \`meta_whatsapp_routes\`, el endpoint se mantiene fail-closed. No declarar real el envío o recepción. La UI de test-send del PR #80 se bloquea si el canal no está verificado.
+- El costo de OpenAI sigue bloqueado (EXECUTE de \`reserve_ai_employee_budgeted_trial\` DENEGADO a service_role).
+
+### Pasos operativos para vincular el primer número
+
+1. Un administrador verifica en **Meta Business Suite de Look Social Media** la propiedad del número actual, la cuenta WABA, Phone Number ID, cuenta de la aplicación Meta y elegibilidad real de **WhatsApp Business App Coexistence** antes de hacer cambios al WhatsApp móvil.
+2. En la consola segura de Supabase, guardar \`META_APP_SECRET\` y \`META_WHATSAPP_VERIFY_TOKEN\`. **No transmitirlos en chats**, repo ni URLs públicas. Asociar el callback a \`https://ygipjqgyreeahslzorik.supabase.co/functions/v1/meta-whatsapp-inbound\` y verificar challenge GET + webhook signed POST en Meta.
+3. Verificar que la app dispone de permisos y suscripción WABA legítimos y que los IDs (WABA y Phone Number) pertenecen al negocio autorizado; conservar justificante de validación.
+4. **Solo desde servicio administrador con credenciales privadas** crear el mapeo \`meta_whatsapp_routes\` con \`verified_reference\`, \`verified_at\`, \`channel_id\` del tenant y \`is_enabled=true\`, y establecer \`channels.status='connected'\` tras el test real. No se permite que formularios públicos activen mapeos por su cuenta.
+5. En CRM seleccionar empleado y vincular ese canal. Probar webhook firmado de un remitente de prueba autorizado: un contacto, una conversación, mensaje de texto y una tarea interna. Repetición del mensaje debe producir 0 duplicados; número o WABA de otra empresa debe producir 0 inserciones. Verificar en el panel con cuenta propietario y con otra empresa.
+6. Envío WhatsApp real es otro permiso y prueba: token Graph con alcance correcto, consentimiento, ventana 24 horas, plantillas aprobadas para iniciar y recibos de entrega. **No enviar a prospectos históricos sin consentimiento**.
+7. Para auto-respuestas con IA, respetar orden del usuario: el presupuesto de OpenAI está revocado; solamente se permiten borradores supervisados cuando se autorice nuevo proveedor real. No hacer gasto.
+
+### Otras capacidades NO verificadas
+
+Un registro \`custom_domain\` no asigna automáticamente DNS/certificado; hace falta dominio propiedad del cliente y configuración explícita en Vercel. Ni las cuentas Facebook/Instagram/ads, ni el cobro recurrente ni Odoo se integran por el mero hecho de que existan tablas o componentes. Cada una requiere verificación y aceptación E2E.
