@@ -54,7 +54,7 @@ try{
  const page=await ctx.newPage();
  await page.goto(base+"/crm/integrations");
  await page.getByRole("heading",{name:"Centro de Integraciones"}).waitFor();
- await page.getByText("Empresa Uno",{exact:false}).first().waitFor();
+ assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"empresa-uno");
  await page.getByText("Sin conectar",{exact:true}).first().waitFor();
  assert.equal(writes.length,0,"loading dashboard must not connect provider");
  assert.ok(await page.getByText("Bloqueado para gasto").isVisible());
