@@ -25,6 +25,8 @@ import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
+import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
+import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -36,7 +38,7 @@ type Quotation = { id: string; quote_number: string; company_id: string | null; 
 type CalendarEvent = { id: string; title: string; description: string | null; event_type: string; status: string; starts_at: string; ends_at: string; location: string | null; created_at: string };
 type AutomationRule = { id: string; name: string; description: string | null; status: string; trigger_type: string; trigger_event: string | null; created_at: string };
 type Agent = { id: string; name: string; purpose: string | null; status: string; model_provider: string; model_name: string; approval_mode: string; created_at: string };
-type TenantSettings = { tenant_id: string; brand_name: string | null; primary_color: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean };
+type TenantSettings = { tenant_id: string; brand_name: string | null; logo_url: string | null; favicon_url: string | null; primary_color: string | null; secondary_color: string | null; accent_color: string | null; custom_domain: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean };
 type RevenueDash = { current_mrr: number | null; open_pipeline_mrr: number | null; weighted_pipeline_mrr: number | null; cash_collected: number | null; open_opportunities: number | null; won_opportunities: number | null };
 type ErpStatus = { tenant_id:string; connection_id:string; provider:string; status:string; sync_direction:string; last_healthcheck_at:string|null; last_error:string|null; source_of_truth:Record<string,unknown>|null; inventory_synced_at:string|null; odoo_products:number };
 type ProductPublication = { product_id:string; is_published:boolean; show_exact_stock:boolean; show_price:boolean; public_label:string|null };
@@ -214,7 +216,7 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
   }, [tenantId, reloadKey, notice]);
   return <div className="stack gap-16">
     <section className="dashboard-intro">
-      <div className="eyebrow">Panel de trabajo · LOOK SOCIAL MEDIA CRM</div>
+      <div className="eyebrow">Panel de trabajo · CRM empresarial</div>
       <h2>Resumen de {tenantName}</h2>
       <p className="muted">Organiza tus clientes, contactos y ventas desde aquí. Los datos aparecerán al registrar operaciones reales de esta empresa.</p>
       <div className="dashboard-actions">
@@ -478,12 +480,99 @@ function Automations({ tenantId, reloadKey, refresh, notice }: { tenantId: strin
 }
 
 function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
-  const [settings, setSettings] = useState<TenantSettings | null>(null); const [erp,setErp]=useState<ErpStatus|null>(null); const [brand, setBrand] = useState(""); const [support, setSupport] = useState(""); const [primary, setPrimary] = useState("#2563EB"); const [saving, setSaving] = useState(false);
-  useEffect(() => { (async () => { const [r,e]=await Promise.all([supabase.from("tenant_settings").select("tenant_id,brand_name,primary_color,support_email,timezone,currency,hide_platform_branding").eq("tenant_id", tenantId).maybeSingle(),supabase.from("tenant_erp_status").select("tenant_id,connection_id,provider,status,sync_direction,last_healthcheck_at,last_error,source_of_truth,inventory_synced_at,odoo_products").eq("tenant_id",tenantId).maybeSingle()]); if (r.error) return notice(r.error.message); if(e.error) notice(e.error.message); const s = r.data as TenantSettings | null; setSettings(s); setBrand(s?.brand_name ?? ""); setSupport(s?.support_email ?? ""); setPrimary(s?.primary_color ?? "#2563EB"); setErp(e.data as ErpStatus|null); })(); }, [tenantId, reloadKey, notice]);
-  async function save(e: FormEvent) { e.preventDefault(); setSaving(true); const r = await supabase.from("tenant_settings").update({ brand_name: brand || null, support_email: support || null, primary_color: primary }).eq("tenant_id", tenantId); setSaving(false); if (r.error) return notice(r.error.message); notice("Configuración guardada."); }
+  const [settings,setSettings]=useState<TenantSettings|null>(null);
+  const activeBrand=useTenantBrand();
+  const [erp,setErp]=useState<ErpStatus|null>(null);
+  const [brand,setBrand]=useState("");
+  const [support,setSupport]=useState("");
+  const [primary,setPrimary]=useState("#2563EB");
+  const [secondary,setSecondary]=useState("#7C3AED");
+  const [accent,setAccent]=useState("#00D4FF");
+  const [logo,setLogo]=useState("");
+  const [favicon,setFavicon]=useState("");
+  const [saving,setSaving]=useState(false);
+  useEffect(()=>{
+    let alive=true;
+    (async()=>{
+      const [r,e]=await Promise.all([
+        supabase.from("tenant_settings")
+          .select("tenant_id,brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,custom_domain,support_email,timezone,currency,hide_platform_branding")
+          .eq("tenant_id",tenantId).maybeSingle(),
+        supabase.from("tenant_erp_status")
+          .select("tenant_id,connection_id,provider,status,sync_direction,last_healthcheck_at,last_error,source_of_truth,inventory_synced_at,odoo_products")
+          .eq("tenant_id",tenantId).maybeSingle()
+      ]);
+      if(!alive)return;
+      if(r.error)return notice("No se pudo cargar la configuración de marca: "+r.error.message);
+      if(e.error)notice(e.error.message);
+      const item=r.data as TenantSettings|null;
+      setSettings(item);
+      setBrand(item?.brand_name??"");
+      setSupport(item?.support_email??"");
+      setPrimary(safeHex(item?.primary_color,"#2563EB"));
+      setSecondary(safeHex(item?.secondary_color,"#7C3AED"));
+      setAccent(safeHex(item?.accent_color,"#00D4FF"));
+      setLogo(item?.logo_url??"");
+      setFavicon(item?.favicon_url??"");
+      setErp(e.data as ErpStatus|null);
+    })().catch(()=>{if(alive)notice("No se pudo leer la configuración del negocio.");});
+    return()=>{alive=false;};
+  },[tenantId,reloadKey,notice]);
+  async function save(e:FormEvent){
+    e.preventDefault();
+    if(saving)return;
+    if(logo.trim()&&!safeTenantAsset(logo))return notice("El logotipo debe ser HTTPS o una ruta local válida.");
+    if(favicon.trim()&&!safeTenantAsset(favicon))return notice("El ícono debe ser HTTPS o una ruta local válida.");
+    if(!brand.trim()||brand.trim().length>100)return notice("Introduce un nombre comercial de 1 a 100 caracteres.");
+    setSaving(true);
+    const response=await supabase.from("tenant_settings").update({
+      brand_name:brand.trim(),
+      support_email:support.trim()||null,
+      primary_color:primary,secondary_color:secondary,accent_color:accent,
+      logo_url:safeTenantAsset(logo),favicon_url:safeTenantAsset(favicon),
+    }).eq("tenant_id",tenantId).select("tenant_id").maybeSingle();
+    setSaving(false);
+    if(response.error)return notice(response.error.message);
+    if(!response.data)return notice("No se encontró una configuración autorizada para esta empresa.");
+    window.dispatchEvent(new CustomEvent(TENANT_BRAND_UPDATED,{detail:{tenantId}}));
+    notice("Identidad visual guardada para esta empresa.");
+  }
   async function syncProducts(){ if(erp?.status!=="connected")return notice("Conecta y verifica Odoo antes de sincronizar."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error)return notice(r.error.message); notice("Sincronización Odoo encolada."); }
   return <div className="stack gap-16">
-    <div className="grid two-col"><form className="card" onSubmit={save}><h2>Marca y soporte</h2><div className="stack gap-12"><label>Nombre de marca<input value={brand} onChange={(e) => setBrand(e.target.value)} /></label><label>Email de soporte<input type="email" value={support} onChange={(e) => setSupport(e.target.value)} /></label><label>Color principal<input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} /></label><button className="button primary" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button></div></form><div className="card"><h2>Workspace</h2><div className="priority-list"><div className="priority-item"><strong>Moneda</strong><span>{settings?.currency ?? "DOP"}</span></div><div className="priority-item"><strong>Zona horaria</strong><span>{settings?.timezone ?? "America/Santo_Domingo"}</span></div><div className="priority-item"><strong>White-label</strong><span>{settings?.hide_platform_branding ? "Activo" : "Disponible"}</span></div><div className="priority-item"><strong>Tenant</strong><span>{tenantId.slice(0, 8)}…</span></div></div></div></div>
+    <div className="grid two-col">
+      <form className="card" onSubmit={save}>
+        <h2>Identidad de tu negocio</h2>
+        <p className="muted">Estos cambios solo se aplican al CRM de la empresa activa. Ningún otro negocio comparte tu imagen o configuración.</p>
+        <div className="stack gap-12">
+          <label>Nombre comercial<input value={brand} maxLength={100} required onChange={e=>setBrand(e.target.value)}/></label>
+          <label>Logo (URL HTTPS o ruta local)<input value={logo} placeholder="https://ejemplo.com/logo.png" maxLength={1200} onChange={e=>setLogo(e.target.value)}/></label>
+          <label>Ícono de pestaña (opcional)<input value={favicon} placeholder="https://ejemplo.com/favicon.png" maxLength={1200} onChange={e=>setFavicon(e.target.value)}/></label>
+          <label>Color principal<input type="color" value={primary} onChange={e=>setPrimary(e.target.value)}/></label>
+          <label>Color secundario<input type="color" value={secondary} onChange={e=>setSecondary(e.target.value)}/></label>
+          <label>Color de acento<input type="color" value={accent} onChange={e=>setAccent(e.target.value)}/></label>
+          <label>Email de soporte<input type="email" value={support} onChange={e=>setSupport(e.target.value)}/></label>
+          <button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar identidad visual"}</button>
+        </div>
+      </form>
+      <div className="card">
+        <h2>Tu espacio privado</h2>
+        <div className="stack gap-12">
+          <div className="tenant-brand-preview" style={{borderColor:primary}}>
+            <strong style={{color:primary}}>{brand||activeBrand?.name||"Mi empresa"}</strong>
+            <span style={{color:secondary}}>CRM personalizado</span>
+            <small style={{color:accent}}>Atención · Ventas · Empleados digitales</small>
+          </div>
+          <div className="priority-list">
+            <div className="priority-item"><strong>Moneda</strong><span>{settings?.currency??"DOP"}</span></div>
+            <div className="priority-item"><strong>Zona horaria</strong><span>{settings?.timezone??"America/Santo_Domingo"}</span></div>
+            <div className="priority-item"><strong>Marca blanca contractual</strong><span>{settings?.hide_platform_branding?"Habilitada":"No habilitada"}</span></div>
+            <div className="priority-item"><strong>Dominio propio</strong><span>{settings?.custom_domain?"Pendiente de verificar/desplegar: "+settings.custom_domain:"No configurado"}</span></div>
+            <div className="priority-item"><strong>Tenant</strong><span>{tenantId.slice(0,8)}…</span></div>
+          </div>
+          <p className="muted">Registrar un dominio no crea por sí solo DNS, certificado ni despliegue. La activación de WhatsApp, IA y Odoo requiere autorizaciones independientes.</p>
+        </div>
+      </div>
+    </div>
     <section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>
     <section className="card"><h2>Catálogo web conectado</h2><p className="muted">Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo.</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
   </div>;

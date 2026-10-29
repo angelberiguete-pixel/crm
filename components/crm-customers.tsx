@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, Search, Target, Users, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
 import CustomerHistory from "@/components/customer-history";
 import { contactVCardFilename, exportContactToVCard } from "@/lib/contact-vcard";
@@ -23,6 +24,7 @@ const dateLabel=(value:string)=>{const date=new Date(value);return Number.isNaN(
 
 export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null,isCompany=kind==="companies";
+ const tenantBrand=useTenantBrand();
  const [companies,setCompanies]=useState<Company[]>([]);
  const [contacts,setContacts]=useState<Contact[]>([]);
  const [opportunities,setOpportunities]=useState<LinkedOpportunity[]>([]);
@@ -131,7 +133,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
    finally{setSaving(false);}
  }
  return <div className="shell">
-   <aside className="sidebar"><div className="brand"><strong>Look Social Media CRM</strong><span>{tenant?.tenant_name??"Clientes y contactos"}</span></div>
+   <aside className="sidebar"><div className="brand"><strong>{tenantBrand?.name??tenant?.tenant_name??"CRM empresarial"}</strong><span>{tenant?.tenant_name??"Clientes y contactos"}</span></div>
      <nav className="nav" aria-label="Módulos del CRM">{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===kind?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
    </aside>
    <main className="content">

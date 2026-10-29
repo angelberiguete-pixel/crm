@@ -292,3 +292,29 @@ textarea{min-height:96px;resize:vertical}
 
 .look-route-loading{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;color:var(--muted)}
 @media(prefers-reduced-motion:no-preference){.look-route-loading .look-brand-logo{animation:look-loading-pulse 1.8s ease-in-out infinite}}
+
+
+/* Authenticated white-label workspace: variables are scoped per tenant,
+   never stored on :root and never shared with the login / platform admin UI. */
+.tenant-brand-scope{min-height:100vh;background:var(--bg);color:var(--text)}
+.tenant-customer-logo{min-height:72px}
+.tenant-customer-initials{
+  display:grid;place-items:center;width:100%;min-height:70px;
+  padding:10px 16px;border-radius:8px;color:#fff;font-weight:800;
+  font-size:clamp(20px,4vw,36px);letter-spacing:.04em;
+}
+.tenant-customer-logo--compact .tenant-customer-initials{min-height:44px;font-size:22px}
+.tenant-customer-logo--login .tenant-customer-initials{min-height:100px}
+.tenant-brand-preview{display:flex;flex-direction:column;gap:7px;border:2px solid;border-radius:14px;padding:20px;background:var(--panel2)}
+.tenant-brand-preview strong{font-size:1.1rem;overflow-wrap:anywhere}
+.tenant-brand-preview span,.tenant-brand-preview small{overflow-wrap:anywhere}
+
+
+/* Show each customer's logo on mobile without increasing the existing header height. */
+.tenant-mobile-brand{display:none}
+@media(max-width:700px){
+ .tenant-mobile-brand{display:inline-flex;align-items:center;flex:0 0 46px;width:46px;height:46px}
+ .tenant-mobile-brand .look-brand-logo{width:44px!important;height:44px!important;min-height:44px;padding:2px;margin:0}
+ .tenant-mobile-brand .look-brand-logo img{width:40px;height:40px;object-fit:contain}
+ .tenant-mobile-brand .tenant-customer-initials{min-height:40px;padding:2px;font-size:18px}
+}
