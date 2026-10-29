@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
+import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
 
 type Counts = { companies:number|null; contacts:number|null; opportunities:number|null; conversations:number|null; quotations:number|null; events:number|null };
@@ -21,6 +22,7 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
 }
 export default function CrmCommercialDashboard(){
   const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null;
+  const tenantBrand=useTenantBrand();
   const roleLabel=tenant?.membership_role==="owner"?"Propietario":tenant?.membership_role==="admin"?"Administrador":tenant?.membership_role==="manager"?"Gerente":tenant?.membership_role==="agent"?"Vendedor":"Equipo";
   const canManage=["owner","admin","manager"].includes(tenant?.membership_role??"");
   const [counts,setCounts]=useState<Counts>({...blank});
@@ -72,7 +74,7 @@ export default function CrmCommercialDashboard(){
       <nav className="nav" aria-label="Módulos del CRM">{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Panel principal · LOOK SOCIAL MEDIA CRM</div><h1>Portal de {tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>
+      <header className="topbar"><div><div className="eyebrow">Panel principal · CRM personalizado</div><h1>Portal de {tenantBrand?.name??tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>
         <div className="top-actions"><button className="button" type="button" onClick={()=>setReload(n=>n+1)}><RefreshCw size={16}/> Actualizar</button></div>
       </header>
       {error&&<div className="notice" role="alert">{error}</div>}
