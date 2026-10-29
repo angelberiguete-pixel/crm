@@ -30,6 +30,8 @@ jobs:
         run: node --experimental-strip-types --test tests/meta-webhook.test.mjs
       - name: WhatsApp Cloud API test-send policy and tenant ownership tests
         run: node --experimental-strip-types --test tests/whatsapp-test-send.test.mjs
+      - name: Digital staff validated role, human-review and provider budget tests
+        run: node --experimental-strip-types --test tests/digital-employees.test.mjs tests/digital-employee-trials-reviews.test.mjs tests/ai-employee-provider.test.mjs
       - name: Automation worker typecheck
         run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Branding and tenant portal regression tests
@@ -46,6 +48,8 @@ jobs:
         run: node tests/look-brand-browser.test.mjs
       - name: Tenant white-label mobile branding and cross-company switching
         run: node tests/tenant-white-label-browser.test.mjs
+      - name: Digital employee mobile onboarding and safe provider fallback
+        run: node tests/digital-employee-browser.test.mjs
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
       - name: Password recovery browser regression tests
