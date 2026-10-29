@@ -38,7 +38,7 @@ type Quotation = { id: string; quote_number: string; company_id: string | null; 
 type CalendarEvent = { id: string; title: string; description: string | null; event_type: string; status: string; starts_at: string; ends_at: string; location: string | null; created_at: string };
 type AutomationRule = { id: string; name: string; description: string | null; status: string; trigger_type: string; trigger_event: string | null; created_at: string };
 type Agent = { id: string; name: string; purpose: string | null; status: string; model_provider: string; model_name: string; approval_mode: string; created_at: string };
-type TenantSettings = { tenant_id: string; brand_name: string | null; logo_url: string | null; favicon_url: string | null; primary_color: string | null; secondary_color: string | null; accent_color: string | null; custom_domain: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean };
+type TenantSettings = { tenant_id: string; brand_name: string | null; logo_url: string | null; favicon_url: string | null; primary_color: string | null; secondary_color: string | null; accent_color: string | null; custom_domain: string | null; support_email: string | null; timezone: string; currency: string; hide_platform_branding: boolean; settings: Record<string, unknown> | null };
 type RevenueDash = { current_mrr: number | null; open_pipeline_mrr: number | null; weighted_pipeline_mrr: number | null; cash_collected: number | null; open_opportunities: number | null; won_opportunities: number | null };
 type ErpStatus = { tenant_id:string; connection_id:string; provider:string; status:string; sync_direction:string; last_healthcheck_at:string|null; last_error:string|null; source_of_truth:Record<string,unknown>|null; inventory_synced_at:string|null; odoo_products:number };
 type ProductPublication = { product_id:string; is_published:boolean; show_exact_stock:boolean; show_price:boolean; public_label:string|null };
@@ -490,6 +490,8 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
   const [secondary,setSecondary]=useState("#7C3AED");
   const [accent,setAccent]=useState("#00D4FF");
   const [logo,setLogo]=useState("");
+  const [logoOnLight,setLogoOnLight]=useState("");
+  const [logoOnDark,setLogoOnDark]=useState("");
   const [favicon,setFavicon]=useState("");
   const [saving,setSaving]=useState(false);
   useEffect(()=>{
@@ -497,7 +499,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
     (async()=>{
       const [r,e]=await Promise.all([
         supabase.from("tenant_settings")
-          .select("tenant_id,brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,custom_domain,support_email,timezone,currency,hide_platform_branding")
+          .select("tenant_id,brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,custom_domain,support_email,timezone,currency,hide_platform_branding,settings")
           .eq("tenant_id",tenantId).maybeSingle(),
         supabase.from("tenant_erp_status")
           .select("tenant_id,connection_id,provider,status,sync_direction,last_healthcheck_at,last_error,source_of_truth,inventory_synced_at,odoo_products")
@@ -514,6 +516,9 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
       setSecondary(safeHex(item?.secondary_color,"#7C3AED"));
       setAccent(safeHex(item?.accent_color,"#00D4FF"));
       setLogo(item?.logo_url??"");
+      const branding=(item?.settings?.branding??{}) as Record<string,unknown>;
+      setLogoOnLight(typeof branding.logo_on_light_url==="string"?branding.logo_on_light_url:"");
+      setLogoOnDark(typeof branding.logo_on_dark_url==="string"?branding.logo_on_dark_url:"");
       setFavicon(item?.favicon_url??"");
       setErp(e.data as ErpStatus|null);
     })().catch(()=>{if(alive)notice("No se pudo leer la configuración del negocio.");});
@@ -524,13 +529,25 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
     if(saving)return;
     if(logo.trim()&&!safeTenantAsset(logo))return notice("El logotipo debe ser HTTPS o una ruta local válida.");
     if(favicon.trim()&&!safeTenantAsset(favicon))return notice("El ícono debe ser HTTPS o una ruta local válida.");
+    if(logoOnLight.trim()&&!safeTenantAsset(logoOnLight))return notice("La variante para fondo claro necesita URL HTTPS o ruta válida.");
+    if(logoOnDark.trim()&&!safeTenantAsset(logoOnDark))return notice("La variante para fondo oscuro necesita URL HTTPS o ruta válida.");
     if(!brand.trim()||brand.trim().length>100)return notice("Introduce un nombre comercial de 1 a 100 caracteres.");
     setSaving(true);
+    const brandingSettings=(settings?.settings?.branding??{}) as Record<string,unknown>;
+    const nextSettings={
+      ...(settings?.settings??{}),
+      branding:{
+        ...brandingSettings,
+        logo_on_light_url:safeTenantAsset(logoOnLight),
+        logo_on_dark_url:safeTenantAsset(logoOnDark),
+      },
+    };
     const response=await supabase.from("tenant_settings").update({
       brand_name:brand.trim(),
       support_email:support.trim()||null,
       primary_color:primary,secondary_color:secondary,accent_color:accent,
       logo_url:safeTenantAsset(logo),favicon_url:safeTenantAsset(favicon),
+      settings:nextSettings,
     }).eq("tenant_id",tenantId).select("tenant_id").maybeSingle();
     setSaving(false);
     if(response.error)return notice(response.error.message);
@@ -547,7 +564,10 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
         <p className="muted">Estos cambios solo se aplican al CRM de la empresa activa. Ningún otro negocio comparte tu imagen o configuración.</p>
         <div className="stack gap-12">
           <label>Nombre comercial<input value={brand} maxLength={100} required onChange={e=>setBrand(e.target.value)}/></label>
-          <label>Logo (URL HTTPS o ruta local)<input value={logo} placeholder="https://ejemplo.com/logo.png" maxLength={1200} onChange={e=>setLogo(e.target.value)}/></label>
+          <label>Logo principal sin fondo (URL HTTPS o ruta local)<input value={logo} placeholder="https://ejemplo.com/logo.png" maxLength={1200} onChange={e=>setLogo(e.target.value)}/></label>
+          <label>Logo para fondo claro<input value={logoOnLight} placeholder="/client-brands/family-power/logo-color.svg" maxLength={1200} onChange={e=>setLogoOnLight(e.target.value)}/></label>
+          <label>Logo para fondo oscuro<input value={logoOnDark} placeholder="/client-brands/family-power/logo-negativo.svg" maxLength={1200} onChange={e=>setLogoOnDark(e.target.value)}/></label>
+          <p className="muted">Selecciona las variantes aprobadas y sin fondo cuadrado. El CRM usa la versión clara sobre superficies oscuras y la versión a color en superficies claras.</p>
           <label>Ícono de pestaña (opcional)<input value={favicon} placeholder="https://ejemplo.com/favicon.png" maxLength={1200} onChange={e=>setFavicon(e.target.value)}/></label>
           <label>Color principal<input type="color" value={primary} onChange={e=>setPrimary(e.target.value)}/></label>
           <label>Color secundario<input type="color" value={secondary} onChange={e=>setSecondary(e.target.value)}/></label>
