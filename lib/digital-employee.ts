@@ -46,7 +46,7 @@ export function validateEmployeeRequest(value:unknown):string|null{
   if(!value||typeof value!=="object"||Array.isArray(value))return "request_invalid";
   const v=value as Record<string,unknown>;
   if(typeof v.tenant_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.tenant_id))return "tenant_invalid";
-  if(typeof v.agent_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.agent_id))return "agent_invalid";
+  if(typeof v.agent_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.agent_id))return "agent_invalid";
   if(typeof v.request_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.request_id))return "request_id_invalid";
   if(typeof v.question!=="string"||v.question.trim().length<3||v.question.trim().length>1200)return "question_invalid";
   return null;
