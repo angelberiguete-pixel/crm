@@ -24,7 +24,7 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
    let active=true;
    const load=async()=>{
      const response=await supabase.from("tenant_settings")
-       .select("brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color")
+       .select("brand_name,logo_url,favicon_url,primary_color,secondary_color,accent_color,settings")
        .eq("tenant_id",tenant.tenant_id).maybeSingle();
      if(!active)return;
      // Never use settings from a failed query or from another tenant.
