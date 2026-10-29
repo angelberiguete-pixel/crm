@@ -63,20 +63,21 @@ Deno.serve(async req=>{
   if(!Object.hasOwn(EMPLOYEE_ROLES,role))return error(origin,"role_not_supported",422);
   const knowledge=normalizeEmployeeKnowledge(settings.knowledge);
   if(validateEmployeeKnowledge(knowledge))return error(origin,"knowledge_incomplete",422);
-  // Soft quota for sandbox trial. Production quota requires atomic reservations.
-  const since=new Date(Date.now()-24*60*60*1000).toISOString();
-  const count=await service.from("ai_agent_runs").select("id",{head:true,count:"exact"})
-    .eq("tenant_id",tenantId).gte("created_at",since);
-  if(count.error)return error(origin,"quota_check_failed",503);
-  if((count.count??0)>=20)return error(origin,"daily_trial_limit",429);
-  // Reserve idempotency before the paid provider call. The service role writes runs;
-  // authenticated clients have only SELECT under the existing RLS policies.
-  const saved=await service.from("ai_agent_runs").insert({
-    id:requestId,tenant_id:tenantId,agent_id:agentId,status:"running",
-    input:{source:"manual_sandbox",question,role},started_at:new Date().toISOString(),
+  // Reserve a paid model trial and idempotent run together inside PostgreSQL.
+  // Authenticated clients cannot call this service_role-only RPC.
+  const reserved=await service.rpc("reserve_ai_employee_trial",{
+    p_request_id:requestId,p_tenant_id:tenantId,p_agent_id:agentId,
+    p_question:question,p_role:role,
   });
-  if(saved.error)return error(origin,saved.error.code==="23505"?"request_already_submitted":"run_reservation_failed",
-    saved.error.code==="23505"?409:503);
+  if(reserved.error){
+    if(reserved.error.code==="23505")return error(origin,"request_already_submitted",409);
+    return error(origin,"trial_reservation_unavailable",503);
+  }
+  if(reserved.data!=="reserved"){
+    const code=typeof reserved.data==="string"?reserved.data:"trial_reservation_failed";
+    const status=code==="daily_trial_limit"?429:code==="request_already_submitted"?409:422;
+    return error(origin,code,status);
+  }
   const finish=async(fields:Record<string,unknown>)=>service.from("ai_agent_runs")
     .update({...fields,finished_at:new Date().toISOString()}).eq("tenant_id",tenantId).eq("id",requestId);
   try{
