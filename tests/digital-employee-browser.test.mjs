@@ -27,6 +27,8 @@ try{
     }));
   },{user,token});
   const agents=[],requests=[];
+  const pendingTrial={id:"22222222-2222-4222-8222-222222222222",agent_id:"11111111-1111-4111-8111-222222222222",status:"awaiting_approval",input:{question:"¿Qué servicios ofrecen?"},output:{draft:"Contamos con servicios verificados y podemos organizar una consulta."},created_at:new Date().toISOString()};
+  const reviews=[];
   await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname.split("/").pop();
     let data=[];
@@ -48,6 +50,19 @@ try{
         data={id:newAgent.id};
       } else data=agents;
     }
+    else if(path==="ai_agent_runs")data=[pendingTrial];
+    else if(path==="ai_agent_reviews"){
+      if(req.method()==="POST"){
+        const decision=req.postDataJSON();
+        assert.equal(decision.tenant_id,tenant);
+        assert.equal(decision.run_id,pendingTrial.id);
+        assert.equal(decision.reviewed_by,uid);
+        assert.equal(decision.decision,"approved");
+        assert.ok(decision.reviewed_text.includes("servicios"));
+        reviews.push(decision);requests.push({type:"human-review"});
+        data=null;
+      }else data=reviews;
+    }
     else if(url.pathname.includes("/functions/v1/ai-employee-draft")){
       requests.push({type:"model-request"});
       await route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({ok:false,error:"ai_provider_not_configured"}),headers:{"access-control-allow-origin":"*"}});
@@ -59,6 +74,11 @@ try{
   await page.goto(base+"/crm/employees");
   await page.getByRole("heading",{name:"Empleados digitales con IA"}).waitFor();
   await page.getByText("Todavía no hay empleados digitales").waitFor();
+  await page.getByRole("button",{name:/¿Qué servicios ofrecen/}).click();
+  await page.getByRole("button",{name:"Aprobar borrador"}).click();
+  await page.getByText("Borrador revisado y aprobado; NO enviado al cliente.",{exact:true}).waitFor();
+  assert.equal(requests.filter(x=>x.type==="human-review").length,1);
+  assert.equal(requests.filter(x=>x.type==="outbound").length,0,"approval is audit-only, not outbound");
   await page.getByLabel("Nombre del negocio").fill("Sublimaciones ficticias de prueba");
   await page.getByLabel("Servicios y productos comprobados").fill("Personalización de artículos, precios sujetos a cotización humana.");
   await page.getByRole("button",{name:"Guardar empleado en borrador"}).click();
