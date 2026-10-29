@@ -59,3 +59,20 @@ test("approved SVG logos are preserved with client-specific contrast, no white t
  assert.match(settings,/Logo para fondo claro/);
  assert.match(settings,/Logo para fondo oscuro/);
 });
+
+test("Family Power panel uses real tenant-scoped records and accessible Spanish labels",()=>{
+ const dashboard=read("../components/energy-service-dashboard.tsx");
+ const main=read("../components/crm-commercial-dashboard.tsx");
+ assert.match(main,/tenant\?\.tenant_slug==="family-power"/);
+ assert.match(main,/EnergyServiceDashboard/);
+ for(const table of ["contacts","quotations","orders","tasks"]){
+   assert.match(dashboard,new RegExp('["\\x27]'+table+'["\\x27]'));
+ }
+ assert.match(dashboard,/\.eq\("tenant_id",tenantId\)/);
+ assert.match(dashboard,/RLS|permisos/i);
+ assert.match(dashboard,/<BrandLogo size="login" surface="dark"\/>/);
+ assert.match(dashboard,/Clientes/);
+ assert.match(dashboard,/Trabajos e instalaciones/);
+ assert.match(dashboard,/Ninguna cuenta de WhatsApp/);
+ assert.doesNotMatch(dashboard,/OPENAI_API_KEY|service_role|graph\.facebook\.com|insert\(/);
+});
