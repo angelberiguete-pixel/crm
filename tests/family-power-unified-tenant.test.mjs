@@ -65,7 +65,7 @@ test("Family Power panel uses real tenant-scoped records and accessible Spanish 
  const main=read("../components/crm-commercial-dashboard.tsx");
  assert.match(main,/tenant\?\.tenant_slug==="family-power"/);
  assert.match(main,/EnergyServiceDashboard/);
- for(const table of ["contacts","quotations","orders","tasks"]){
+ for(const table of ["contacts","quotations","orders","opportunities"]){
    assert.match(dashboard,new RegExp('["\\x27]'+table+'["\\x27]'));
  }
  assert.match(dashboard,/\.eq\("tenant_id",tenantId\)/);
@@ -75,4 +75,34 @@ test("Family Power panel uses real tenant-scoped records and accessible Spanish 
  assert.match(dashboard,/Trabajos e instalaciones/);
  assert.match(dashboard,/Ninguna cuenta de WhatsApp/);
  assert.doesNotMatch(dashboard,/OPENAI_API_KEY|service_role|graph\.facebook\.com|insert\(/);
+});
+
+test("branded portal login never trusts a URL or self-signup for tenant access",()=>{
+ const login=read("../app/family-power/login/page.tsx");
+ const helper=read("../lib/family-power-access.ts");
+ const styles=read("../app/family-power/login/family-login.module.css");
+ assert.match(login,/src="\/client-brands\/family-power\/logo-negativo.svg"/);
+ assert.match(login,/supabase\.auth\.signInWithPassword/);
+ assert.match(login,/supabase\.rpc\("list_my_tenants"\)/);
+ assert.match(login,/familyPowerMembership\(list\.data/);
+ assert.match(login,/supabase\.rpc\("set_active_tenant"/);
+ assert.match(login,/notifyTenantContextChanged\(\)/);
+ assert.match(login,/router\.replace\("\/crm"\)/);
+ assert.doesNotMatch(login,/supabase\.auth\.signUp|platform_join_tenant_as_admin|window\.location\.search.*next/);
+ assert.match(login,/no tiene acceso autorizado/);
+ assert.match(styles,/background:#0c0d10/);
+ assert.match(styles,/border-top:4px solid #d20a14/);
+ assert.match(helper,/FAMILY_POWER_SLUG="family-power"/);
+ assert.match(helper,/case "owner":return "Propietario"/);
+ assert.match(helper,/case "admin":return "Administrador"/);
+ assert.match(helper,/case "agent":return "Vendedor"/);
+});
+test("Family Power screens hide inaccessible actions for each role",()=>{
+ const dashboard=read("../components/energy-service-dashboard.tsx");
+ assert.match(dashboard,/familyPowerRoleLabel\(tenant\?\.membership_role\)/);
+ assert.match(dashboard,/tenant_current_permissions/);
+ assert.match(dashboard,/permissions\[\s*link\.permission\s*\]===true/);
+ assert.match(dashboard,/\/crm\/operations/);
+ assert.match(dashboard,/\/crm\/revenue/);
+ assert.doesNotMatch(dashboard,/href:"\/crm\/tasks"|href:"\/crm\/orders"/);
 });
