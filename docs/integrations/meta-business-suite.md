@@ -41,3 +41,21 @@ El canal se marca 'connected' **únicamente por un worker de servidor autorizado
 - Guía Meta de integración de formularios Lead Ads con un CRM.
 
 **No modificar producción, no gastar, no enviar mensajes ni fusionar PR hasta autorización y QA.**
+
+
+## Envío real de prueba por WhatsApp Cloud API — fase preparatoria (28 octubre 2026)
+
+Se creó la función de servidor supabase/functions/whatsapp-test-send con envío auténtico al endpoint de mensajes de Meta; política segura, libro privado de intentos, botón de prueba en CRM → Canales y pruebas unitarias. Todo está **solo en una rama**, NO desplegado ni conectado; no se ha enviado ningún mensaje real. Meta aceptó el mensaje no significa entregado ni leído.
+
+SEGURIDAD Y ALCANCE:
+- Solo un test recipient previamente autorizado y guardado en secretos del servidor; no se acepta destinatario arbitrario por solicitud web.
+- El usuario debe tener sesión válida, ser owner activo del tenant Look Social Media (slug técnico eurevector), con WhatsApp de la propia empresa verificado en servidor y Phone Number ID correcto.
+- El destinatario de prueba debe consentir y escribir primero al número empresarial para abrir la ventana de atención si se envía texto libre.
+- UUID de solicitud único y registro previo en la tabla RLS whatsapp_send_attempts. Intentos ambiguos no se reintentan automáticamente.
+- Variables secretas en Supabase: META_WA_TENANT_ID, META_WA_PHONE_NUMBER_ID, META_WA_TEST_RECIPIENT, META_WA_ACCESS_TOKEN, META_WA_GRAPH_VERSION. Nunca se deben pegar claves/tokens en chat, GitHub o frontend.
+- Migración versionada supabase/migrations/20261028212000_whatsapp_test_sends_private_ledger.sql requiere aprobación antes de ser aplicada a producción. Desplegar Edge Function con verify_jwt=true.
+- Verificar Business Portfolio Look Social Media, WABA ID, Phone Number ID, permisos whatsapp_business_messaging y elegibilidad de WhatsApp Business App Coexistence. NO borrar la cuenta activa del teléfono.
+- Envíos a contactos y automatizaciones: FASE POSTERIOR. Exigen webhook entrante firmado, tenant mapping validado, registro de consentimiento, plantillas aprobadas fuera de 24h, control antispam, deduplicación, E2E y supervisión humana.
+- Sin credenciales autorizadas y aceptación del proveedor no hay integración productiva. No enviar mensajes ni registrar conversaciones como enviadas por simple click o HTTP 200.
+
+PRUEBA DE ACEPTACIÓN: login propietario → canal Meta configurado/verificado → destinatario voluntario → un solo POST real con idempotencia → Meta responde message ID → webhook confirma entrega → resultados auditados. No interpretar un estado READY o CI success como confirmación de entrega.
