@@ -6,6 +6,7 @@ import { Bot, Plus, Save, Sparkles, RefreshCw, ShieldCheck, ClipboardCopy } from
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import DigitalEmployeeReviewQueue from "@/components/digital-employee-review-queue";
+import DigitalEmployeeChannelBinding from "@/components/digital-employee-channel-binding";
 import { EMPLOYEE_ROLES, normalizeEmployeeKnowledge, validateEmployeeKnowledge,
   type EmployeeRole, type EmployeeKnowledge } from "@/lib/digital-employee";
 
@@ -185,6 +186,7 @@ export default function DigitalEmployeeStudio(){
         <p className="muted">Copiar no envía el contenido ni constituye una aprobación comercial.</p>
       </div>}
     </section>
+    {tenantId&&<DigitalEmployeeChannelBinding tenantId={tenantId} agentId={selectedId}/>}
     {tenantId&&<DigitalEmployeeReviewQueue tenantId={tenantId}/>}
   </main>;
 }
