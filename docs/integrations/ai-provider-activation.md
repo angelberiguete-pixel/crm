@@ -1,6 +1,6 @@
 # Activación del proveedor IA de Look Digital Staff (controlada)
 
-Fecha de verificación: 29 octubre 2026. **Estado: código preparado en PR #81, no desplegado; no se ha gastado dinero ni probado una llamada real con una clave de OpenAI.**
+Fecha de verificación: 29 octubre 2026. **Estado (29 octubre 2026): presupuesto PILOTO GLOBAL US$5/MES AUTORIZADO por Ángel Berigüete. Las migraciones de cuota/auditoría y límite monetario se aplicaron y verificaron en Supabase CRM. La función IA aún no tiene una clave OpenAI verificada ni ha generado una llamada real; el despliegue del endpoint se verifica por separado. No se ha cargado saldo ni contratado API automáticamente.**
 
 ## Proveedor recomendado y coste comprobado
 
@@ -11,7 +11,9 @@ Fecha de verificación: 29 octubre 2026. **Estado: código preparado en PR #81, 
 
 ## Presupuesto: dos barreras de consumo
 
-**Barrera interna** (SQL transaccional, primer alcance piloto):
+**Barrera interna ACTIVA en Supabase** (SQL transaccional, primer alcance piloto):
+- Límite total aprobado: **US$5.00 mensuales entre todas las empresas** (5,000,000 unidades micro-USD). Es un techo adicional fijado **dentro de PostgreSQL**; ni siquiera una variable equivocada de la Edge Function puede aumentarlo por sí sola.
+- Límite por empresa para este piloto: **hasta US$5.00 por mes**, sujeto al mismo máximo compartido de US$5.00. Por defecto la función usa `5.00` para ambos y permite valores inferiores por variables seguras del servidor.
 - \`AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD\`: máximo reservado por tenant / mes UTC, USD exactos con hasta dos decimales.
 - \`AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD\`: máximo reservado para **todos** los tenants / mes UTC.
 - Un request reserva antes de la llamada el coste conservador de todos sus tokens de entrada, más 450 tokens de salida. No puede exceder ninguno de los dos presupuestos, ni 20 pruebas/día/tenant. Se serializa por fila global para evitar concurrencia peligrosa.
@@ -26,8 +28,8 @@ Fecha de verificación: 29 octubre 2026. **Estado: código preparado en PR #81, 
 
 ## Conexión segura desde Supabase
 
-1. Revisar y aprobar el PR #81 y las migraciones versionadas, especialmente \`20261028235000_ai_employee_atomic_trials_and_reviews.sql\` y \`20261029041000_ai_employee_budget_reservations.sql\`.
-2. Hacer QA de las políticas RLS y la RPC presupuestaria con dos tenants de prueba, incluyendo 21 solicitudes simultáneas, reintentos, límites por USD y errores del proveedor; conservar backups y rollback.
+1. Revisar el PR #81 y comprobar las migraciones aplicadas en Supabase, especialmente \`20261028235000_ai_employee_atomic_trials_and_reviews.sql\` y \`20261029041000_ai_employee_budget_reservations.sql\`.
+2. Repetir QA de las políticas RLS y la RPC presupuestaria con dos tenants de prueba, incluyendo 21 solicitudes simultáneas, reintentos, límites por USD y errores del proveedor; conservar backups y rollback.
 3. Crear un **proyecto OpenAI API separado para Look Digital Staff** y limitar su gasto en la consola OpenAI, con privilegios mínimos. No compartir tokens en chats ni comprometerlos en GitHub/Vercel frontend.
 4. En el panel de Supabase del proyecto CRM \`ygipjqgyreeahslzorik\`, abrir **Edge Functions → Secrets**. Configurar mediante consola protegida los valores:
    - \`OPENAI_API_KEY\`: **valor secreto generado en OpenAI**, NUNCA enviarlo por conversación;
@@ -49,3 +51,12 @@ Fecha de verificación: 29 octubre 2026. **Estado: código preparado en PR #81, 
 ## Aceptación del producto
 
 Se considera **activado** únicamente cuando la Edge Function está desplegada y conectada con una clave autorizada, responde con un modelo real, los límites de gasto bloquean correctamente, la auditoría recoge tokens y costes, y se demuestra que ningún envío se produjo sin aprobación.
+
+
+## Evidencia de aplicación del límite US$5 — 29 octubre 2026
+
+- Supabase CRM proyecto `ygipjqgyreeahslzorik`: se aplicaron las migraciones `look_digital_staff_reviews_and_trial_quota` y `look_digital_staff_pilot_usd5_budget`, ambas con `success:true`.
+- Comprobadas 4 tablas con RLS activo: `ai_agent_trial_usage`, `ai_agent_reviews`, `ai_employee_monthly_budget`, `ai_employee_global_monthly_budget`.
+- El RPC `reserve_ai_employee_budgeted_trial` usa `SECURITY INVOKER`, requiere `service_role` y está denegado para `anon` y `authenticated`.
+- Prueba real SQL de la validación económica con montos sintéticos (sin agente real): presupuesto US$10 => `budget_configuration_invalid`; presupuesto US$5 con agente inexistente => `agent_not_in_safe_draft_mode`. Ambas ejecuciones dejaron 0 reservas y 0 llamadas IA.
+- Estos límites NO instalan una clave API ni garantizan que el proveedor externe nunca exceda US$5 (la aplicación de topes del proveedor puede tardar); configurar también el hard limit US$5 en el proyecto OpenAI exclusivo.
