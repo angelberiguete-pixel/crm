@@ -130,7 +130,7 @@ export default function CrmChannelSetup(){
 
   return <main className="content" style={{maxWidth:1150,margin:"0 auto"}}>
     <header className="topbar">
-      <div><div className="eyebrow">Configuración de la empresa</div><h1>Canales de atención</h1><p className="muted">Empresa: {tenant.tenant_name}</p></div>
+      <div><div className="eyebrow">Configuración de la empresa</div><h1>Canales de atención</h1><Link className="button" href="/crm/integrations">Centro de Integraciones</Link><p className="muted">Empresa: {tenant.tenant_name}</p></div>
       <div className="top-actions"><Link href="/crm/inbox" className="button"><ArrowLeft size={15}/> Conversaciones</Link><button type="button" className="button" onClick={()=>setRefresh(v=>v+1)}><RefreshCw size={15}/> Actualizar</button></div>
     </header>
     <div className={styles.notice}><ShieldCheck size={20} aria-hidden="true"/><p><strong>Una solicitud no equivale a una conexión.</strong> Registraremos únicamente los datos públicos del canal. No introduzcas contraseñas, tokens de Meta, códigos de verificación ni claves de correo aquí. Los mensajes reales permanecerán inactivos hasta completar la autorización del proveedor y una prueba funcional.</p></div>
