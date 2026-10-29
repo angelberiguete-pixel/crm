@@ -60,3 +60,17 @@ Se considera **activado** únicamente cuando la Edge Function está desplegada y
 - El RPC `reserve_ai_employee_budgeted_trial` usa `SECURITY INVOKER`, requiere `service_role` y está denegado para `anon` y `authenticated`.
 - Prueba real SQL de la validación económica con montos sintéticos (sin agente real): presupuesto US$10 => `budget_configuration_invalid`; presupuesto US$5 con agente inexistente => `agent_not_in_safe_draft_mode`. Ambas ejecuciones dejaron 0 reservas y 0 llamadas IA.
 - Estos límites NO instalan una clave API ni garantizan que el proveedor externe nunca exceda US$5 (la aplicación de topes del proveedor puede tardar); configurar también el hard limit US$5 en el proyecto OpenAI exclusivo.
+
+
+## Publicación técnica del receptor IA — 29 octubre 2026
+
+- Supabase Edge Function `ai-employee-draft`: **ACTIVE, versión 2**, `verify_jwt:true`. Desplegada en el proyecto CRM `ygipjqgyreeahslzorik`, con archivos autocontenidos empaquetados desde la misma rama de GitHub. Verificada mediante `get_edge_function`.
+- Modelo predeterminado fijado: `gpt-5.4-mini-2026-03-17`. No se necesita crear la variable `AI_EMPLOYEE_MODEL` si se conserva el valor predeterminado; otro valor queda bloqueado.
+- Presupuesto de prueba autorizado: global **US$5.00/mes UTC** y máximo por tenant US$5.00/mes UTC, compartiendo siempre el mismo fondo global. Estas cifras se usan como valores por defecto del servidor; la función de PostgreSQL impide subir el global de US$5 aun cambiando variables.
+- Estado de proveedor **PENDIENTE**: no se instaló `OPENAI_API_KEY`, no se comprobó un proyecto OpenAI API con "Enforce a hard limit" de US$5, no hubo llamada autenticada de pago ni generación de texto con IA real.
+- La interfaz `/crm/employees` sigue exclusivamente en PR #81 sin merge/deploy frontend, por lo que no se puede considerar que la función esté disponible desde el CRM público.
+- Para completar el acceso debe configurarse la clave privada de un proyecto API exclusivo de Look Digital Staff directamente en **Supabase → Edge Functions → Secrets**, nunca en chat ni en `NEXT_PUBLIC_*`.
+- Antes de habilitar una primera prueba autenticada debe existir el hard limit de proyecto OpenAI US$5.00/mes + alertas. **Nunca** realizar compras ni activar auto-recarga desde ChatGPT.
+- El `ai_employee_budgeted_trial` se probó con datos sintéticos: un tope de US$10 fue rechazado como `budget_configuration_invalid` y no creó registros. Esta prueba no ejecutó una IA real.
+
+**Advertencia:** Deploy activo no implica proveedor conectado ni sistema comercial completo. El cierre exige una respuesta auténtica con cuenta API autorizada, usuario de tenant legítimo y logs/costo verificados.
