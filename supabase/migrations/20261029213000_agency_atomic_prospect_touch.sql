@@ -29,9 +29,10 @@ begin
     where id=p_prospect_id for update;
   if not found then raise exception 'prospect_not_found' using errcode='P0002'; end if;
   v_contacted:=p_activity_type in ('call','whatsapp','email','meeting','proposal');
-  -- Last contact is an observed action only, never a guessed historical date.
+  -- Last contact is an observed outreach action only, not an inferred response.
+  -- Stage transitions are ALWAYS explicit: a missed call is not a contacted lead.
   update public.agency_prospects
-  set stage=coalesce(p_stage,case when v_contacted and stage='prospecto' then 'contactado' else stage end),
+  set stage=coalesce(p_stage,stage),
       last_contact_at=case when v_contacted then v_at else last_contact_at end,
       next_action=nullif(btrim(coalesce(p_next_action,'')),''),
       next_action_at=case when nullif(btrim(coalesce(p_next_action,'')),'') is null
@@ -47,7 +48,7 @@ begin
 
   return pg_catalog.jsonb_build_object('activity_id',v_activity_id,
      'prospect_id',p_prospect_id,'last_contact_updated',v_contacted,
-     'stage',coalesce(p_stage,case when v_contacted and v_old.stage='prospecto' then 'contactado' else v_old.stage end));
+     'stage',coalesce(p_stage,v_old.stage));
 end;
 $$;
 revoke all on function public.agency_record_prospect_touch(
