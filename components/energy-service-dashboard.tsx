@@ -59,7 +59,7 @@ export default function EnergyServiceDashboard(){
          </Link>
        </div>
        <div style={{width:"min(100%,355px)",padding:12,background:"transparent",flex:"0 1 355px"}}>
-         <BrandLogo size="sidebar" surface="dark"/>
+         <BrandLogo size="login" surface="dark"/>
        </div>
      </div>
    </section>
