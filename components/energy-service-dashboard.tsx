@@ -7,14 +7,15 @@ import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
+import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
-type Counts={contacts:number|null;quotations:number|null;orders:number|null;tasks:number|null};
-const empty:Counts={contacts:null,quotations:null,orders:null,tasks:null};
+type Counts={contacts:number|null;quotations:number|null;orders:number|null;opportunities:number|null};
+const empty:Counts={contacts:null,quotations:null,orders:null,opportunities:null};
 const links=[
-  {href:"/crm/contacts",title:"Clientes",description:"Personas y negocios atendidos",Icon:Users,key:"contacts"},
-  {href:"/crm/quotations",title:"Cotizaciones",description:"Presupuestos que requieren revisión",Icon:FileText,key:"quotations"},
-  {href:"/crm/orders",title:"Trabajos e instalaciones",description:"Órdenes y seguimiento de servicios",Icon:Wrench,key:"orders"},
-  {href:"/crm/tasks",title:"Tareas pendientes",description:"Acciones asignadas a tu equipo",Icon:ClipboardList,key:"tasks"},
+  {href:"/crm/contacts",title:"Clientes",description:"Personas y negocios atendidos",Icon:Users,key:"contacts",permission:"contacts"},
+  {href:"/crm/quotations",title:"Cotizaciones",description:"Presupuestos que requieren revisión",Icon:FileText,key:"quotations",permission:"quotations"},
+  {href:"/crm/operations",title:"Trabajos e instalaciones",description:"Órdenes y seguimiento de servicios",Icon:Wrench,key:"orders",permission:"operations"},
+  {href:"/crm/revenue",title:"Seguimientos",description:"Oportunidades y próximas gestiones",Icon:ClipboardList,key:"opportunities",permission:"pipeline"},
 ] as const;
 
 export default function EnergyServiceDashboard(){
@@ -22,19 +23,23 @@ export default function EnergyServiceDashboard(){
  const brand=useTenantBrand();
  const tenantId=tenant?.tenant_id;
  const [counts,setCounts]=useState<Counts>({...empty});
+ const [permissions,setPermissions]=useState<Record<string,unknown>|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [version,setVersion]=useState(0);
  useEffect(()=>{
-   let current=true;setCounts({...empty});setLoading(true);setError("");
+   let current=true;setCounts({...empty});setPermissions(null);setLoading(true);setError("");
    if(!tenantId){setLoading(false);return()=>{current=false;};}
    void (async()=>{
-     const keys=["contacts","quotations","orders","tasks"] as const;
-     const responses=await Promise.all(keys.map(table=>
-       supabase.from(table).select("id",{count:"exact",head:true}).eq("tenant_id",tenantId)));
+     const keys=["contacts","quotations","orders","opportunities"] as const;
+     const [allowed,...responses]=await Promise.all([
+       supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
+       ...keys.map(table=>supabase.from(table).select("id",{count:"exact",head:true}).eq("tenant_id",tenantId)),
+     ]);
      if(!current)return;
      const result={...empty};
-     let failed=false;
+     let failed=Boolean(allowed.error);
+     if(!allowed.error)setPermissions((allowed.data??{}) as Record<string,unknown>);
      responses.forEach((r,i)=>{
        if(r.error){failed=true;return;}
        result[keys[i]]=typeof r.count==="number"?r.count:null;
@@ -47,7 +52,7 @@ export default function EnergyServiceDashboard(){
  },[tenantId,version]);
  return <main className="content family-power-dashboard" style={{margin:"0 auto",maxWidth:1240}}>
    <section style={{background:"linear-gradient(115deg,#101115,#222329 68%,#4B1117)",border:"1px solid #444650",borderRadius:20,padding:"clamp(20px,5vw,38px)",color:"#F7F8FA"}}>
-     <div className="eyebrow" style={{color:"#DFE1E3"}}>Panel de trabajo · Energía alternativa</div>
+     <div className="eyebrow" style={{color:"#DFE1E3"}}>Panel de trabajo · {familyPowerRoleLabel(tenant?.membership_role)}</div>
      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:18,flexWrap:"wrap"}}>
        <div style={{flex:"1 1 280px"}}>
          <h1 style={{color:"#FFFFFF",margin:"10px 0 12px"}}>{brand?.name??tenant?.tenant_name??"Family Power"}</h1>
@@ -72,7 +77,7 @@ export default function EnergyServiceDashboard(){
      </div>
      {error&&<div className="notice" role="alert">{error}</div>}
      <div className="grid two-col" style={{marginTop:18}}>
-       {links.map(({href,title,description,Icon,key})=><Link href={href} key={key}
+       {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,description,Icon,key})=><Link href={href} key={key}
          className="card" style={{display:"flex",alignItems:"center",gap:16,textDecoration:"none",borderLeft:"4px solid #D20A14"}}>
          <span style={{display:"grid",placeItems:"center",background:"#D20A1420",borderRadius:12,padding:12,color:"#D20A14"}}>
            <Icon size={26}/>
@@ -93,13 +98,13 @@ export default function EnergyServiceDashboard(){
        <div className="eyebrow">Atención al cliente</div>
        <h2>Canales de comunicación</h2>
        <p className="muted">Conecta los canales autorizados antes de recibir o enviar mensajes reales. Ninguna cuenta de WhatsApp, Instagram ni correo se activa por mostrar esta pantalla.</p>
-       <Link href="/crm/integrations" className="button">Gestionar canales</Link>
+       {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/integrations" className="button">Gestionar canales</Link>}
      </div>
      <div className="card">
        <div className="eyebrow">Equipo y acceso</div>
        <h2>Operación segura</h2>
        <p className="muted">Los usuarios deben recibir invitaciones individuales y sus permisos se revisan antes de operar. No se importan contraseñas del CRM anterior.</p>
-       <Link href="/crm/settings" className="button">Configuración de la empresa</Link>
+       {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/settings" className="button">Configuración de la empresa</Link>}
      </div>
    </section>
  </main>;
