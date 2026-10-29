@@ -40,11 +40,11 @@ Deno.serve(async req=>{
   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const apiKey=Deno.env.get("OPENAI_API_KEY");
   const model=Deno.env.get("AI_EMPLOYEE_MODEL");
-  const tenantMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD"));
-  const globalMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD"));
+  const tenantMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_TENANT_MONTHLY_BUDGET_USD")??"5.00");
+  const globalMonthlyBudget=budgetUsdToMicros(Deno.env.get("AI_EMPLOYEE_GLOBAL_MONTHLY_BUDGET_USD")??"5.00");
   if(!url||!publicKey||!serviceKey)return error(origin,"server_not_configured",503);
   if(!apiKey||model!==EMPLOYEE_AI_MODEL)return error(origin,"ai_provider_not_configured",503);
-  if(!tenantMonthlyBudget||!globalMonthlyBudget||globalMonthlyBudget<tenantMonthlyBudget)
+  if(!tenantMonthlyBudget||!globalMonthlyBudget||globalMonthlyBudget<tenantMonthlyBudget||globalMonthlyBudget>5_000_000)
     return error(origin,"ai_budget_not_configured",503);
   const service=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
   const identity=await service.auth.getUser(bearer);
