@@ -66,6 +66,7 @@ export default function PlatformAdmin() {
   const [newVertical, setNewVertical] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const [creatingTenant, setCreatingTenant] = useState(false);
+  const [provisioningDrafts,setProvisioningDrafts]=useState(false);
   const [readiness,setReadiness]=useState<Readiness|null>(null);
   const [subscriptionProof,setSubscriptionProof]=useState<SubscriptionProof|null>(null);
   const selectedTenantRef=useRef<string|null>(null);
@@ -185,6 +186,19 @@ export default function PlatformAdmin() {
     setSelectedId(tenantId);
     await loadTenant(tenantId);
     setNotice(`${createdName} creado con plan ${newPlan}${newTemplate ? ` y plantilla ${newTemplate}` : ""}. Continúa con branding, usuarios, módulos e integraciones.`);
+  }
+
+  async function prepareDigitalStaffDrafts(){
+    if(!selectedId||provisioningDrafts)return;
+    const tenantId=selectedId;
+    setProvisioningDrafts(true);setNotice("");
+    const result=await supabase.rpc("platform_prepare_client_digital_staff",{p_tenant_id:tenantId});
+    setProvisioningDrafts(false);
+    if(selectedTenantRef.current!==tenantId)return;
+    if(result.error)return setNotice("No se pudieron preparar los empleados: "+result.error.message);
+    const count=Number(result.data??0);
+    setNotice(count>0?count+" perfiles en borrador preparados para "+(selected?.tenant_name??"el cliente")+". Completa servicios y datos verificados dentro de su CRM; no hay IA ni envíos activados.":"Los cuatro perfiles ya están configurados o reservados para este cliente. No se crearon duplicados.");
+    await loadTenant(tenantId);
   }
 
   async function setPlan(code: string) {
@@ -388,7 +402,7 @@ export default function PlatformAdmin() {
           <p className="notice">No se certifican cobros ni ingresos desde esta pantalla. Las suscripciones «manual» habilitan el uso del CRM, pero requieren contrato, factura y comprobante externo antes de contabilizar ingresos. No se inicia facturación automática.</p>
         </section>
         <section className="card">
-          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
+          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
         </section>
 
         <section className="grid two-col" id="modules">
