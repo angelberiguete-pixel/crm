@@ -37,6 +37,8 @@ test("Agency OS logs actual calls transactionally with admin checks and deadline
  assert.match(migration,/private\.is_platform_admin\(\)/);
  assert.match(migration,/for update/);
  assert.match(migration,/last_contact_at=case when v_contacted/);
+ assert.match(migration,/stage=coalesce\(p_stage,stage\)/);
+ assert.doesNotMatch(migration,/stage=\x27prospecto\x27 then \x27contactado\x27/);
  assert.match(migration,/insert into public\.agency_prospect_activities/);
  assert.match(migration,/grant execute on function public\.agency_record_prospect_touch[\s\S]*?to authenticated;/i);
  assert.match(agency,/supabase\.rpc\("agency_record_prospect_touch"/);
