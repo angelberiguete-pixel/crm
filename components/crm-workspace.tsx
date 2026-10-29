@@ -58,6 +58,7 @@ const nav = [
   ["automations", "Automatizaciones", Bot],
   ["files", "Archivos", FileText],
   ["channels", "Canales", Inbox],
+  ["integrations", "Integraciones", Settings],
   ["settings", "Configuración", Settings],
 ] as const;
 
