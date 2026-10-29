@@ -106,3 +106,16 @@ test("Family Power screens hide inaccessible actions for each role",()=>{
  assert.match(dashboard,/\/crm\/revenue/);
  assert.doesNotMatch(dashboard,/href:"\/crm\/tasks"|href:"\/crm\/orders"/);
 });
+
+test("Family Power sidebar hides denied sections and uses Spanish business labels",()=>{
+ const workspace=read("../components/crm-workspace.tsx");
+ assert.match(workspace,/familyMenuPermissions/);
+ assert.match(workspace,/familyEnabledModules/);
+ assert.match(workspace,/familyEnabledModules\[permission\]!==false/);
+ assert.match(workspace,/if\(!familyMenuPermissions\)return false/);
+ assert.match(workspace,/supabase\.rpc\("tenant_current_permissions"/);
+ assert.match(workspace,/supabase\.rpc\("tenant_effective_modules"/);
+ assert.match(workspace,/familyLabels/);
+ assert.match(workspace,/isFamilyPower\?familyPowerRoleLabel\(member\.role\):member\.role/);
+ assert.match(workspace,/isFamilyPower\?"\/family-power\/login":"\/login"/);
+});
