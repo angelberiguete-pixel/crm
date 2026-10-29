@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -35,6 +35,9 @@ type Member = { user_id: string; email: string | null; membership_role: string; 
 type Role = { role_key: string; role_name: string; description: string | null; permissions: Record<string, unknown>; is_system: boolean };
 type Plan = { id?: string; code?: string; name?: string; [key: string]: unknown };
 type Template = { template_key: string; name: string; description: string | null; status: string };
+type ReadinessCheck = {key:string;label:string;status:"passed"|"action_required"|"not_verified";detail:string};
+type Readiness = {verified_configuration:number;required_actions:number;manual_checks:number;ready_for_commercial_activation:boolean;checks:ReadinessCheck[]};
+type SubscriptionProof = {provider:string;status:string;provider_subscription_id:string|null;provider_customer_id:string|null};
 
 function unwrap<T>(value: unknown, rpcName: string): T[] {
   if (!Array.isArray(value)) return [];
@@ -63,6 +66,10 @@ export default function PlatformAdmin() {
   const [newVertical, setNewVertical] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const [creatingTenant, setCreatingTenant] = useState(false);
+  const [provisioningDrafts,setProvisioningDrafts]=useState(false);
+  const [readiness,setReadiness]=useState<Readiness|null>(null);
+  const [subscriptionProof,setSubscriptionProof]=useState<SubscriptionProof|null>(null);
+  const selectedTenantRef=useRef<string|null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("viewer");
   const [invitingMember, setInvitingMember] = useState(false);
@@ -72,6 +79,7 @@ export default function PlatformAdmin() {
   const [odooBusy, setOdooBusy] = useState(false);
 
   const selected = useMemo(() => tenants.find((t) => t.tenant_id === selectedId) ?? null, [tenants, selectedId]);
+  selectedTenantRef.current=selectedId;
 
   const loadAccess = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -117,21 +125,31 @@ export default function PlatformAdmin() {
   }, [loadAccess, loadPlatform]);
 
   const loadTenant = useCallback(async (tenantId: string) => {
-    const [moduleResult, memberResult, roleResult] = await Promise.all([
+    const [moduleResult, memberResult, roleResult, readinessResult, billingResult] = await Promise.all([
       supabase.rpc("tenant_effective_modules", { p_tenant_id: tenantId }),
       supabase.rpc("platform_admin_members", { p_tenant_id: tenantId }),
       supabase.rpc("platform_admin_tenant_roles", { p_tenant_id: tenantId }),
+      supabase.rpc("platform_client_readiness", { p_tenant_id: tenantId }),
+      supabase.from("tenant_subscriptions")
+        .select("provider,status,provider_subscription_id,provider_customer_id")
+        .eq("tenant_id",tenantId).maybeSingle(),
     ]);
-    const err = moduleResult.error ?? memberResult.error ?? roleResult.error;
+    // An A -> B switch must never render the previous tenant's readiness,
+    // billing information, members or role permissions under B's heading.
+    if(selectedTenantRef.current!==tenantId)return;
+    const err = moduleResult.error ?? memberResult.error ?? roleResult.error
+      ?? readinessResult.error ?? billingResult.error;
     if (err) setNotice(err.message);
     setModules((moduleResult.data ?? []) as Module[]);
     setMembers((memberResult.data ?? []) as Member[]);
     setRoles((roleResult.data ?? []) as Role[]);
+    setReadiness(readinessResult.error?null:readinessResult.data as Readiness);
+    setSubscriptionProof(billingResult.error?null:billingResult.data as SubscriptionProof|null);
   }, []);
 
   useEffect(() => {
     if (selectedId && access?.is_platform_admin) loadTenant(selectedId);
-    else { setModules([]); setMembers([]); setRoles([]); }
+    else { setModules([]); setMembers([]); setRoles([]); setReadiness(null);setSubscriptionProof(null); }
   }, [selectedId, access, loadTenant]);
 
   async function claimOwner(e: FormEvent) {
@@ -168,6 +186,19 @@ export default function PlatformAdmin() {
     setSelectedId(tenantId);
     await loadTenant(tenantId);
     setNotice(`${createdName} creado con plan ${newPlan}${newTemplate ? ` y plantilla ${newTemplate}` : ""}. Continúa con branding, usuarios, módulos e integraciones.`);
+  }
+
+  async function prepareDigitalStaffDrafts(){
+    if(!selectedId||provisioningDrafts)return;
+    const tenantId=selectedId;
+    setProvisioningDrafts(true);setNotice("");
+    const result=await supabase.rpc("platform_prepare_client_digital_staff",{p_tenant_id:tenantId});
+    setProvisioningDrafts(false);
+    if(selectedTenantRef.current!==tenantId)return;
+    if(result.error)return setNotice("No se pudieron preparar los empleados: "+result.error.message);
+    const count=Number(result.data??0);
+    setNotice(count>0?count+" perfiles en borrador preparados para "+(selected?.tenant_name??"el cliente")+". Completa servicios y datos verificados dentro de su CRM; no hay IA ni envíos activados.":"Los cuatro perfiles ya están configurados o reservados para este cliente. No se crearon duplicados.");
+    await loadTenant(tenantId);
   }
 
   async function setPlan(code: string) {
@@ -296,7 +327,7 @@ export default function PlatformAdmin() {
     <aside className="sidebar">
       <div className="brand"><strong>Look Social Media</strong><span>Super Admin · {access.role}</span></div>
       <nav className="nav">
-        <a className="active" href="#tenants"><Building2 size={17} /> Clientes / Tenants</a>
+        <a className="active" href="#tenants"><Building2 size={17} /> Espacios / Tenants</a>
         <a href="#modules"><Layers3 size={17} /> Planes y módulos</a>
         <a href="#team"><Users size={17} /> Usuarios y roles</a>
         <a href="#templates"><Stethoscope size={17} /> Templates</a>
@@ -311,7 +342,7 @@ export default function PlatformAdmin() {
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <section className="grid metrics" style={{ marginBottom: 16 }}>
-        <div className="metric"><div className="metric-label">Tenants</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Clientes / workspaces</div></div>
+        <div className="metric"><div className="metric-label">Tenants</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Espacios creados, no clientes de pago</div></div>
         <div className="metric"><div className="metric-label">Usuarios activos</div><div className="metric-value">{tenants.reduce((n, t) => n + Number(t.member_count ?? 0), 0)}</div><div className="metric-sub">Membresías activas</div></div>
         <div className="metric"><div className="metric-label">Planes</div><div className="metric-value">{plans.length}</div><div className="metric-sub">Catálogo actual</div></div>
         <div className="metric"><div className="metric-label">Control</div><div className="metric-value"><ShieldCheck size={26} /></div><div className="metric-sub">Platform Owner activo</div></div>
@@ -319,13 +350,14 @@ export default function PlatformAdmin() {
 
       <section className="grid two-col" id="tenants">
         <div className="card">
-          <h2>Clientes / Tenants</h2>
+          <h2>Espacios / Tenants</h2>
           <div className="table-wrap"><table className="data-table"><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>Usuarios</th><th></th></tr></thead><tbody>{tenants.map((t) => <tr key={t.tenant_id}><td><strong>{t.tenant_name}</strong><div className="muted">{t.tenant_slug}</div></td><td>{t.plan_code ?? "—"}</td><td><span className="pill">{t.subscription_status ?? "sin plan"}</span></td><td>{t.member_count}</td><td><button className="button small" onClick={() => setSelectedId(t.tenant_id)}>Gestionar</button></td></tr>)}</tbody></table>{tenants.length === 0 && <div className="empty"><strong>Sin tenants todavía</strong><div>Crea el primero desde este panel.</div></div>}</div>
         </div>
         <form className="card" onSubmit={createTenant}>
           <div className="eyebrow">Onboarding de cliente</div>
           <h2>Agregar nuevo cliente</h2>
           <p className="muted">Crea el workspace aislado, asigna el plan y aplica una plantilla vertical opcional en una sola operación.</p>
+          <p className="notice">La creación de un espacio y un plan manual no constituye un contrato firmado, pago confirmado ni cliente de pago. Verifica identidad y autorización antes de invitar usuarios.</p>
           <div className="stack gap-12">
             <label>Empresa / cliente<input value={newName} onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")); }} required /></label>
             <label>Slug<input value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} required minLength={3} /></label>
@@ -339,8 +371,38 @@ export default function PlatformAdmin() {
       </section>
 
       {selected && <div className="stack gap-16 section-gap">
+        <section className="card" aria-label="Preparación de lanzamiento del cliente">
+          <div className="eyebrow"><ShieldCheck size={15}/> Control de alta y preparación del cliente</div>
+          <h2>Comprobación previa al lanzamiento de {selected.tenant_name}</h2>
+          <p className="muted">Fuente: comprobaciones existentes de Supabase. Un espacio creado no equivale a un negocio contratado ni a una integración probada.</p>
+          {readiness?<div className="stack gap-12">
+            <div className="kpi-row">
+              <span className="kpi-chip">Configuración: {readiness.verified_configuration} comprobaciones superadas</span>
+              <span className="kpi-chip">Acciones pendientes: {readiness.required_actions}</span>
+              <span className="kpi-chip">Pruebas manuales: {readiness.manual_checks}</span>
+            </div>
+            <div className="priority-list">{readiness.checks.map(check=>
+              <div className="priority-item" key={check.key}>
+                <div><strong>{check.label}</strong><div className="muted">{check.detail}</div></div>
+                <span className="pill">{check.status==="passed"?"Comprobado":check.status==="action_required"?"Acción necesaria":"Sin verificar"}</span>
+              </div>)}</div>
+            <p className="notice">Estado comercial: {readiness.ready_for_commercial_activation?"Revisión humana final necesaria":"NO autorizado para lanzar como servicio operativo"}. Debe completarse el ensayo real con usuario del cliente, aislamiento entre empresas, recuperación de acceso, permisos de Meta y aceptación.</p>
+          </div>:<div className="notice">No se pudo validar el checklist de preparación. No marcar el cliente como listo.</div>}
+          <button type="button" className="button" onClick={()=>void loadTenant(selected.tenant_id)}>Actualizar revisión</button>
+        </section>
+        <section className="card" aria-label="Suscripción y cobros comprobados">
+          <div className="eyebrow">Suscripción · control comercial</div>
+          <h2>Plan asignado no equivale a ingreso cobrado</h2>
+          <div className="priority-list">
+            <div className="priority-item"><strong>Plan interno</strong><span>{selected.plan_code??"Sin plan"}</span></div>
+            <div className="priority-item"><strong>Estado técnico</strong><span>{subscriptionProof?.status??"Sin verificar"}</span></div>
+            <div className="priority-item"><strong>Registro de proveedor</strong><span>{subscriptionProof?.provider??"No configurado"}</span></div>
+            <div className="priority-item"><strong>Suscripción externa</strong><span>{subscriptionProof?.provider_subscription_id?"ID registrado; verificar recibos":"Sin comprobante de proveedor"}</span></div>
+          </div>
+          <p className="notice">No se certifican cobros ni ingresos desde esta pantalla. Las suscripciones «manual» habilitan el uso del CRM, pero requieren contrato, factura y comprobante externo antes de contabilizar ingresos. No se inicia facturación automática.</p>
+        </section>
         <section className="card">
-          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
+          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
         </section>
 
         <section className="grid two-col" id="modules">
