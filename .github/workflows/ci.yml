@@ -30,6 +30,8 @@ jobs:
         run: node --experimental-strip-types --test tests/digital-employees.test.mjs
       - name: Digital staff quota and human review security contract tests
         run: node --experimental-strip-types --test tests/digital-employee-trials-reviews.test.mjs
+      - name: AI employee provider budget and structured sales outcome tests
+        run: node --experimental-strip-types --test tests/ai-employee-provider.test.mjs
       - name: Automation worker typecheck
         run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Branding and tenant portal regression tests
