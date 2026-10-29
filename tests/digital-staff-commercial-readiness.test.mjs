@@ -6,6 +6,7 @@ const demo=readFileSync(new URL("../app/demo/look-digital-staff/page.tsx",import
 const admin=readFileSync(new URL("../components/platform-admin.tsx",import.meta.url),"utf8");
 const agency=readFileSync(new URL("../app/agency/page.tsx",import.meta.url),"utf8");
 const migration=readFileSync(new URL("../supabase/migrations/20261029213000_agency_atomic_prospect_touch.sql",import.meta.url),"utf8");
+const seed=readFileSync(new URL("../supabase/migrations/20261029214500_client_digital_staff_drafts.sql",import.meta.url),"utf8");
 test("four employees simulate fixed replies, never send or invent real appointments/payments",()=>{
  assert.equal(Object.keys(DEMO_ROLES).length,4);
  assert.equal(Object.keys(DEMO_SCENARIOS).length,4);
@@ -48,4 +49,19 @@ test("onboarding reads server readiness and never markets manual subscriptions a
  assert.match(admin,/suscripciones «manual»/);
  assert.match(admin,/selectedTenantRef\.current!==tenantId/);
  assert.match(admin,/Sin comprobante de proveedor/);
+});
+
+test("platform provisions four disabled-by-default draft staff profiles exactly once",()=>{
+ assert.match(admin,/supabase\.rpc\("platform_prepare_client_digital_staff"/);
+ assert.match(admin,/Preparar 4 empleados en borrador/);
+ assert.match(seed,/security invoker/i);
+ assert.match(seed,/private\.is_platform_admin\(\)/);
+ assert.match(seed,/pg_advisory_xact_lock/);
+ assert.match(seed,/settings->>'role'=v_role/);
+ for(const role of ["recepcionista","vendedor","secretaria","cobros"])assert.ok(seed.includes("'"+role+"'"));
+ assert.match(seed,/'draft','openai','server-configured'/);
+ assert.match(seed,/'human_approval','\[\]'::jsonb/);
+ assert.match(seed,/requires_verified_knowledge/);
+ assert.doesNotMatch(seed,/INSERT INTO public\.ai_agent_runs|graph\.facebook|OPENAI_API_KEY/i);
+ assert.match(seed,/grant execute on function public\.platform_prepare_client_digital_staff\(uuid\)[\s\S]*?to authenticated;/i);
 });
