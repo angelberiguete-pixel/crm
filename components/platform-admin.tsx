@@ -433,7 +433,7 @@ export default function PlatformAdmin() {
           <p className="notice">No se certifican cobros ni ingresos desde esta pantalla. Las suscripciones «manual» habilitan el uso del CRM, pero requieren contrato, factura y comprobante externo antes de contabilizar ingresos. No se inicia facturación automática.</p>
         </section>
         <section className="card">
-          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions"><button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
+          <div className="topbar" style={{ marginBottom: 0 }}><div><div className="eyebrow">Tenant seleccionado</div><h2>{selected.tenant_name}</h2><div className="muted">{selected.tenant_slug} · {selected.subscription_status ?? "sin suscripción"}</div></div><div className="top-actions">{selected.tenant_slug==="family-power"&&<Link className="button" href="/family-power/login" target="_blank" rel="noopener noreferrer">Ver acceso de Family Power</Link>}<button className="button primary" onClick={enterTenant}>Entrar al CRM del cliente</button><button className="button" type="button" onClick={()=>void prepareDigitalStaffDrafts()} disabled={provisioningDrafts}>{provisioningDrafts?"Preparando perfiles…":"Preparar 4 empleados en borrador"}</button><button className="button" onClick={installCita24}><Stethoscope size={14} /> Instalar Cita-24</button></div></div>
         </section>
 
         <section className="grid two-col" id="modules">
@@ -466,7 +466,7 @@ export default function PlatformAdmin() {
             </div>
           </div>
           <div className="card">
-            <h2>Perfiles de acceso</h2>
+            <h2>Perfiles de acceso</h2>{selected.tenant_slug==="family-power"&&<p className="notice">Family Power: el propietario, los administradores y los vendedores usan <strong>/family-power/login</strong> con cuentas individuales. La invitación se envía desde este panel y los permisos se asignan según su rol; no se crean cuentas públicas ni se copian contraseñas del CRM anterior.</p>}
             <p className="muted">Cada rol se traduce a un rol base seguro y conserva permisos específicos del tenant. Roles personalizados como Producción o Entregas no necesitan tocar código.</p>
             {roles.map((r) => <div className="priority-item" key={r.role_key}><div><strong>{r.role_name}</strong><div className="muted">{r.description ?? r.role_key}</div></div><span className="pill">{r.is_system ? "Base" : "Custom"}</span></div>)}
           </div>
