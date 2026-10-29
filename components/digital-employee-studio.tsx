@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bot, Plus, Save, Sparkles, RefreshCw, ShieldCheck, ClipboardCopy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import DigitalEmployeeReviewQueue from "@/components/digital-employee-review-queue";
 import { EMPLOYEE_ROLES, normalizeEmployeeKnowledge, validateEmployeeKnowledge,
   type EmployeeRole, type EmployeeKnowledge } from "@/lib/digital-employee";
 
@@ -62,7 +63,7 @@ export default function DigitalEmployeeStudio(){
   function selectAgent(agent:AgentRow){
     const settings=agent.settings??{},kind=settings.role;
     setSelectedId(agent.id);
-    setRole(kind==="vendedor"?"vendedor":"recepcionista");
+    setRole(kind==="vendedor"||kind==="secretaria"||kind==="cobros"?kind:"recepcionista");
     setName(agent.name);
     setKnowledge(normalizeEmployeeKnowledge(settings.knowledge));
     setDraft("");setError("");setNotice("");
@@ -143,13 +144,13 @@ export default function DigitalEmployeeStudio(){
           onClick={()=>selectAgent(agent)} className={"button "+(selectedId===agent.id?"primary":"")} style={{textAlign:"left",justifyContent:"flex-start"}}>
           <Bot size={16}/> {agent.name} · {agent.status==="draft"?"Borrador":agent.status}
         </button>)}</div>}
-        <p className="muted" style={{marginTop:16}}>Roles iniciales: Recepcionista y Asesor comercial. Secretaría, cobros y voz se incorporarán tras validar la primera operación.</p>
+        <p className="muted" style={{marginTop:16}}>Cuatro roles configurables en modo borrador; voz y acciones reales requieren proveedores y verificaciones independientes.</p>
       </section>
       <section className="card">
         <h2>{active?"Configurar empleado":"Crear empleado digital"}</h2>
         <form onSubmit={save} className="stack gap-12">
           <label>Tipo de empleado<select value={role} onChange={e=>{const val=e.target.value as EmployeeRole;setRole(val);if(!selectedId)setName(EMPLOYEE_ROLES[val].label);setDraft("");}}>
-            <option value="recepcionista">Recepcionista IA</option><option value="vendedor">Asesor comercial IA</option>
+            <option value="recepcionista">Recepcionista IA</option><option value="vendedor">Asesor comercial IA</option><option value="secretaria">Secretaría administrativa IA</option><option value="cobros">Asistente de cobros IA</option>
           </select></label>
           <p className="muted">{EMPLOYEE_ROLES[role].purpose}</p>
           <label>Nombre interno<input value={name} maxLength={90} minLength={3} required onChange={e=>setName(e.target.value)}/></label>
@@ -176,5 +177,6 @@ export default function DigitalEmployeeStudio(){
         <p className="muted">Copiar no envía el contenido ni constituye una aprobación comercial.</p>
       </div>}
     </section>
+    {tenantId&&<DigitalEmployeeReviewQueue tenantId={tenantId}/>}
   </main>;
 }
