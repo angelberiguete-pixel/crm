@@ -1,5 +1,5 @@
 /** Reusable Look Digital Staff configuration. No provider calls or side effects. */
-export type EmployeeRole = "recepcionista" | "vendedor";
+export type EmployeeRole = "recepcionista" | "vendedor" | "secretaria" | "cobros";
 export type EmployeeKnowledge = {
   business_name: string;
   services: string;
@@ -20,6 +20,16 @@ export const EMPLOYEE_ROLES: Record<EmployeeRole,{label:string;purpose:string;in
     label:"Asesor comercial IA",
     purpose:"Calificar interés, explicar servicios y preparar respuestas de seguimiento.",
     instructions:"Ayuda a calificar prospectos, presenta solo servicios comprobados y propone el siguiente paso. No ofrezcas descuentos, garantías ni cotizaciones definitivas sin aprobación humana.",
+  },
+  secretaria:{
+    label:"Secretaría administrativa IA",
+    purpose:"Preparar recordatorios, resúmenes y solicitudes administrativas para aprobación.",
+    instructions:"Redacta borradores administrativos y solicitudes de cita. No alteres registros, no confirmes citas ni afirmes haber emitido documentos; pide intervención humana para cualquier operación.",
+  },
+  cobros:{
+    label:"Asistente de cobros IA",
+    purpose:"Preparar recordatorios respetuosos de vencimiento a partir de estados de cuenta autorizados.",
+    instructions:"Nunca afirmes que alguien debe dinero sin una cuenta verificada. No inventes saldos, facturas ni plazos; no recibas pagos ni pidas contraseñas o datos bancarios. Transfiere disputas o dificultades de pago a una persona.",
   },
 };
 const keys: (keyof EmployeeKnowledge)[]=[
