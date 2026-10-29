@@ -39,3 +39,15 @@ test("router is server-only, Meta HMAC and verified mapping required, no auto-se
  assert.ok(migration.includes("'suggested_agent_id'"));
  assert.ok(migration.includes("'requires_human',true"));
 });
+
+test("one human follow-up task is scheduled only from verified receipts",()=>{
+ const migration=readFileSync(new URL("../supabase/migrations/20261029204500_whatsapp_verified_first_response_tasks.sql",import.meta.url),"utf8");
+ assert.match(migration,/create unique index if not exists tasks_whatsapp_first_response_once/i);
+ assert.match(migration,/where source='automation'/);
+ assert.match(migration,/meta_whatsapp_inbound_receipts r/);
+ assert.match(migration,/r.external_message_id=NEW.external_message_id/);
+ assert.match(migration,/NEW.metadata->>'provider' <> 'whatsapp'/);
+ assert.match(migration,/on conflict do nothing/);
+ assert.match(migration,/after insert on public.messages/i);
+ assert.doesNotMatch(migration,/graph\.facebook|openai|twilio/i);
+});
