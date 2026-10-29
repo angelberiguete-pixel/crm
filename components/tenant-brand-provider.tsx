@@ -44,12 +44,19 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
    if(loading)return;
    const previous=document.title;
    document.title=brand.name+" | CRM";
-   const favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-   const originalHref=favicon?.getAttribute("href")??null;
-   if(favicon)favicon.href=brand.faviconUrl??(brand.officialLookBrand?"/look-social-media-logo.svg":"/favicon.ico");
+   let favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+   const created=!favicon;
+   if(!favicon){
+     favicon=document.createElement("link");
+     favicon.rel="icon";
+     document.head.appendChild(favicon);
+   }
+   const originalHref=favicon.getAttribute("href");
+   favicon.href=brand.faviconUrl??(brand.officialLookBrand?"/look-social-media-logo.svg":"/tenant-crm-icon.svg");
    return()=>{
      document.title=previous;
-     if(favicon&&originalHref)favicon.href=originalHref;
+     if(created)favicon.remove();
+     else if(originalHref!==null)favicon.setAttribute("href",originalHref);
    };
  },[brand,loading]);
  if(loading)return <div className="loading" role="status">Preparando el espacio de {fallback.name}…</div>;
