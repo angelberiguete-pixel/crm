@@ -47,7 +47,7 @@ export default function AgencyPage(){
   try{
     const result=await supabase.rpc("agency_record_prospect_touch",{
       p_prospect_id:id,p_activity_type:activityType,p_summary:activitySummary.trim(),
-      p_outcome:activityOutcome.trim()||null,p_stage:activityStage,
+      p_outcome:activityOutcome.trim()||null,p_stage:activityStage===activityProspect.stage?null:activityStage,
       p_next_action:activityNextAction.trim()||null,
       p_next_action_at:activityNextDate?new Date(activityNextDate).toISOString():null,
     });
