@@ -56,3 +56,5 @@ jobs:
         run: node tests/omnichannel-assignment-browser.test.mjs
       - name: Company channel authorization browser regression tests
         run: node tests/company-channel-onboarding-browser.test.mjs
+      - name: Digital employee Android mobile sandbox regression tests
+        run: node tests/digital-employee-browser.test.mjs
