@@ -5,9 +5,11 @@ import {EMPLOYEE_ROLES, normalizeEmployeeKnowledge, validateEmployeeKnowledge,va
 const uid="11111111-1111-4111-8111-111111111111";
 const knowledge={business_name:"Negocio de prueba",services:"Servicio de personalización de artículos según la cotización individual",hours:"",location:"",prices:"",booking:"",faq:"",human_contact:"Atención humana"};
 test("reusable first roles include receptionist and seller",()=>{
- assert.deepEqual(Object.keys(EMPLOYEE_ROLES).sort(),["recepcionista","vendedor"]);
+ assert.deepEqual(Object.keys(EMPLOYEE_ROLES).sort(),["cobros","recepcionista","secretaria","vendedor"]);
  assert.match(EMPLOYEE_ROLES.vendedor.instructions,/cotizaciones definitivas/);
  assert.match(EMPLOYEE_ROLES.recepcionista.instructions,/nunca confirmes/i);
+ assert.match(EMPLOYEE_ROLES.cobros.instructions,/No inventes saldos/);
+ assert.match(EMPLOYEE_ROLES.secretaria.instructions,/No alteres registros/);
 });
 test("explicit bounded business knowledge is required",()=>{
  assert.equal(validateEmployeeKnowledge({}),"business_name_required");
