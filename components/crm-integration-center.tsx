@@ -47,7 +47,7 @@ export default function CrmIntegrationCenter(){
  const tenant=useActiveTenant();
  const brand=useTenantBrand();
  const id=tenant?.tenant_id??null;
- const admin=["owner","admin","manager"].includes(tenant?.membership_role??"");
+ const admin=["owner","admin"].includes(tenant?.membership_role??"");
  const activeId=useRef(id);activeId.current=id;
  const [health,setHealth]=useState<Health|null>(null);
  const [requests,setRequests]=useState<RequestRow[]>([]);
@@ -91,9 +91,10 @@ export default function CrmIntegrationCenter(){
   e.preventDefault();
   if(!id||!admin||!provider||saving)return;
   const sourceTenant=id;
-  const value=identifier.trim(),name=channelName.trim();
+  const value=provider==="whatsapp"?identifier.replace(/[\s()-]/g,"").trim():identifier.trim();
+  const name=channelName.trim();
   if(value.length<3||value.length>160||name.length<2||name.length>90){setError("Revisa el identificador y el nombre del canal.");return;}
-  if(provider==="whatsapp"&&!/^\+[1-9]\d{7,14}$/.test(value)){setError("Incluye el número con código de país, por ejemplo +1 849 570 6550 (sin espacios).");return;}
+  if(provider==="whatsapp"&&!/^\+[1-9]\d{7,14}$/.test(value)){setError("Incluye el número con código de país, por ejemplo +1 849 570 6550.");return;}
   if(provider==="instagram"&&!/^[a-zA-Z0-9._]{1,30}$/.test(value)){setError("Escribe un usuario de Instagram válido, sin @.");return;}
   if(provider==="email"&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("Introduce un correo empresarial válido.");return;}
   setSaving(true);setError("");setNotice("");
