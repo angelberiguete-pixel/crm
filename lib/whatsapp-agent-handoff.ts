@@ -26,7 +26,7 @@ export function classifyWhatsAppHandoff(body:unknown):WhatsAppHandoffDecision {
  let intent:WhatsAppHandoffIntent="general_information";
  let nextStep:WhatsAppHandoffDecision["nextStep"]="prepare_draft_only";
  const human=test(v,/\b(humano|persona real|asesor(?:a)?|representante|operador|vendedor|supervisor)\b/)
-    &&test(v,/\b(hablar|comunicar|contactar|atender|transfer|pasar|quiero|necesito|prefiero|llam|conectar)\w*\b/);
+    &&test(v,/\b(hablar|comunicar|contactar|atender|transfer|pasar|pasame|quiero|necesito|prefiero|llam|conectar)\w*\b/);
  if(human || test(v,/\b(quiero hablar con alguien|pasame con alguien|necesito hablar con alguien)\b/)){
    intent="human_requested";nextStep="transfer_to_human";
  } else if(test(v,/\b(acepto|apruebo|aprobada|confirmo|autorizo)\b.{0,55}\b(cotizacion|propuesta|presupuesto|precio|oferta)\b/)
