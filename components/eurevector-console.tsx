@@ -10,6 +10,11 @@ import BrandLogo from "@/components/brand-logo";
 import {safeTenantAsset} from "@/lib/tenant-brand";
 import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 
+function memberLabel(email:string|null,userId:string):string{
+  const prefix="family-power.",suffix="@login.looksocialmedia.invalid";
+  if(email?.startsWith(prefix)&&email.endsWith(suffix))return email.slice(prefix.length,-suffix.length);
+  return email||userId.slice(0,8);
+}
 type CompanyBrand={tenant_id:string;brand_name:string|null;logo_url:string|null;dark_logo_url:string|null};
 type Tenant = { tenant_id:string; tenant_name:string; tenant_slug:string; owner_user_id:string|null; plan_code:string|null; subscription_status:string|null; member_count:number; created_at:string };
 type Plan = { id:string; code:string; name:string; monthly_price_cents:number; is_active:boolean };
@@ -135,7 +140,7 @@ export default function EurevectorConsole(){
  </form>
  <div className="stack gap-12"><h3>Miembros registrados</h3>
  {members.map(m=><div className="priority-item" key={m.user_id}>
-  <div><strong>{m.email??m.user_id.slice(0,8)}</strong><p className="muted">{m.role_name??m.membership_role}</p></div>
+  <div><strong>{memberLabel(m.email,m.user_id)}</strong><p className="muted">{m.role_name??m.membership_role}</p></div>
   <span className="pill">{m.membership_status}</span>
  </div>)}
  {!members.length&&<p className="muted">Todavía no hay miembros visibles para esta cuenta.</p>}</div>
