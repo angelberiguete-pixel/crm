@@ -66,9 +66,13 @@ export default function FamilyPowerLogin(){
    if(busy||checking)return;
    setBusy(true);setMessage("");setOtherSession(false);
    try{
-     const result=await supabase.auth.signInWithPassword({email:email.trim(),password});
+     const identity=email.trim().toLowerCase();
+     const username=/^[a-z][a-z0-9._-]{2,31}$/.test(identity);
+     if(!identity.includes("@")&&!username){setMessage("Introduce un usuario autorizado o un correo válido.");return;}
+     const loginEmail=username?`family-power.${identity}@login.looksocialmedia.invalid`:identity;
+     const result=await supabase.auth.signInWithPassword({email:loginEmail,password});
      if(result.error||!result.data.session){
-       setMessage("No pudimos iniciar sesión. Revisa tu correo y contraseña.");return;
+       setMessage("No pudimos iniciar sesión. Revisa tu usuario y contraseña.");return;
      }
      await authorize(true);
    }catch{setMessage("No se pudo completar el acceso seguro. Inténtalo nuevamente.");}
@@ -76,7 +80,7 @@ export default function FamilyPowerLogin(){
  }
  async function recover(){
    const target=email.trim();
-   if(!target)return setMessage("Escribe tu correo para solicitar una nueva contraseña.");
+   if(!target||!target.includes("@"))return setMessage("Las cuentas con usuario sin correo recuperan el acceso a través del administrador de Look Social Media.");
    if(resetting)return;
    setResetting(true);setMessage("");
    try{
@@ -109,15 +113,15 @@ export default function FamilyPowerLogin(){
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>Inicia sesión con la cuenta que te haya autorizado Family Power.</p>
+       <p>Inicia sesión con el usuario aprobado por el administrador o con tu correo registrado.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
        <form onSubmit={signIn} className={styles.form}>
-         <label htmlFor="family-email">Correo electrónico</label>
-         <input id="family-email" name="email" type="email" required
+         <label htmlFor="family-email">Nombre de usuario o correo</label>
+         <input id="family-email" name="email" type="text" required
            autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}
-           placeholder="tu-correo@empresa.com"/>
+           placeholder="usuario autorizado"/>
          <label htmlFor="family-password">Contraseña</label>
          <input id="family-password" name="password" type="password" required minLength={8}
            autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}
@@ -129,7 +133,7 @@ export default function FamilyPowerLogin(){
        </form>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
-       <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
+       <div className={styles.invite}>Los accesos se crean exclusivamente desde la administración. No hay registro público.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Tecnología de Look Digital Staff</footer>
