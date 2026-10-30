@@ -16,6 +16,8 @@ type TenantRole={role_key:string;role_name:string};
 type Member = { user_id:string; email:string|null; membership_role:string; membership_status:string; role_key:string|null; role_name:string|null };
 type ReadinessCheck={key:string;label:string;detail:string;status:"passed"|"action_required"|"not_verified"};
 type Readiness={tenant_id:string;account_onboarding_status:string;verified_configuration:number;required_actions:number;manual_checks:number;ready_for_commercial_activation:boolean;checks:ReadinessCheck[]};
+type SellerStat={user_id:string;display_name:string;role:string;assigned_conversations:number;open_assigned:number;closed_assigned:number;sent_human_messages:number;quotes_created:number;quotes_accepted:number};
+type SellerPerformance={total_conversations:number;unassigned_conversations:number;sellers:SellerStat[]};
 type Snapshot = { tenant?:{id:string;name:string;slug:string}; metrics?:{companies:number;contacts:number;open_opportunities:number;won_opportunities:number;won_mrr:number;open_mrr:number;conversations:number;products:number}; settings?:{brand_name?:string|null;support_email?:string|null;primary_color?:string|null;hide_platform_branding?:boolean;country_code?:string|null;currency?:string|null;timezone?:string|null;locale?:string|null}|null; agency_account?:{status:string;onboarding_status:string;monthly_recurring_cents:number;setup_fee_cents:number;vertical:string|null;template_key:string|null;customizations:Record<string,unknown>}|null; odoo?:Array<{id:string;provider:string;name:string;base_url:string;database_name:string|null;status:string;sync_direction:string;last_healthcheck_at:string|null;last_error:string|null}>; channels?:Array<{provider:string;name:string;status:string}>; lead_pages?:number };
 
 const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format((Number(cents)||0)/100);
@@ -29,32 +31,33 @@ export default function EurevectorConsole(){
  const commercialTenants=useMemo(()=>tenants.filter(t=>isCommercialClientTenant(t.tenant_slug)),[tenants]);
  const visibleTenants=showTechnical?tenants:commercialTenants;
  const selectedRef=useRef<string|null>(null); const requestVersion=useRef(0); const[tenantLoading,setTenantLoading]=useState(false);
- const[modules,setModules]=useState<Module[]>([]); const[members,setMembers]=useState<Member[]>([]);const[tenantRoles,setTenantRoles]=useState<TenantRole[]>([]);const[memberEmail,setMemberEmail]=useState("");const[memberRole,setMemberRole]=useState("viewer");const[linkingMember,setLinkingMember]=useState(false); const[snapshot,setSnapshot]=useState<Snapshot|null>(null);const[readiness,setReadiness]=useState<Readiness|null>(null);
+ const[modules,setModules]=useState<Module[]>([]); const[members,setMembers]=useState<Member[]>([]);const[tenantRoles,setTenantRoles]=useState<TenantRole[]>([]);const[memberEmail,setMemberEmail]=useState("");const[memberRole,setMemberRole]=useState("viewer");const[linkingMember,setLinkingMember]=useState(false); const[snapshot,setSnapshot]=useState<Snapshot|null>(null);const[readiness,setReadiness]=useState<Readiness|null>(null);const[performance,setPerformance]=useState<SellerPerformance|null>(null);
  const[brand,setBrand]=useState(""); const[support,setSupport]=useState(""); const[color,setColor]=useState("#0f766e"); const[whiteLabel,setWhiteLabel]=useState(false);
  const[country,setCountry]=useState(""); const[currency,setCurrency]=useState("DOP"); const[timezone,setTimezone]=useState("America/Santo_Domingo"); const[locale,setLocale]=useState("es-DO");
  const[odooUrl,setOdooUrl]=useState(""); const[odooDb,setOdooDb]=useState(""); const[odooDirection,setOdooDirection]=useState("bidirectional");
  const[newName,setNewName]=useState(""); const[newSlug,setNewSlug]=useState(""); const[newPlan,setNewPlan]=useState("starter"); const[newVertical,setNewVertical]=useState(""); const[newTemplate,setNewTemplate]=useState(""); const[creating,setCreating]=useState(false);
  const selected=useMemo(()=>tenants.find(t=>t.tenant_id===selectedId)??null,[tenants,selectedId]);
- const chooseTenant=(id:string)=>{setNotice("");selectedRef.current=id;requestVersion.current++;setSelectedId(id);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setTenantRoles([]);setMemberEmail("");setMemberRole("viewer");setTenantLoading(true);setBrand("");setSupport("");setOdooUrl("");setOdooDb("");setCountry("");setCurrency("");setTimezone("");setLocale("");};
+ const chooseTenant=(id:string)=>{setNotice("");selectedRef.current=id;requestVersion.current++;setSelectedId(id);setSnapshot(null);setReadiness(null);setPerformance(null);setModules([]);setMembers([]);setTenantRoles([]);setMemberEmail("");setMemberRole("viewer");setTenantLoading(true);setBrand("");setSupport("");setOdooUrl("");setOdooDb("");setCountry("");setCurrency("");setTimezone("");setLocale("");};
 
  const loadPlatform=useCallback(async()=>{setLoading(true);setNotice("");const{data:{session}}=await supabase.auth.getSession();if(!session){router.replace('/login');return}const access=await supabase.rpc('platform_current_access');if(access.error){setNotice(access.error.message);setLoading(false);return}if(!(access.data as any)?.is_platform_admin){setNotice('Tu usuario no tiene acceso de Platform Admin.');setLoading(false);return}const[t,p]=await Promise.all([supabase.rpc('platform_admin_tenants'),supabase.from('plans').select('id,code,name,monthly_price_cents,is_active').eq('is_active',true).order('monthly_price_cents')]);if(t.error||p.error){setNotice((t.error??p.error)?.message??'No se pudo cargar la plataforma');setLoading(false);return}const rows=(t.data??[]) as Tenant[];setTenants(rows);setPlans((p.data??[]) as Plan[]);setSelectedId(cur=>cur&&rows.some(x=>x.tenant_id===cur&&isCommercialClientTenant(x.tenant_slug))?cur:rows.find(x=>isCommercialClientTenant(x.tenant_slug))?.tenant_id??rows[0]?.tenant_id??null);setLoading(false)},[router]);
  const loadTenant=useCallback(async(id:string)=>{
    if(selectedRef.current!==id)return;
    const ticket=++requestVersion.current;
-   setTenantLoading(true);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setTenantRoles([]);
-   const[s,m,u,readinessResult,tenantRoleResult]=await Promise.all([
+   setTenantLoading(true);setSnapshot(null);setReadiness(null);setPerformance(null);setModules([]);setMembers([]);setTenantRoles([]);
+   const[s,m,u,readinessResult,tenantRoleResult,performanceResult]=await Promise.all([
      supabase.rpc('platform_admin_tenant_snapshot',{p_tenant_id:id}),
      supabase.rpc('tenant_effective_modules',{p_tenant_id:id}),
      supabase.rpc('platform_admin_members',{p_tenant_id:id}),
      supabase.rpc('platform_client_readiness',{p_tenant_id:id}),
-     supabase.rpc('platform_admin_tenant_roles',{p_tenant_id:id})
+     supabase.rpc('platform_admin_tenant_roles',{p_tenant_id:id}),
+     supabase.rpc('platform_tenant_seller_performance',{p_tenant_id:id})
    ]);
    if(ticket!==requestVersion.current||selectedRef.current!==id)return;
    const err=s.error??m.error??u.error??readinessResult.error??tenantRoleResult.error;
    setTenantLoading(false);
    if(err){setNotice(err.message);return;}
    const snap=(s.data??{}) as Snapshot;
-   setSnapshot(snap);setReadiness(readinessResult.data as Readiness);setModules((m.data??[]) as Module[]);setMembers((u.data??[]) as Member[]);setTenantRoles((tenantRoleResult.data??[]) as TenantRole[]);
+   setSnapshot(snap);setReadiness(readinessResult.data as Readiness);setModules((m.data??[]) as Module[]);setMembers((u.data??[]) as Member[]);setTenantRoles((tenantRoleResult.data??[]) as TenantRole[]);setPerformance(performanceResult.error?null:(performanceResult.data as SellerPerformance));
    setBrand(snap.settings?.brand_name??snap.tenant?.name??'');
    setSupport(snap.settings?.support_email??'');
    setColor(snap.settings?.primary_color??'#0f766e');
@@ -68,7 +71,7 @@ export default function EurevectorConsole(){
    setOdooDirection(o?.sync_direction??'bidirectional');
  },[]);
  useEffect(()=>{loadPlatform()},[loadPlatform]);
- useEffect(()=>{selectedRef.current=selectedId;if(selectedId)void loadTenant(selectedId);else{requestVersion.current++;setTenantLoading(false);setSnapshot(null);setReadiness(null);setModules([]);setMembers([]);setTenantRoles([])}return()=>{requestVersion.current++}},[selectedId,loadTenant]);
+ useEffect(()=>{selectedRef.current=selectedId;if(selectedId)void loadTenant(selectedId);else{requestVersion.current++;setTenantLoading(false);setSnapshot(null);setReadiness(null);setPerformance(null);setModules([]);setMembers([]);setTenantRoles([])}return()=>{requestVersion.current++}},[selectedId,loadTenant]);
  async function createClient(e:FormEvent){
   e.preventDefault();
   const name=newName.trim(),slug=(newSlug.trim()||slugify(name));
@@ -151,6 +154,9 @@ export default function EurevectorConsole(){
    </>}
  </section>
  <section id="resultado"><div className="grid metrics"><Metric label="Empresas" value={String(metrics.companies)} sub="Cuentas"/><Metric label="Contactos" value={String(metrics.contacts)} sub="Personas / leads"/><Metric label="Pipeline" value={String(metrics.open_opportunities)} sub={dop(metrics.open_mrr)+" abierto"}/><Metric label="Ganadas" value={String(metrics.won_opportunities)} sub={dop(metrics.won_mrr)}/><Metric label="Conversaciones" value={String(metrics.conversations)} sub="Inbox"/><Metric label="Productos" value={String(metrics.products)} sub="Catálogo"/></div></section>
+ <section className="card" id="desempeno" aria-label="Indicadores comprobables de vendedores"><h2>Resultados por vendedor</h2><p className="muted">Indicadores basados en asignaciones actuales y actividad registrada. No son resultados inventados ni atribución histórica de ventas.</p>
+ {performance?<><div className="grid metrics"><Metric label="Conversaciones" value={String(performance.total_conversations)} sub="Registradas en esta empresa"/><Metric label="Sin asignar" value={String(performance.unassigned_conversations)} sub="Requieren seguimiento"/><Metric label="Vendedores" value={String(performance.sellers.length)} sub="Cuentas activas con rol ventas"/></div><div className="table-wrap"><table className="data-table"><thead><tr><th>Vendedor</th><th>Asignadas</th><th>Abiertas</th><th>Cerradas</th><th>Respuestas humanas enviadas</th><th>Cotizaciones creadas</th><th>Cotizaciones aceptadas</th></tr></thead><tbody>{performance.sellers.map(s=><tr key={s.user_id}><td><strong>{s.display_name}</strong></td><td>{s.assigned_conversations}</td><td>{s.open_assigned}</td><td>{s.closed_assigned}</td><td>{s.sent_human_messages}</td><td>{s.quotes_created}</td><td>{s.quotes_accepted}</td></tr>)}</tbody></table>{performance.sellers.length===0&&<p className="muted">Aún no hay vendedores activos registrados para esta empresa.</p>}</div></>:<p className="muted">El informe por vendedor requiere activar primero su consulta protegida en Supabase. No se simulan estadísticas.</p>}
+ </section>
  <section className="grid two-col" id="personalizacion"><form className="card" onSubmit={saveBrand}><h2>Vista del cliente</h2><div className="stack gap-12"><label>Marca<input value={brand} onChange={e=>setBrand(e.target.value)}/></label><label>Email soporte<input type="email" value={support} onChange={e=>setSupport(e.target.value)}/></label><label>Color<input type="color" value={color} onChange={e=>setColor(e.target.value)}/></label><label><input type="checkbox" checked={whiteLabel} onChange={e=>setWhiteLabel(e.target.checked)}/> White-label</label><button className="button primary">Guardar</button></div></form><div className="card"><h2>Acceso y preparación</h2>
 <p className="muted">Miembros activos: {members.filter(m=>m.membership_status==="active").length}. Gestiona los permisos sin crear otra aplicación para esta empresa.</p>
 <div className="stack gap-12"><a href="#onboarding-users" className="button">Gestionar usuarios y roles</a><a href="#readiness" className="button">Revisar pendientes de activación</a></div>
