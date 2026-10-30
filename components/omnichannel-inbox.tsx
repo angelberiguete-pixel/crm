@@ -11,6 +11,14 @@ type Channel = { id: string; provider: string; name: string; status: string };
 type Assignee = { user_id: string; display_name: string; team_role: string };
 const channelLabel: Record<string,string> = {whatsapp:"WhatsApp",instagram:"Instagram",email:"Correo",messenger:"Messenger",webchat:"Chat web",sms:"SMS",manual:"Registro manual"};
 const priorityLabel: Record<string,string> = {low:"Baja",normal:"Normal",high:"Alta",urgent:"Urgente"};
+const handoffIntentLabel:Record<string,string>={
+  human_requested:"Solicita atención de una persona",
+  quote_acknowledgment:"Menciona aceptación de propuesta; verificar aprobación real",
+  quote_requested:"Solicita precios o cotización",
+  appointment_requested:"Solicita cita; comprobar agenda antes de confirmar",
+  billing_or_complaint:"Consulta delicada: pago, cobro o reclamación",
+  general_information:"Consulta informativa",
+};
 const statusLabel: Record<string,string> = {open:"Abierta",pending:"Pendiente",snoozed:"Pospuesta",closed:"Cerrada"};
 const messageStatusLabel:Record<string,string>={pending:"Pendiente",queued:"En cola",sent:"Enviado",delivered:"Entregado",read:"Leído",received:"Recibido",failed:"Error de entrega"};
 const messageTypeLabel:Record<string,string>={text:"Texto",image:"Imagen",audio:"Audio",video:"Vídeo",document:"Documento",file:"Archivo",template:"Plantilla"};
@@ -191,6 +199,11 @@ export default function OmnichannelInbox() {
               {selected.unread_count>0&&<button type="button" className="button" disabled={updating} onClick={()=>void updateConversation({unread_count:0})}>Marcar como leída</button>}
             </div>
           </div>
+          {typeof selected.metadata?.handoff_intent==="string"&&handoffIntentLabel[selected.metadata.handoff_intent]&&<div className="notice" role="status" style={{marginTop:12}}>
+            <strong>Orientación de atención (reglas, no respuesta IA)</strong>
+            <div>{handoffIntentLabel[selected.metadata.handoff_intent]}</div>
+            <small>Revisión humana obligatoria. No se ha enviado ninguna respuesta automática ni aprobado una cotización.</small>
+          </div>}
           <div className="crm-conversation-assignment"><div><strong>Responsable</strong><p className="muted">Asigna la conversación a un vendedor activo de esta empresa.</p></div>{isSupervisor?<select aria-label="Asignar conversación a vendedor" disabled={assigning} value={selected.assigned_to??""} onChange={e=>void assignConversation(e.target.value||null)}><option value="">Sin asignar</option>{assignees.map(a=><option value={a.user_id} key={a.user_id}>{a.display_name} · {a.team_role}</option>)}</select>:<div className="top-actions"><span className="pill">{assignedName(selected.assigned_to)}</span>{!selected.assigned_to&&currentUserId&&<button type="button" className="button primary" disabled={assigning} onClick={()=>void assignConversation(currentUserId)}>Tomar conversación</button>}{selected.assigned_to===currentUserId&&<button type="button" className="button" disabled={assigning} onClick={()=>void assignConversation(null)}>Devolver al equipo</button>}</div>}</div>
           <div className={`stack gap-8 ${styles.messageArea}`} aria-label="Historial de la conversación">
             {messagesLoading?<div className="loading" role="status">Cargando mensajes…</div>:messages.length===0&&<div className="empty"><strong>Sin mensajes todavía</strong><div>La conversación existe, pero aún no tiene historial registrado.</div></div>}
