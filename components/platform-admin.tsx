@@ -19,6 +19,11 @@ import {
 import { supabase } from "@/lib/supabase";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
+function memberLabel(email:string|null,userId:string):string{
+  const prefix="family-power.",suffix="@login.looksocialmedia.invalid";
+  if(email?.startsWith(prefix)&&email.endsWith(suffix))return email.slice(prefix.length,-suffix.length);
+  return email||userId.slice(0,8);
+}
 type Access = { is_platform_admin?: boolean; is_platform_user?: boolean; role?: string | null };
 type Tenant = {
   tenant_id: string;
@@ -490,7 +495,7 @@ export default function PlatformAdmin() {
             </form>
             <div className="stack gap-8">
               {members.map((m) => <div className="priority-item" key={m.user_id}>
-                <div><strong>{m.email ?? m.user_id.slice(0, 8)}</strong><div className="muted">Base: {m.membership_role} · <span className={`pill ${m.membership_status === "active" ? "good" : m.membership_status === "invited" ? "warn" : "danger"}`}>{m.membership_status}</span></div></div>
+                <div><strong>{memberLabel(m.email,m.user_id)}</strong><div className="muted">Base: {m.membership_role} · <span className={`pill ${m.membership_status === "active" ? "good" : m.membership_status === "invited" ? "warn" : "danger"}`}>{m.membership_status}</span></div></div>
                 <select style={{ width: 170 }} value={m.role_key ?? (m.membership_role === "owner" ? "owner" : m.membership_role === "admin" ? "admin" : m.membership_role === "manager" ? "manager" : m.membership_role === "viewer" ? "viewer" : "sales")} onChange={(e) => setMemberRole(m.user_id, e.target.value)}>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select>
               </div>)}
               {members.length === 0 && <div className="empty"><strong>Sin usuarios</strong><div>Invita al dueño o al equipo de este cliente.</div></div>}
