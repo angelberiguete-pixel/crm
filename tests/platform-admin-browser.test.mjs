@@ -51,6 +51,7 @@ try {
   await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
   await page.waitForTimeout(1000);
   console.log('DEBUG company cards',await page.locator('.platform-company-cards button').evaluateAll(nodes=>nodes.map(n=>({aria:n.getAttribute('aria-label'),text:n.textContent?.slice(0,50)}))));
+  console.log('DEBUG admin page text',(await page.locator('body').innerText()).slice(0,900));
   const cardA=page.getByRole('button',{name:'Gestionar empresa QA A'});
   const cardB=page.getByRole('button',{name:'Gestionar empresa QA B'});
   await cardA.click();
