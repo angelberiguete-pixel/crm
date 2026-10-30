@@ -49,18 +49,18 @@ try {
   const page = await context.newPage();
   await page.goto(base+'/platform-admin');
   await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
-  const row=page.getByRole('row').filter({has:page.getByText('QA A',{exact:true})});
-  const rowB=page.getByRole('row').filter({has:page.getByText('QA B',{exact:true})});
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click();
+  const cardA=page.getByRole('button',{name:'Gestionar empresa QA A'});
+  const cardB=page.getByRole('button',{name:'Gestionar empresa QA B'});
+  await cardA.click();
   for(let i=0;i<60&&!delayedAStarted;i++)await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(delayedAStarted,true,'QA A request must start before switching');
-  await rowB.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await cardB.click();
   await page.getByLabel('Marca',{exact:true}).waitFor();
   await page.waitForFunction(()=>document.querySelector('input')!==null);
   await page.getByLabel('Marca',{exact:true}).fill('Marca B');
   await page.waitForTimeout(1000);
   assert.equal(await page.getByLabel('Marca',{exact:true}).inputValue(),'Marca B','late QA A must not overwrite client B branding');
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click(); // no force: catches overlapping cells
+  await cardA.click(); // no force: catches overlapping cards
   await page.getByRole('heading',{name:'QA A',exact:true}).waitFor();
   await page.getByLabel('País (ISO, 2 letras)').fill('DO');
   await page.getByLabel('Moneda (ISO, 3 letras)').fill('DOP');
@@ -94,5 +94,5 @@ try {
   await page.getByText('Usuario vinculado a esta empresa. No se ha enviado correo; necesita sus credenciales existentes.').waitFor();
   await page.getByText('qa-client@example.invalid',{exact:true}).waitFor();
   assert.equal(linkedCalls,1,'exactly one user account linked under selected tenant');
-  console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, mobile support entry and isolation (mocked API; separate real SQL rollback proof).');
+  console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, mobile company cards, support entry and isolation (mocked API; separate real SQL rollback proof).');
 } finally { if(browser)await browser.close(); if(server)server.kill(); }
