@@ -1,28 +1,30 @@
 -- Session-scoped client view for platform owners.
 -- Once an owner opens a client's company the SAME login loses platform
 -- capabilities until sign-out. This is enforced server-side, not only in UI.
-create table if not exists private.platform_client_view_sessions (
- user_id uuid not null references auth.users(id) on delete cascade,
- session_id text not null check(length(session_id) between 20 and 160),
- tenant_id uuid not null references public.tenants(id) on delete cascade,
- entered_at timestamptz not null default now(),
- primary key(user_id,session_id)
+-- Reuse the existing private.crm_client_portal_locks table already present
+-- in this CRM rather than creating a second, competing session lock.
+create table if not exists private.crm_client_portal_locks (
+  auth_session_id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  locked_at timestamptz not null default now()
 );
-revoke all on private.platform_client_view_sessions from public,anon,authenticated;
-
+revoke all on private.crm_client_portal_locks from public,anon,authenticated;
 create or replace function private.platform_client_view_tenant()
 returns uuid language sql stable security definer set search_path=''
 as $$
- select v.tenant_id from private.platform_client_view_sessions v
- where v.user_id=(select auth.uid())
-  and v.session_id=(select auth.jwt()->>'session_id')
- limit 1
+  select l.tenant_id from private.crm_client_portal_locks l
+  where l.user_id=(select auth.uid())
+    and l.auth_session_id=case
+     when (auth.jwt()->>'session_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+       then (auth.jwt()->>'session_id')::uuid else null end
+  limit 1;
 $$;
 
 create or replace function private.crm_is_platform_admin()
 returns boolean language sql stable security definer set search_path=''
 as $$
- select private.platform_client_view_tenant() is null
+ select not private.crm_is_client_portal_locked()
    and exists(select 1 from public.platform_users pu
      where pu.user_id=(select auth.uid()) and pu.status='active'
        and pu.platform_role in ('platform_owner','platform_admin'));
@@ -112,7 +114,7 @@ begin
    and t.status in ('active','trial');
  if v_slug is null then raise exception 'Company not active' using errcode='P0002';end if;
  v_session:=auth.jwt()->>'session_id';
- if length(coalesce(v_session,'')) not between 20 and 160
+ if v_session !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
  then raise exception 'Valid authenticated session required for tenant isolation' using errcode='42501';end if;
  insert into public.memberships as m(tenant_id,user_id,role,status)
  values(p_tenant_id,auth.uid(),'admin','active')
@@ -125,9 +127,9 @@ begin
 
  -- Only opening an external/client business enters locked customer-view mode.
  if v_slug<>'eurevector' then
-   insert into private.platform_client_view_sessions(user_id,session_id,tenant_id)
-   values(auth.uid(),v_session,p_tenant_id)
-   on conflict(user_id,session_id) do nothing;
+   insert into private.crm_client_portal_locks(user_id,auth_session_id,tenant_id)
+   values(auth.uid(),v_session::uuid,p_tenant_id)
+   on conflict(auth_session_id) do nothing;
  end if;
  insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,metadata)
  values(p_tenant_id,auth.uid(),'platform.support_access_granted','membership',
