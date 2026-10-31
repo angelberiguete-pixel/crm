@@ -54,6 +54,8 @@ jobs:
         run: node --experimental-strip-types --test tests/ycloud-whatsapp-webhook.test.mjs tests/ycloud-whatsapp-send.test.mjs
       - name: YCloud integrations status and onboarding safeguards
         run: node --test tests/ycloud-integrations-live-status.test.mjs
+      - name: Family Power brand and portal authorization contracts
+        run: node --experimental-strip-types --test tests/family-power-brand-admin.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build

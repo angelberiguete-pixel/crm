@@ -45,3 +45,14 @@ test("tenant branding is loaded behind membership gate and never writes global r
  assert.match(settings,/\.eq\("tenant_id",tenantId\)\.select\("tenant_id"\)\.maybeSingle\(\)/);
  assert.match(settings,/Logo principal sin fondo \(URL HTTPS o ruta local\)/);
 });
+
+test("Family Power corporate identity never uses stale agency logos or colors",()=>{
+ const identity={tenant_id:"cccccccc-cccc-4ccc-8ccc-cccccccccccc",tenant_slug:"family-power",tenant_name:"Family Power"};
+ const brand=resolveTenantBrand(identity,{brand_name:"Look Social Media",logo_url:"/look-social-media-logo.svg",
+   primary_color:"#2563EB",secondary_color:"#7C3AED",accent_color:"#00D4FF"});
+ assert.equal(brand.name,"Family Power");
+ assert.equal(brand.logoOnLightUrl,"/client-brands/family-power/logo-color-sin-fondo.svg");
+ assert.equal(brand.logoOnDarkUrl,"/client-brands/family-power/logo-negativo-sin-fondo.svg");
+ assert.equal(brand.primaryColor,"#C91425");
+ assert.equal(brand.officialLookBrand,false);
+});
