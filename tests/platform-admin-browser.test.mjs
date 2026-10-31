@@ -71,14 +71,6 @@ try {
   assert.deepEqual(savedRegions.get(A),{country_code:'DO',currency:'DOP',timezone:'America/Santo_Domingo',locale:'es-DO'});
   const size=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(size.scroll<=size.viewport+1,'Super Admin mobile page does not overflow');
-  await page.getByRole('button',{name:'Entrar al CRM',exact:true}).click();
-  await page.waitForURL(/\/crm/);
-  await page.goto(base+'/crm/companies');
-  await page.getByText('Empresa A',{exact:true}).waitFor();
-  assert.deepEqual(supportEntries,[A],'support entry uses the explicitly selected client');
-  assert.equal(await page.getByLabel('Empresa activa').inputValue(),A);
-  await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
   const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Agregar empresa cliente'})});
   await onboarding.getByLabel('Nombre').fill('Nuevo Cliente QA');
   await onboarding.getByLabel('Identificador interno').fill('nuevo-cliente-qa');
@@ -94,5 +86,14 @@ try {
   await page.getByText('Usuario vinculado a esta empresa. No se ha enviado correo; necesita sus credenciales existentes.').waitFor();
   await page.getByText('qa-client@example.invalid',{exact:true}).waitFor();
   assert.equal(linkedCalls,1,'exactly one user account linked under selected tenant');
-  console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, mobile support entry and isolation (mocked API; separate real SQL rollback proof).');
+  // Opening a customer must end the global session and require fresh credentials,
+  // never silently expose the platform controls inside the customer's portal.
+  await row.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await page.getByRole('heading',{name:'QA A',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Entrar al CRM',exact:true}).click();
+  await page.waitForURL(/\/login\?empresa=/);
+  assert.deepEqual(supportEntries,[A],'support access is restricted to explicitly selected company');
+  assert.equal(await page.locator('.tenant-switcher select').count(),0,'no company switch dropdown in customer login');
+
+  console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, client login boundary and isolation (mocked API; separate real SQL rollback proof).');
 } finally { if(browser)await browser.close(); if(server)server.kill(); }
