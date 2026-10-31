@@ -106,6 +106,18 @@ export default function TenantPermissionGate({ section, children }: { section: s
         notifyTenantContextChanged();
       }
 
+      // Existing owner sessions that were already viewing a client from an older
+      // release must become server-locked too. Ordinary client users are unaffected.
+      if (activeTenant.tenant_slug !== "eurevector") {
+        const lock = await supabase.rpc("platform_lock_active_client_view",{
+          p_tenant_id:activeTenant.tenant_id
+        });
+        if(!alive)return;
+        if(lock.error){
+          setReason("No pudimos aislar esta sesión del cliente. Cierra sesión e inicia nuevamente.");
+          setState("deny");return;
+        }
+      }
       if (tenantRef.current && tenantRef.current !== activeTenant.tenant_id) setState("loading");
       const tenantId = activeTenant.tenant_id;
       const permissionKey = sectionPermission[section] ?? section;
