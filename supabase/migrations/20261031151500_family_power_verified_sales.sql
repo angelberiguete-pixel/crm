@@ -332,6 +332,12 @@ begin
  if new.status not in ('sent','accepted') or
   not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
  then return new;end if;
+ -- Only the evidence-audited decision RPC may advance a commercial quote.
+ -- A generic Supabase UPDATE from a salesperson cannot impersonate acceptance.
+ if pg_catalog.current_setting('crm.family_quote_decision',true) is distinct from
+      new.id::text||':'||new.status||':'||auth.uid()::text
+ then raise exception 'Family Power quote status requires human evidence RPC'
+   using errcode='42501';end if;
  if new.total<=0 or new.contact_id is null
   or not exists(select 1 from public.quotation_items qi where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id)
   or exists(
@@ -452,9 +458,12 @@ begin
  then raise exception 'Invalid quote state transition' using errcode='22023';end if;
  if length(v_reference)<8 or length(v_reference)>250
  then raise exception 'Human verification or communication reference required' using errcode='22023';end if;
+ perform pg_catalog.set_config('crm.family_quote_decision',
+    p_quote_id::text||':'||p_new_status||':'||auth.uid()::text,true);
  update public.quotations set status=p_new_status,
   accepted_at=case when p_new_status='accepted' then now() else accepted_at end
  where tenant_id=p_tenant_id and id=p_quote_id;
+ perform pg_catalog.set_config('crm.family_quote_decision','',true);
  insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
  values(p_tenant_id,auth.uid(),'family_power.quotation_status_confirmed','quotation',p_quote_id,
  jsonb_build_object('status',p_new_status,'reference',v_reference,'manual_human_review',true));
