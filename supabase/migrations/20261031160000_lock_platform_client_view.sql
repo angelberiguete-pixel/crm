@@ -165,3 +165,42 @@ $$;
 
 comment on function private.platform_client_view_tenant()
  is 'Session-scoped, server-owned customer view; platform navigation and all platform admin bypasses are unavailable until signout.';
+
+
+-- Also lock an already-open client workspace from an earlier version of the
+-- CRM, without confusing the legitimate client's own login with support.
+create or replace function public.platform_lock_active_client_view(p_tenant_id uuid)
+returns jsonb language plpgsql security definer set search_path=''
+as $$
+declare v_existing uuid;v_session text;v_slug text;
+begin
+ if auth.uid() is null then raise exception 'Authentication required' using errcode='42501';end if;
+ v_existing:=private.platform_client_view_tenant();
+ if v_existing is not null then
+   if v_existing<>p_tenant_id then raise exception 'Sign out before changing the client' using errcode='42501';end if;
+   return jsonb_build_object('locked',true,'tenant_id',p_tenant_id,'already',true);
+ end if;
+ if not private.crm_is_platform_admin() then
+   return jsonb_build_object('locked',false,'reason','client_account');
+ end if;
+ select t.slug into v_slug from public.tenants t
+   join private.user_active_tenants uat on uat.tenant_id=t.id and uat.user_id=auth.uid()
+   join public.memberships m on m.tenant_id=t.id and m.user_id=auth.uid()
+     and m.status='active' and m.role in ('owner','admin')
+ where t.id=p_tenant_id and t.status in ('active','trial');
+ if v_slug is null then raise exception 'Verified client support membership required' using errcode='42501';end if;
+ if v_slug='eurevector' then return jsonb_build_object('locked',false,'reason','agency');end if;
+ v_session:=auth.jwt()->>'session_id';
+ if v_session !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+ then raise exception 'A valid auth session is required' using errcode='42501';end if;
+ insert into private.crm_client_portal_locks(auth_session_id,user_id,tenant_id)
+ values(v_session::uuid,auth.uid(),p_tenant_id)
+ on conflict(auth_session_id) do nothing;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,metadata)
+ values(p_tenant_id,auth.uid(),'platform.client_view_session_locked','membership',
+   jsonb_build_object('until_signout',true,'from_existing_workspace',true));
+ return jsonb_build_object('locked',true,'tenant_id',p_tenant_id);
+end;
+$$;
+revoke all on function public.platform_lock_active_client_view(uuid) from public,anon;
+grant execute on function public.platform_lock_active_client_view(uuid) to authenticated;
