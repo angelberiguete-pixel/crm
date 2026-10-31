@@ -51,3 +51,10 @@ test("PDF quotation is built only from tenant-scoped real quote and line items",
   assert.match(doc,/quote\.status==="draft"/);
   assert.match(doc,/window\.print\(\)/);
 });
+test("inbox refresh uses RLS and tenant-scoped visible-tab polling until realtime is authorized",()=>{
+ const source=readFileSync("components/omnichannel-inbox.tsx","utf8");
+ assert.match(source,/document\.visibilityState!=="visible"/);
+ assert.match(source,/window\.setInterval\(\(\)=>void refreshVisible\(\),8000\)/);
+ assert.match(source,/\.eq\("tenant_id",tenantId\)\.eq\("conversation_id",selectedId\)/);
+ assert.match(source,/if\(c\.error\)\{setConversations\(\[\]\);setMessages\(\[\]\);setSelectedId\(null\)/);
+});
