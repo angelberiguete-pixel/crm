@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bot,
+  BarChart3,
   Building2,
   CalendarDays,
   FileText,
@@ -50,6 +51,7 @@ const date = new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: 
 const nav = [
   ["", "Inicio", Gauge],
   ["companies", "Empresas", Building2],
+  ["marketing", "Marketing", BarChart3],
   ["contacts", "Contactos", Users],
   ["revenue", "Oportunidades", Target],
   ["inbox", "Conversaciones", Inbox],
