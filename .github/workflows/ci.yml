@@ -54,6 +54,8 @@ jobs:
         run: node --experimental-strip-types --test tests/ycloud-whatsapp-webhook.test.mjs tests/ycloud-whatsapp-send.test.mjs
       - name: YCloud integrations status and onboarding safeguards
         run: node --test tests/ycloud-integrations-live-status.test.mjs
+      - name: Strict customer portal and private vendor inbox contracts
+        run: node --test tests/client-portal-isolation.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
