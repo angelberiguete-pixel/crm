@@ -24,7 +24,7 @@ try {
   let delayedAStarted = false;
   const savedRegions = new Map();
   await context.addInitScript(({ user, token }) => localStorage.setItem('sb-ygipjqgyreeahslzorik-auth-token', JSON.stringify({ access_token: token, refresh_token: 'qa-refresh', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user })), { user, token });
-  const tenants = [B,A].map((id,i) => ({ tenant_id:id, tenant_name:i?'QA A':'QA B', tenant_slug:'qa-mobile-long-slug-which-used-to-overlap-the-manage-button-'+id, plan_code:'enterprise', member_count:1, created_at:new Date().toISOString() }));
+  const tenants = [B,A].map((id,i) => ({ tenant_id:id, tenant_name:i?'QA A':'QA B', tenant_slug:'qa-mobile-long-slug-overlap-'+(i?'a':'b'), plan_code:'enterprise', member_count:1, created_at:new Date().toISOString() }));
   await context.route('https://ygipjqgyreeahslzorik.supabase.co/**', async route => {
     const request = route.request(), url = new URL(request.url());
     let response = [];
