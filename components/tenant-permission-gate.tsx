@@ -24,6 +24,7 @@ const sectionPermission: Record<string, string> = {
   inbox: "inbox",
   channels: "settings",
   integrations: "settings",
+  marketing: "settings",
   employees: "settings",
   products: "products",
   quotations: "quotations",
