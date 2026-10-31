@@ -7,6 +7,7 @@ import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
 import TenantSwitcher from "@/components/tenant-switcher";
+import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import BrandLogo from "@/components/brand-logo";
@@ -205,7 +206,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div>{tenant.tenant_slug==="eurevector"&&<span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span>}<MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div>{tenant.tenant_slug==="eurevector"&&<span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span>}<TenantSessionExit/><MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;
