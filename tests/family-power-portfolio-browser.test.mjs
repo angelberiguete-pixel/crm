@@ -69,8 +69,10 @@ try{
  await page.getByRole("heading",{name:"Mis empresas"}).waitFor({timeout:15000});
  const tile=page.getByRole("button",{name:"Entrar como administrador en Family Power"});
  await tile.waitFor();
- assert.ok(await tile.getByRole("img",{name:"Logo de Family Power"}).isVisible(),
-   "Family Power has its own logo on the portfolio");
+ const logo=tile.locator('img[alt="Logo de Family Power"]');
+ await logo.waitFor({state:"attached"});
+ assert.match(await logo.getAttribute("src")??"",/client-brands\/family-power\/logo-negativo-sin-fondo\.svg/,
+   "Family Power must load only its own official logo in the portfolio");
  await tile.click();
  await page.waitForURL(url=>url.pathname==="/crm",{timeout:15000});
  assert.deepEqual(visits,[fp],"one click opens Family Power through audited RPC, not the agency");
