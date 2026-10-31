@@ -7,6 +7,7 @@ import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
 import TenantSwitcher from "@/components/tenant-switcher";
+import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import BrandLogo from "@/components/brand-logo";
@@ -25,6 +26,7 @@ const sectionPermission: Record<string, string> = {
   channels: "settings",
   integrations: "settings",
   marketing: "settings",
+  sesiones: "settings",
   employees: "settings",
   products: "products",
   quotations: "quotations",
@@ -104,6 +106,18 @@ export default function TenantPermissionGate({ section, children }: { section: s
         notifyTenantContextChanged();
       }
 
+      // Existing owner sessions that were already viewing a client from an older
+      // release must become server-locked too. Ordinary client users are unaffected.
+      if (activeTenant.tenant_slug !== "eurevector") {
+        const lock = await supabase.rpc("platform_lock_active_client_view",{
+          p_tenant_id:activeTenant.tenant_id
+        });
+        if(!alive)return;
+        if(lock.error){
+          setReason("No pudimos aislar esta sesión del cliente. Cierra sesión e inicia nuevamente.");
+          setState("deny");return;
+        }
+      }
       if (tenantRef.current && tenantRef.current !== activeTenant.tenant_id) setState("loading");
       const tenantId = activeTenant.tenant_id;
       const permissionKey = sectionPermission[section] ?? section;
@@ -141,6 +155,21 @@ export default function TenantPermissionGate({ section, children }: { section: s
     });
     return () => { alive = false; };
   }, [section, contextVersion, router]);
+
+  // Record a real Supabase authentication session when this company opens,
+  // then keep a recent-activity heartbeat. Not a measure of keyboard work.
+  useEffect(()=>{
+    if(state!=="allow"||!tenant?.tenant_id)return;
+    let active=true;
+    const touch=async()=>{
+      if(!active||document.visibilityState!=="visible")return;
+      try{await supabase.rpc("crm_member_session_heartbeat",{p_tenant_id:tenant.tenant_id});}catch{}
+    };
+    void touch();
+    const timer=window.setInterval(()=>void touch(),60_000);
+    document.addEventListener("visibilitychange",touch);
+    return()=>{active=false;window.clearInterval(timer);document.removeEventListener("visibilitychange",touch);};
+  },[state,tenant?.tenant_id]);
 
   useEffect(() => {
     const invalidate = () => {
@@ -189,7 +218,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div>{tenant.tenant_slug==="eurevector"&&<span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span>}<TenantSessionExit/><MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;

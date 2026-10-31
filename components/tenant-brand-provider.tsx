@@ -62,7 +62,10 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
  if(loading)return <div className="loading" role="status">Preparando el espacio de {fallback.name}…</div>;
  return <TenantBrandContext.Provider value={brand}>
    <div className="tenant-brand-scope" data-tenant-brand={brand.slug}
-     style={tenantBrandStyle(brand) as CSSProperties}>
+     style={{...tenantBrandStyle(brand),
+       "--tenant-loading-image":brand.logoOnDarkUrl?`url("${brand.logoOnDarkUrl}")`:
+          brand.officialLookBrand?'url("/look-social-media-logo.svg")':"none"
+     } as CSSProperties}>
      {children}
    </div>
  </TenantBrandContext.Provider>;

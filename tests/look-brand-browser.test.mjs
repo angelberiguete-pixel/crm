@@ -25,6 +25,6 @@ try {
    const background=getComputedStyle(div,"::before").backgroundImage;
    div.remove();return background;
  });
- assert.ok(loading.includes("look-social-media-logo.svg"),"global loading state uses official logo");
- console.log("PASS Android mobile: original logo asset rendered on login and displayed by loading indicator.");
+ assert.equal(loading,"none","neutral loading must not leak Look branding into another client workspace");
+ console.log("PASS Android mobile: original Look logo remains on its own login and generic loading stays brand-neutral.");
 } finally {if(browser)await browser.close();if(server)server.kill()}

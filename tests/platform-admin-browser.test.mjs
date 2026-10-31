@@ -76,7 +76,8 @@ try {
   await page.goto(base+'/crm/companies');
   await page.getByText('Empresa A',{exact:true}).waitFor();
   assert.deepEqual(supportEntries,[A],'support entry uses the explicitly selected client');
-  assert.equal(await page.getByLabel('Empresa activa').inputValue(),A);
+  assert.equal(await page.getByLabel('Empresa activa').count(),0,'client header has no superadmin company selector');
+   await page.getByLabel('Empresa de esta sesión').getByText('QA A').waitFor();
   await page.goto(base+'/platform-admin');
   await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
   const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Agregar empresa cliente'})});
