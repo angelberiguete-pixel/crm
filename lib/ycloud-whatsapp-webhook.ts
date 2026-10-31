@@ -41,8 +41,8 @@ export function parseYCloudInboundText(raw:unknown):InboundYCloud|null{
     body=typeof reply.title==="string"?reply.title.trim().slice(0,80):"Opción seleccionada";
   }
   if(!body||body.length>1600)return null;
-  const n=asObj(m.customerProfile)?.name;
-  const attribution=asObj(m.referral)?.ctwa_clid;
+  const n=asObj(m?.customerProfile)?.name;
+  const attribution=asObj(m?.referral)?.ctwa_clid;
   return {kind,wabaId:waba,businessPhone:to,from,externalMessageId:id,
     contactName:typeof n==="string"?n.trim().slice(0,120):"",body,replyId,
     ctwaClickId:typeof attribution==="string"&&/^[a-zA-Z0-9_-]{12,512}$/.test(attribution)?attribution:null};
