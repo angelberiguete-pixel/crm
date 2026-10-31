@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseYCloudInboundText,parseYCloudOutboundStatus} from "../lib/ycloud-whatsapp-webhook.ts";
+import {parseYCloudInboundText,parseYCloudInboundMedia,parseYCloudOutboundStatus} from "../lib/ycloud-whatsapp-webhook.ts";
 
 const signedExample={id:"evt_example_01",type:"whatsapp.inbound_message.received",
  apiVersion:"v2",whatsappInboundMessage:{
@@ -64,4 +64,45 @@ test("Verified CTA & buttons must be bound to WABA, original provider message an
    "rec.external_message_id=p_message_id","request_logged_no_automatic_approval"].filter(x=>x!=="request_logged_no_automatic_approval"))
   assert.ok(migration.includes(marker),marker);
  assert.doesNotMatch(migration,/update\s+public\.quotations\s+set\s+status/i);
+});
+
+
+test("media parsing follows documented YCloud image and PDF envelopes, no tenant trust",()=>{
+ const message=signedExample.whatsappInboundMessage;
+ const image={...signedExample,tenant_id:"forged",whatsappInboundMessage:{
+   ...message,type:"image",image:{
+     id:"592623615738103",link:"https://api.ycloud.com/v2/whatsapp/media/download/592623615738103?sig=valid-example",
+     mime_type:"image/jpeg",caption:"Comprobante de transferencia"
+   }
+ }};
+ const parsed=parseYCloudInboundMedia(image);
+ assert.equal(parsed?.kind,"image");
+ assert.equal(parsed?.providerMediaId,"592623615738103");
+ assert.equal(parsed?.businessPhone,message.to);
+ assert.equal(parsed?.caption,"Comprobante de transferencia");
+ assert.equal("tenant_id" in (parsed??{}),false);
+ assert.equal(parseYCloudInboundText(image),null);
+ const doc={...signedExample,whatsappInboundMessage:{...message,type:"document",document:{
+  id:"948915536111569",link:"https://api.ycloud.com/v2/whatsapp/media/download/948915536111569",
+  mime_type:"application/pdf",filename:"Factura de prueba.pdf"
+ }}};
+ assert.equal(parseYCloudInboundMedia(doc)?.filename,"Factura de prueba.pdf");
+});
+test("media parser fails closed against SSRF and unsupported or mismatched media",()=>{
+ const message=signedExample.whatsappInboundMessage;
+ const image={...signedExample,whatsappInboundMessage:{...message,type:"image",image:{
+  id:"592623615738103",link:"https://api.ycloud.com/v2/whatsapp/media/download/592623615738103",
+  mime_type:"image/jpeg"
+ }}};
+ for(const url of ["http://api.ycloud.com/v2/whatsapp/media/download/592623615738103",
+ "https://api.ycloud.com.evil.test/v2/whatsapp/media/download/592623615738103",
+ "https://api.ycloud.com@localhost/v2/whatsapp/media/download/592623615738103",
+ "https://api.ycloud.com/v2/whatsapp/media/download/222222",
+ "https://api.ycloud.com:444/v2/whatsapp/media/download/592623615738103"])
+  assert.equal(parseYCloudInboundMedia({...image,whatsappInboundMessage:{...image.whatsappInboundMessage,
+   image:{...image.whatsappInboundMessage.image,link:url}}}),null);
+ assert.equal(parseYCloudInboundMedia({...image,whatsappInboundMessage:{...image.whatsappInboundMessage,
+   image:{...image.whatsappInboundMessage.image,mime_type:"image/svg+xml"}}}),null);
+ assert.equal(parseYCloudInboundMedia({...image,whatsappInboundMessage:{...image.whatsappInboundMessage,
+   image:{...image.whatsappInboundMessage.image,id:"../private"}}}),null);
 });
