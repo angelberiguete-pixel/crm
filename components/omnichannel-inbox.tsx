@@ -118,6 +118,45 @@ export default function OmnichannelInbox() {
     return () => { active = false; };
   }, [tenantId, selectedId, reload]);
 
+  // Until a verified realtime publication is approved, refresh active inboxes
+  // automatically through normal tenant-scoped RLS queries. This is polling,
+  // not an instantaneous delivery guarantee; hidden tabs make zero requests.
+  useEffect(()=>{
+    if(!tenantId)return;
+    let active=true,working=false;
+    const refreshVisible=async()=>{
+      if(!active||working||document.visibilityState!=="visible")return;
+      working=true;
+      try{
+        const c=await supabase.from("conversations")
+          .select("id,channel_id,contact_id,opportunity_id,subject,status,priority,assigned_to,unread_count,last_message_at,metadata")
+          .eq("tenant_id",tenantId).order("last_message_at",{ascending:false,nullsFirst:false}).limit(200);
+        if(!active)return;
+        if(c.error){setConversations([]);setMessages([]);setSelectedId(null);return;}
+        const rows=(c.data??[]) as Conversation[];
+        setConversations(rows);
+        if(selectedId&&!rows.some(row=>row.id===selectedId)){
+          setMessages([]);setSelectedId(null);return;
+        }
+        if(selectedId){
+          const m=await supabase.from("messages")
+            .select("id,conversation_id,direction,sender_type,message_type,body,status,sent_at,delivered_at,read_at,created_at")
+            .eq("tenant_id",tenantId).eq("conversation_id",selectedId)
+            .order("created_at",{ascending:true}).limit(500);
+          if(!active)return;
+          if(m.error){setMessages([]);return;}
+          setMessages((m.data??[]) as Message[]);
+        }
+      }catch{
+        // A transient polling failure never permits cross-tenant fallback.
+      }finally{working=false;}
+    };
+    const timer=window.setInterval(()=>void refreshVisible(),8000);
+    const onFocus=()=>void refreshVisible();
+    document.addEventListener("visibilitychange",onFocus);
+    return()=>{active=false;window.clearInterval(timer);document.removeEventListener("visibilitychange",onFocus);};
+  },[tenantId,selectedId]);
+
   const contactMap = useMemo(() => new Map(contacts.map((row) => [row.id, row])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((row) => [row.id, row])), [companies]);
   const opportunityMap = useMemo(() => new Map(opportunities.map((row) => [row.id, row])), [opportunities]);

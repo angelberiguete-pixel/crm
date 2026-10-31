@@ -35,6 +35,8 @@ const sectionPermission: Record<string, string> = {
   automations: "automations",
   settings: "settings",
   sessions: "settings",
+  "family-power-setup": "settings",
+  "family-power-quote": "quotations",
   files: "dashboard",
 };
 
