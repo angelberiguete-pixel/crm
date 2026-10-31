@@ -11,7 +11,7 @@ export default function TenantSessionExit(){
  async function exit(){
   if(!tenant||busy)return;
   setBusy(true);setError("");
-  try{await supabase.rpc("tenant_session_end",{p_tenant_id:tenant.tenant_id});}catch{}
+  try{await supabase.rpc("crm_member_session_close",{p_tenant_id:tenant.tenant_id});}catch{}
   const r=await supabase.auth.signOut();
   if(r.error){setError("No fue posible cerrar sesión.");setBusy(false);return;}
   router.replace("/login");
