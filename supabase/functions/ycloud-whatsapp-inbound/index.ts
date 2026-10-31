@@ -4,7 +4,7 @@
  * Deploy only after review with verify_jwt=false and YCLOUD_WEBHOOK_SECRET set.
  */
 import {createClient} from "npm:@supabase/supabase-js@2.116.0";
-import {parseYCloudInboundText} from "../../../lib/ycloud-whatsapp-webhook.ts";
+import {parseYCloudInboundText,parseYCloudOutboundStatus} from "../../../lib/ycloud-whatsapp-webhook.ts";
 const enc=new TextEncoder();
 function json(value:unknown,status=200){
  return new Response(JSON.stringify(value),{status,
@@ -52,23 +52,45 @@ Deno.serve(async request=>{
  try{event=JSON.parse(raw);}
  catch{return json({error:"invalid_json"},400);}
  const inbound=parseYCloudInboundText(event);
- // No bulk historical imports, business app sync, media or outbound status changes.
- if(!inbound)return json({received:true,processed:false});
+ const outgoing= !inbound ? parseYCloudOutboundStatus(event) : null;
+ if(!inbound&&!outgoing)return json({received:true,processed:false});
  const db=createClient(url,serviceRole,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data,error}=await db.rpc("ingest_verified_ycloud_whatsapp_text",{
-  p_waba_id:inbound.wabaId,
-  p_business_phone:inbound.businessPhone,
-  p_message_id:inbound.externalMessageId,
-  p_from:inbound.from,
-  p_contact_name:inbound.contactName,
-  p_body:inbound.body
- });
- if(error){
-  // No log of raw payload, customer phone, names, message contents or secrets.
-  console.error("ycloud_webhook_ingest_failed",error.code??"db_error");
-  return json({error:"retry_later"},503);
+ if(outgoing){
+   const {data,error}=await db.rpc("ycloud_mark_verified_message_status",{
+     p_waba_id:outgoing.wabaId,p_business_phone:outgoing.businessPhone,
+     p_external_message_id:outgoing.externalMessageId,p_new_status:outgoing.status
+   });
+   if(error){console.error("ycloud_status_failed",error.code??"db_error");return json({error:"retry_later"},503);}
+   return json({received:true,status:data});
  }
+ if(!inbound)return json({received:true,processed:false});
+ const {data,error}=await db.rpc("ingest_verified_ycloud_whatsapp_text",{
+   p_waba_id:inbound.wabaId,
+   p_business_phone:inbound.businessPhone,
+   p_message_id:inbound.externalMessageId,
+   p_from:inbound.from,
+   p_contact_name:inbound.contactName,
+   p_body:inbound.body
+ });
+ if(error){console.error("ycloud_webhook_ingest_failed",error.code??"db_error");return json({error:"retry_later"},503);}
  if(!["stored","duplicate","unverified_route","invalid_message"].includes(data))
-  return json({error:"unexpected_result"},503);
+   return json({error:"unexpected_result"},503);
+ // Only a verified and stored source message may create attribution or a quote action.
+ if(data==="stored"||data==="duplicate"){
+   if(inbound.replyId){
+     const action=await db.rpc("marketing_record_verified_ycloud_quote_reply",{
+       p_waba_id:inbound.wabaId,p_business_phone:inbound.businessPhone,
+       p_message_id:inbound.externalMessageId,p_reply_id:inbound.replyId
+     });
+     if(action.error){console.error("ycloud_button_record_failed",action.error.code??"db_error");return json({error:"retry_later"},503);}
+   }
+   if(inbound.ctwaClickId){
+     const attribution=await db.rpc("marketing_record_verified_ycloud_attribution",{
+       p_waba_id:inbound.wabaId,p_business_phone:inbound.businessPhone,
+       p_message_id:inbound.externalMessageId,p_ctwa_click_id:inbound.ctwaClickId
+     });
+     if(attribution.error){console.error("ycloud_ctwa_record_failed",attribution.error.code??"db_error");return json({error:"retry_later"},503);}
+   }
+ }
  return json({received:true,stored:data==="stored"});
 });
