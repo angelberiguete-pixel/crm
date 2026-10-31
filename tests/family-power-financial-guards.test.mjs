@@ -15,7 +15,8 @@ test("generic CRM order and opportunity writes cannot bypass Family Power reconc
 test("all quote lines require exact approval, tax and server stock; status guards are DB-backed",()=>{
  for(const word of ["crm_family_verified_quotation_item","crm_family_approved_quotation_progress",
    "approved_tax_rate","v_product.tax_rate","approved_price","p.stock_snapshot",
-   "crm_family_invalidate_product_approval","v_quote.status<>'draft'"])
+   "crm_family_invalidate_product_approval","v_quote.status<>'draft'",
+   "crm.family_quote_decision","p_quote_id::text||':'||p_new_status"])
    assert.ok(sql.includes(word),word);
 });
 test("audited quote RPCs never trust browser-provided commercial amounts",()=>{
