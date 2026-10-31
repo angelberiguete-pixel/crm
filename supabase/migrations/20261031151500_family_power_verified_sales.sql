@@ -228,3 +228,120 @@ begin
 end; $$;
 revoke all on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) from public,anon,authenticated;
 grant execute on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) to authenticated;
+
+
+-- Atomic manual quotation from approved Family Power inventory only. No fake pricing.
+-- This procedure is deliberately owner/admin-only during the pilot.
+create or replace function public.crm_family_create_quote(
+ p_tenant_id uuid,
+ p_contact_id uuid,
+ p_valid_until date,
+ p_notes text,
+ p_lines jsonb
+) returns uuid language plpgsql security definer set search_path=''
+as $$
+declare
+ v_quote_id uuid:=gen_random_uuid(); v_contact record;
+ v_product public.products%rowtype; v_approval record;
+ v_line jsonb; v_product_id uuid; v_quantity numeric(14,2);
+ v_discount numeric(7,2); v_currency text:=null; v_position integer:=0;
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+   raise exception 'Family Power owner/admin required' using errcode='42501';
+ end if;
+ if p_contact_id is null or not exists(
+   select 1 from public.contacts where id=p_contact_id and tenant_id=p_tenant_id
+ ) then raise exception 'Real customer contact required' using errcode='22023';end if;
+ if p_valid_until is not null and (p_valid_until<current_date or p_valid_until>current_date+90)
+ then raise exception 'Quotation validity must be within 90 days' using errcode='22023';end if;
+ if length(coalesce(p_notes,''))>2000 then raise exception 'Notes too long' using errcode='22023';end if;
+ if jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines) not between 1 and 20
+ then raise exception 'One to twenty approved product lines required' using errcode='22023';end if;
+ for v_line in select value from jsonb_array_elements(p_lines) as l(value)
+ loop
+  v_position:=v_position+1;
+  if jsonb_typeof(v_line) is distinct from 'object'
+    or coalesce(v_line->>'product_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    or coalesce(v_line->>'quantity','') !~ '^[0-9]{1,6}(\\.[0-9]{1,2})?$'
+    or coalesce(v_line->>'discount_percent','0') !~ '^[0-9]{1,2}(\\.[0-9]{1,2})?$'
+  then raise exception 'Invalid product, quantity or discount' using errcode='22023'; end if;
+  v_product_id:=(v_line->>'product_id')::uuid;
+  v_quantity:=(v_line->>'quantity')::numeric;
+  v_discount:=coalesce((v_line->>'discount_percent')::numeric,0);
+  if v_quantity<=0 or v_discount<0 or v_discount>25
+  then raise exception 'Quantity or discount outside approval limits' using errcode='22023';end if;
+  select * into v_product from public.products where tenant_id=p_tenant_id
+    and id=v_product_id and status='active' for share;
+  if not found or v_product.sale_price<=0 or v_product.stock_snapshot is null
+     or v_product.stock_snapshot<v_quantity or nullif(btrim(v_product.name),'') is null
+     or nullif(btrim(v_product.sku),'') is null
+  then raise exception 'Product unavailable or price not verified' using errcode='22023';end if;
+  select a.* into v_approval from public.crm_family_product_approvals a
+   where a.tenant_id=p_tenant_id and a.product_id=v_product_id
+     and a.approved_price=v_product.sale_price and a.currency=v_product.currency
+     and exists(select 1 from public.tenant_files f where f.id=a.photo_file_id
+       and f.tenant_id=p_tenant_id and f.status='ready' and f.mime_type in
+       ('image/jpeg','image/png','image/webp'))
+     and exists(select 1 from public.tenant_files f where f.id=a.technical_file_id
+       and f.tenant_id=p_tenant_id and f.status='ready' and f.mime_type='application/pdf');
+  if not found then raise exception 'Product photo, technical sheet and price approval required' using errcode='22023';end if;
+  if v_currency is null then v_currency:=v_product.currency;
+  elsif v_currency<>v_product.currency then
+    raise exception 'All line items must use the same currency' using errcode='22023';
+  end if;
+ end loop;
+ insert into public.quotations(
+   id,tenant_id,quote_number,contact_id,status,currency,valid_until,notes,
+   subtotal,discount_total,tax_total,total,created_by,metadata
+ ) values (
+   v_quote_id,p_tenant_id,'FP-'||upper(substring(replace(v_quote_id::text,'-','') from 1 for 12)),
+   p_contact_id,'draft',v_currency,p_valid_until,nullif(btrim(coalesce(p_notes,'')),''),
+   0,0,0,0,auth.uid(),jsonb_build_object('source','verified_family_power_manual')
+ );
+ v_position:=0;
+ for v_line in select value from jsonb_array_elements(p_lines) as l(value) loop
+  v_position:=v_position+1;
+  v_product_id:=(v_line->>'product_id')::uuid;
+  select * into v_product from public.products where tenant_id=p_tenant_id and id=v_product_id;
+  insert into public.quotation_items(
+     tenant_id,quotation_id,product_id,position,sku_snapshot,description,
+     quantity,unit_price,discount_percent,tax_rate
+   ) values (
+     p_tenant_id,v_quote_id,v_product.id,v_position,v_product.sku,v_product.name,
+     (v_line->>'quantity')::numeric,v_product.sale_price,
+     coalesce((v_line->>'discount_percent')::numeric,0),coalesce(v_product.tax_rate,0)
+   );
+ end loop;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.verified_quote_draft_created','quotation',v_quote_id,
+  jsonb_build_object('contact_id',p_contact_id,'item_count',v_position,'currency',v_currency));
+ return v_quote_id;
+end; $$;
+revoke all on function public.crm_family_create_quote(uuid,uuid,date,text,jsonb) from public,anon,authenticated;
+grant execute on function public.crm_family_create_quote(uuid,uuid,date,text,jsonb) to authenticated;
+
+-- Prevent manually populating amount_paid on Family Power orders without
+-- reconciled receipt records. This is defense-in-depth; outbox is still held.
+create or replace function private.crm_family_guard_order_payment()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_reconciled numeric;
+begin
+ if exists(select 1 from public.tenants t where t.id=new.tenant_id and t.slug='family-power') then
+   select coalesce(sum(r.amount),0) into v_reconciled
+    from public.crm_family_payment_receipts r
+    where r.tenant_id=new.tenant_id and r.order_id=new.id and r.status='confirmed';
+   if coalesce(new.amount_paid,0)<>v_reconciled then
+    raise exception 'Family Power amount_paid must match reconciled receipts' using errcode='42501';
+   end if;
+   if tg_op='UPDATE' and new.total is distinct from old.total and v_reconciled>0 then
+    raise exception 'Paid Family Power order total requires audited adjustment' using errcode='42501';
+   end if;
+ end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_order_payment() from public,anon,authenticated;
+drop trigger if exists crm_family_guard_order_payment on public.orders;
+create trigger crm_family_guard_order_payment
+before insert or update of amount_paid,total on public.orders
+for each row execute function private.crm_family_guard_order_payment();

@@ -58,3 +58,18 @@ test("inbox refresh uses RLS and tenant-scoped visible-tab polling until realtim
  assert.match(source,/\.eq\("tenant_id",tenantId\)\.eq\("conversation_id",selectedId\)/);
  assert.match(source,/if\(c\.error\)\{setConversations\(\[\]\);setMessages\(\[\]\);setSelectedId\(null\)/);
 });
+
+test("Family Power manual quote is an atomic audited RPC from approved products",()=>{
+ const quote=readFileSync("components/family-power-quote-builder.tsx","utf8");
+ assert.match(migration,/function public\.crm_family_create_quote/);
+ assert.match(migration,/private\.crm_family_admin_allowed\(p_tenant_id\)/);
+ assert.match(migration,/a\.approved_price=v_product\.sale_price/);
+ assert.match(migration,/p_lines jsonb/);
+ assert.match(migration,/status='active' for share/);
+ assert.match(migration,/v_product\.stock_snapshot<v_quantity/);
+ assert.match(migration,/insert into public\.quotation_items/);
+ assert.match(migration,/crm_family_guard_order_payment/);
+ assert.match(quote,/supabase\.rpc\("crm_family_create_quote"/);
+ assert.match(quote,/crm_family_product_approvals/);
+ assert.match(quote,/status==="active"/);
+});
