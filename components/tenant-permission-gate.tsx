@@ -142,6 +142,21 @@ export default function TenantPermissionGate({ section, children }: { section: s
     return () => { alive = false; };
   }, [section, contextVersion, router]);
 
+  // Record a real Supabase authentication session when this company opens,
+  // then keep a recent-activity heartbeat. Not a measure of keyboard work.
+  useEffect(()=>{
+    if(state!=="allow"||!tenant?.tenant_id)return;
+    let active=true;
+    const touch=async()=>{
+      if(!active||document.visibilityState!=="visible")return;
+      try{await supabase.rpc("tenant_session_heartbeat",{p_tenant_id:tenant.tenant_id});}catch{}
+    };
+    void touch();
+    const timer=window.setInterval(()=>void touch(),60_000);
+    document.addEventListener("visibilitychange",touch);
+    return()=>{active=false;window.clearInterval(timer);document.removeEventListener("visibilitychange",touch);};
+  },[state,tenant?.tenant_id]);
+
   useEffect(() => {
     const invalidate = () => {
       setState("loading");
@@ -189,7 +204,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div>{tenant.tenant_slug==="eurevector"&&<span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span>}<MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;
