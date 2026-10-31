@@ -358,3 +358,66 @@ textarea{min-height:96px;resize:vertical}
 .tenant-session-exit button:disabled{opacity:.65;cursor:wait}
 .tenant-session-exit small{display:block;max-width:240px}
 @media(max-width:700px){.tenant-session-exit{display:none}}
+
+
+/* Family Power UI: verified tenant identity, not global agency branding. */
+.tenant-identity-loading{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:14px;background:#f7f8f9;color:#17191f}
+.tenant-identity-loading img{width:min(240px,85vw);height:auto;object-fit:contain}
+.tenant-brand-scope{min-height:100vh;background:var(--bg);color:var(--text)}
+.tenant-brand-scope[data-tenant-brand="family-power"]{
+ color-scheme:light;
+ --bg:#f6f7f9;--panel:#fff;--panel2:#f6f6f7;--text:#17191e;--muted:#5b626e;--border:#d9dce3;
+ --brand-blue:#c91425;--brand-cyan:#b71022;--brand-violet:#15171e;--brand-lime:#fa8a95;
+ --accent:#c91425;--accent2:#aa0e1d;--shadow:0 11px 28px rgba(16,19,25,.08);
+ --brand-gradient:linear-gradient(125deg,#c91425,#ac0d1d);
+}
+.tenant-brand-scope[data-tenant-brand="family-power"] .sidebar{
+ background:linear-gradient(180deg,#15171e,#24252b 68%,#181a20);border-right:1px solid rgba(255,255,255,.15);
+}
+.tenant-brand-scope[data-tenant-brand="family-power"] .brand:after{background:linear-gradient(90deg,#c91425,#f4707c)}
+.tenant-brand-scope[data-tenant-brand="family-power"] .nav a svg{color:#edb2b8}
+.tenant-brand-scope[data-tenant-brand="family-power"] .nav a.active,
+.tenant-brand-scope[data-tenant-brand="family-power"] .nav a:hover{
+ background:rgba(201,20,37,.2);border-color:rgba(245,96,108,.32);color:#fff;
+}
+.tenant-brand-scope[data-tenant-brand="family-power"] .nav a.active svg{color:#ff8690}
+.tenant-brand-scope[data-tenant-brand="family-power"] :is(a.button,button.button):not(.danger){
+ background:#bd1426;border:1px solid #9f101f;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.3);
+ box-shadow:0 3px 0 rgba(0,0,0,.2),0 7px 15px rgba(0,0,0,.11);
+}
+.tenant-brand-scope[data-tenant-brand="family-power"] :is(a.button,button.button):not(.danger):hover:not(:disabled){
+ background:#a90e1d;color:#fff;border-color:#8c0c17;box-shadow:0 4px 0 rgba(0,0,0,.2),0 9px 18px rgba(0,0,0,.14);
+}
+.tenant-brand-scope[data-tenant-brand="family-power"] :is(a.button,button.button):focus-visible,
+.tenant-brand-scope[data-tenant-brand="family-power"] .nav a:focus-visible{outline:3px solid #f1a3ac;outline-offset:3px}
+.tenant-brand-scope[data-tenant-brand="family-power"] .metric-value,
+.tenant-brand-scope[data-tenant-brand="family-power"] .eyebrow{color:#b01222}
+.tenant-brand-scope[data-tenant-brand="family-power"] .metric:before{background:linear-gradient(180deg,#e44254,#ab1220)}
+.tenant-brand-scope[data-tenant-brand="family-power"] .mobile-nav a.active{color:#b71021}
+.tenant-brand-scope[data-tenant-brand="family-power"] .mobile-tenant-navigation summary{background:#25262b;border-color:#8c323a;color:#fff}
+.tenant-brand-scope[data-tenant-brand="family-power"] .mobile-module-panel{background:#17191e;border-color:#93343d}
+.tenant-brand-scope[data-tenant-brand="family-power"] .mobile-module-panel nav a{border-color:#663139}
+/* Small menu: secondary exit, not the first action on every page. */
+.tenant-session-exit{right:18px;top:12px;z-index:35}
+.tenant-session-exit details{position:relative}
+.tenant-session-exit summary{display:grid;place-items:center;width:38px;height:38px;cursor:pointer;list-style:none;
+ border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--text);
+ box-shadow:0 2px 8px rgba(0,0,0,.1);font-weight:800;letter-spacing:1px}
+.tenant-session-exit summary::-webkit-details-marker{display:none}
+.tenant-session-exit-menu{position:absolute;right:0;top:calc(100% + 7px);display:grid;gap:8px;
+ min-width:230px;padding:14px;border:1px solid var(--border);border-radius:13px;
+ background:var(--panel);color:var(--text);box-shadow:0 16px 36px rgba(0,0,0,.2)}
+.tenant-session-exit-menu button{display:flex;align-items:center;justify-content:center;width:100%}
+.tenant-brand-scope[data-tenant-brand="family-power"] .tenant-session-exit-menu button{
+ background:#b81325;color:white;border-color:#99101e}
+.session-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:13px;margin:16px 0}
+.session-summary-card{background:var(--panel);padding:17px;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+.session-summary-card strong{display:block;font-size:28px;color:var(--accent);margin:5px 0}
+.session-member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:13px;margin:16px 0}
+.session-member-card{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.session-member-avatar{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:13px;
+ background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--accent);font-weight:800}
+.session-member-card strong{overflow-wrap:anywhere}
+.session-state{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:4px 9px}
+.session-state.online{color:#11613c;background:#e8f7ef;border-color:#b9e5c9}
+@media(max-width:700px){.tenant-session-exit{display:none}}

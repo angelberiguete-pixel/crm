@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Building2, CalendarDays, FileText, Gauge, Inbox, Package, Plus, RefreshCw, Search, Target, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import BrandLogo from "@/components/brand-logo";
 import styles from "@/components/crm-commercial.module.css";
 
 type Opportunity = {
@@ -203,9 +204,9 @@ export default function CrmSales360() {
 
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand"><strong>Look Social Media CRM</strong><span>{tenant?.tenant_name ?? "Gestión comercial"}</span></div>
+      <div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name ?? "Gestión comercial"}</span></div>
       <nav className="nav" aria-label="Módulos del CRM">
-        {nav.map(([key, label, Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} className={key === "revenue" ? "active" : ""}>
+        {nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").map(([key, label, Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} className={key === "revenue" ? "active" : ""}>
           <Icon size={17} />{label}
         </Link>)}
       </nav>

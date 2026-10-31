@@ -35,7 +35,7 @@ export default function TenantSwitcher() {
     });
     return () => { alive = false; };
   }, [tenant?.tenant_id]);
-  if (!tenant || choices.length < 2) return null;
+  if (!tenant || tenant.tenant_slug==="family-power" || choices.length < 2) return null;
   async function select(id: string) {
     if (id === tenant?.tenant_id) return;
     setBusy(true); setError("");

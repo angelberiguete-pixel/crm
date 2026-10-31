@@ -28,9 +28,15 @@ export default function TenantSessionExit() {
     }
   };
   return <div className="tenant-session-exit">
-    <button type="button" disabled={busy} aria-label="Cerrar sesión del cliente" onClick={()=>void logout()}>
-      <LogOut size={15}/><span>{busy?"Saliendo…":"Salir de la empresa"}</span>
-    </button>
-    {error&&<small role="alert">{error}</small>}
+    <details>
+     <summary aria-label="Opciones del espacio de trabajo" title="Opciones del espacio de trabajo"><span aria-hidden="true">•••</span></summary>
+     <div className="tenant-session-exit-menu">
+      <strong>{tenant.tenant_name}</strong><small>Espacio privado</small>
+      <button type="button" disabled={busy} aria-label="Cerrar sesión del cliente" onClick={()=>void logout()}>
+       <LogOut size={15}/><span>{busy?"Saliendo…":"Cerrar sesión y salir"}</span>
+      </button>
+      {error&&<small role="alert">{error}</small>}
+     </div>
+    </details>
   </div>;
 }

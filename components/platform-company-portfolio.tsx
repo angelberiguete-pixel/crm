@@ -27,7 +27,7 @@ const money=(v:number|undefined,c:string)=>{
 };
 function Logo({tenant,brand}:{tenant:Tenant;brand:Brand|null}){
  const fallback=tenant.tenant_slug==="family-power"?"/client-brands/family-power/logo-negativo-sin-fondo.svg":tenant.tenant_slug==="eurevector"?"/look-social-media-logo.svg":null;
- const src=safeTenantAsset(brand?.logo_on_dark_url)||safeTenantAsset(brand?.logo_url)||fallback;
+ const src=tenant.tenant_slug==="family-power"?fallback:(safeTenantAsset(brand?.logo_on_dark_url)||safeTenantAsset(brand?.logo_url)||fallback);
  return <div className={styles.logo}>{src?<Image src={src} alt={"Logo de "+tenant.tenant_name} width={240} height={120} unoptimized/>:<strong>{tenant.tenant_name.slice(0,2).toUpperCase()}</strong>}</div>;
 }
 export default function PlatformCompanyPortfolio(){
@@ -75,10 +75,10 @@ export default function PlatformCompanyPortfolio(){
  },[selected,authorized,revision]);
  const tenant=tenants.find(t=>t.tenant_id===selected);
  const names=new Map(members.map(m=>[m.user_id,m.email||m.role_name||"Usuario autorizado"]));
- async function enter(){
-  if(!tenant||busy)return;
+ async function enter(target:Tenant){
+  if(busy)return;
   setBusy(true);setError("");
-  const r=await supabase.rpc("platform_join_tenant_as_admin",{p_tenant_id:tenant.tenant_id});
+  const r=await supabase.rpc("platform_join_tenant_as_admin",{p_tenant_id:target.tenant_id});
   if(r.error){setError(r.error.message);setBusy(false);return;}
   notifyTenantContextChanged();
   window.location.assign("/crm");
@@ -95,16 +95,21 @@ export default function PlatformCompanyPortfolio(){
   <div className={styles.cards}>{tenants.map(t=>{
     const b=t.tenant_id===selected?analytics?.branding||null:null;
     return <button type="button" key={t.tenant_id} className={[styles.tile,t.tenant_id===selected?styles.active:""].join(" ")}
-      style={{borderTopColor:safeHex(b?.primary_color,"#6489d6")}} aria-pressed={t.tenant_id===selected}
-      onClick={()=>{setError("");setSelected(t.tenant_id);}}>
-      <Logo tenant={t} brand={b}/><strong>{b?.brand_name||t.tenant_name}</strong>
+      style={{borderTopColor:safeHex(b?.primary_color,t.tenant_slug==="family-power"?"#C91425":"#6489d6")}} disabled={busy}
+      aria-label={"Entrar como administrador en "+t.tenant_name}
+      onClick={()=>void enter(t)}>
+      <Logo tenant={t} brand={b}/><strong>{t.tenant_slug==="family-power"?"Family Power":b?.brand_name||t.tenant_name}</strong>
       <small>{t.tenant_slug==="eurevector"?"Operación propia":"Empresa cliente"} · {n(t.member_count||0)} usuarios registrados</small>
-      <span>Ver panel <ArrowRight size={16}/></span>
+      <span>Entrar como administrador <ArrowRight size={16}/></span>
     </button>;
   })}</div>
   {tenant&&<section className={styles.panel}>
     <header className={styles.detailHead}><div><p className={styles.eyebrow}>Estadísticas registradas · {tenant.tenant_name}</p><h2>Panel de administración</h2><p>No se confunden oportunidades proyectadas con ventas, facturas o cobros.</p></div>
-     <button className={styles.enter} type="button" disabled={busy} onClick={()=>void enter()}><ShieldCheck size={16}/>{busy?"Abriendo…":"Entrar como administrador"}<ArrowRight size={16}/></button></header>
+     <label>Revisar estadísticas de
+       <select aria-label="Consultar estadísticas de empresa" value={selected??""} onChange={e=>setSelected(e.target.value)}>
+        {tenants.map(t=><option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>)}
+       </select>
+     </label></header>
     {detailsLoading?<p role="status">Comprobando registros de esta empresa…</p>:analytics&&<>
       <div className={styles.kpis}>{([
         ["Contactos",analytics.counts.contacts,"Registros de clientes"],

@@ -132,6 +132,6 @@ export default function FamilyPowerLogin(){
        <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
      </section>
    </div>
-   <footer className={styles.footer}>Family Power · Portal privado · Tecnología de Look Digital Staff</footer>
+   <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
  </main>;
 }
