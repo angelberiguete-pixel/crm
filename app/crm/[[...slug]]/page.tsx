@@ -9,6 +9,7 @@ import CrmIntegrationCenter from "@/components/crm-integration-center";
 import CrmMarketingPerformance from "@/components/crm-marketing-performance";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 import TenantSessionReport from "@/components/tenant-session-report";
+import FamilyPowerLaunchCenter from "@/components/family-power-launch-center";
 
 export default async function CrmPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug = [] } = await params;
@@ -33,6 +34,8 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
               ? <DigitalEmployeeStudio />
             : section === "sessions"
               ? <TenantSessionReport />
+            : section === "family-power-setup"
+              ? <FamilyPowerLaunchCenter />
             : <CrmWorkspace slug={slug} />}
     </TenantPermissionGate>
   );

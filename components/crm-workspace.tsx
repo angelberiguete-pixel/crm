@@ -65,6 +65,7 @@ const nav = [
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
   ["sessions", "Sesiones del equipo", Users],
+  ["family-power-setup", "Preparación Family Power", Settings],
   ["settings", "Configuración", Settings],
 ] as const;
 
@@ -72,13 +73,13 @@ const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
  automations:"Automatizaciones",files:"Archivos",channels:"Canales",
- integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración"
+ integrations:"Conexiones",sessions:"Sesiones del equipo","family-power-setup":"Preparación Family Power",settings:"Configuración"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",files:"dashboard",channels:"settings",
- integrations:"settings",sessions:"settings",settings:"settings"
+ integrations:"settings",sessions:"settings","family-power-setup":"settings",settings:"settings"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);
@@ -165,6 +166,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
+    if(key==="family-power-setup"&&(!isFamilyPower||!["owner","admin"].includes(member.role)))return false;
     if(!isFamilyPower)return true;
     if(!familyMenuPermissions)return false; // fail closed while waiting
     const permission=permissionForSection[key]??key;
