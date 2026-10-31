@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
+import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import EnergyServiceDashboard from "@/components/energy-service-dashboard";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
@@ -77,7 +78,7 @@ function GeneralCommercialDashboard(){
   const due=deals.filter(d=>d.next_action_at&&new Date(d.next_action_at).getTime()<Date.now());
   return <div className="shell">
     <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name} · {roleLabel}</span></div>
-      <nav className="nav" aria-label="Módulos del CRM">{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
+      <nav className="nav" aria-label="Módulos del CRM"><PlatformCompaniesShortcut/>{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
     </aside>
     <main className="content">
       <header className="topbar"><div><div className="eyebrow">Panel principal · CRM personalizado</div><h1>Portal de {tenantBrand?.name??tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>

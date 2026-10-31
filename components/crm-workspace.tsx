@@ -25,6 +25,7 @@ import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
+import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
@@ -169,7 +170,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
-        <nav className="nav">
+        <nav className="nav"><PlatformCompaniesShortcut/>
           {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
               <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
