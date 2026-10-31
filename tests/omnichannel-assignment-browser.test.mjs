@@ -45,7 +45,8 @@ try{
  await page.getByText("WhatsApp: Sin conexión activa").waitFor();
  await page.getByRole("button",{name:/Consulta de prueba/}).waitFor();
  await page.getByRole("button",{name:/Consulta de prueba/}).click();
- assert.ok(await page.getByText(/Las respuestas externas seguirán desactivadas/).isVisible(),"no mock message sending offered");
+ assert.ok(await page.getByText(/El envío depende de que YCloud esté verificado/).isVisible(),"provider verification is required");
+ assert.ok(await page.getByRole("button",{name:"Enviar por YCloud"}).isDisabled(),"unverified YCloud channel cannot send");
  await page.getByRole("button",{name:"Volver a las conversaciones"}).click();
  await page.getByRole("combobox",{name:"Filtrar conversaciones por responsable"}).selectOption("unassigned");
  await page.getByRole("button",{name:/Consulta de prueba/}).waitFor();

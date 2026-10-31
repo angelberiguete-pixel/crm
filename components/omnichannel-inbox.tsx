@@ -47,6 +47,9 @@ export default function OmnichannelInbox() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [replyDraft,setReplyDraft]=useState("");
+  const [replySending,setReplySending]=useState(false);
+  const [replyFeedback,setReplyFeedback]=useState("");
 
   useEffect(() => {
     // Reset the visible conversation immediately when the active company changes.
@@ -54,6 +57,7 @@ export default function OmnichannelInbox() {
     setOpportunities([]); setAssignees([]); setMessages([]); setSelectedId(null);
     setCurrentUserId(null); setMobileThreadOpen(false); setQuery(""); setStatus("all");
     setOnlyUnread(false); setAssignmentFilter("all"); setChannelFilter("all");
+    setReplyDraft(""); setReplyFeedback("");
   }, [tenantId]);
 
   useEffect(() => {
@@ -132,7 +136,30 @@ export default function OmnichannelInbox() {
 
   const isSupervisor = ["owner","admin","manager"].includes(activeTenant?.membership_role??"");
   const assignedName=(id:string|null)=>id ? (assignees.find(a=>a.user_id===id)?.display_name??"Asignado") : "Sin asignar";
-  function openConversation(id:string) {setSelectedId(id);setMobileThreadOpen(true);setError("");}
+  function openConversation(id:string) {setSelectedId(id);setMobileThreadOpen(true);setError("");setReplyDraft("");setReplyFeedback("");}
+
+  const canReply=channel?.provider==="whatsapp"&&channel.status==="connected"&&
+    (isSupervisor||(activeTenant?.membership_role==="agent"&&!!currentUserId&&selected?.assigned_to===currentUserId));
+
+  async function sendYCloudReply() {
+    if(!canReply||!tenantId||!selected||replySending||!replyDraft.trim())return;
+    setReplySending(true);setReplyFeedback("");setError("");
+    const currentConversation=selected.id;
+    try {
+      const {data,error:sendError}=await supabase.functions.invoke("ycloud-whatsapp-send",{
+        body:{tenantId,conversationId:currentConversation,
+          clientRequestId:crypto.randomUUID(),text:replyDraft.trim()}
+      });
+      if(sendError||!data?.accepted){
+        setReplyFeedback("No se confirmó el envío. No pulses otra vez hasta comprobar el historial y la configuración del canal.");
+        return;
+      }
+      setReplyDraft("");setReplyFeedback("YCloud aceptó el mensaje en cola; su entrega todavía debe confirmarse.");
+      setReload(v=>v+1);
+    }catch{
+      setReplyFeedback("No se confirmó el envío. Revisa el estado antes de volver a intentarlo.");
+    }finally{setReplySending(false);}
+  }
 
   async function assignConversation(assignee:string|null) {
     if(!tenantId||!selected||assigning)return;
@@ -200,7 +227,19 @@ export default function OmnichannelInbox() {
               <small className={`muted ${styles.messageMeta}`}>{when.format(new Date(msg.sent_at??msg.created_at))} · {messageStatusLabel[msg.status]??msg.status}{msg.read_at?" · leído":msg.delivered_at?" · entregado":""}</small>
             </div>)}
           </div>
-          <div className="notice" style={{ marginTop: 16 }}>Las respuestas externas seguirán desactivadas hasta conectar y comprobar oficialmente el canal de esta empresa. Las claves nunca se escriben aquí.</div>
+          {channel?.provider==="whatsapp"&&<div className="stack gap-8" style={{marginTop:16}}>
+            <label htmlFor="ycloud-reply-text"><strong>Responder desde el CRM · YCloud</strong></label>
+            <textarea id="ycloud-reply-text" aria-label="Respuesta de WhatsApp"
+              value={replyDraft} onChange={e=>setReplyDraft(e.target.value)}
+              placeholder={canReply?"Escribe una respuesta para enviar por la API…":"Disponible tras verificar el canal YCloud y asignar un responsable"}
+              maxLength={1600} rows={3} disabled={!canReply||replySending}/>
+            <div className="top-actions"><button type="button" className="button primary"
+              disabled={!canReply||replySending||!replyDraft.trim()}
+              onClick={()=>void sendYCloudReply()}>{replySending?"Procesando…":"Enviar por YCloud"}</button>
+              <small className="muted">Solo respuesta manual; dentro de las 24 horas del último mensaje recibido. Sin IA automática.</small></div>
+            {replyFeedback&&<div className="notice" role="status">{replyFeedback}</div>}
+          </div>}
+          <div className="notice" style={{ marginTop: 16 }}>El envío depende de que YCloud esté verificado, autorizado y habilitado en el servidor. Ninguna clave API se configura desde esta pantalla.</div>
         </>}
       </div>
       <aside className={`stack gap-12 ${styles.inboxAside}`}>
