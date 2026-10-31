@@ -327,7 +327,7 @@ export default function PlatformAdmin() {
           {notice && <div className="notice">{notice}</div>}
           <button className="button primary"><KeyRound size={15} /> Activar Platform Owner</button>
         </form>
-        <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); }}><LogOut size={14} /> Cerrar sesión</button>
+        <button className="text-button" onClick={async () => { await supabase.auth.signOut({scope:"local"}); router.replace("/login"); }}><LogOut size={14} /> Cerrar sesión</button>
       </section>
     </main>;
   }
@@ -343,11 +343,11 @@ export default function PlatformAdmin() {
       </nav>
       <div className="sidebar-footer">
         <Link className="text-button" href="/crm"><ChevronRight size={14} /> Ir al CRM</Link>
-        <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace("/login"); }}><LogOut size={14} /> Salir</button>
+        <button className="text-button" onClick={async () => { await supabase.auth.signOut({scope:"local"}); router.replace("/login"); }}><LogOut size={14} /> Salir</button>
       </div>
     </aside>
     <main className="content">
-      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button><button type="button" className="button mobile-only" onClick={async()=>{const result=await supabase.auth.signOut();if(result.error)return setNotice("No se pudo cerrar la sesión. Intenta nuevamente.");router.replace("/login");}}>Salir</button></div></header>
+      <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button><button type="button" className="button mobile-only" onClick={async()=>{const result=await supabase.auth.signOut({scope:"local"});if(result.error)return setNotice("No se pudo cerrar la sesión. Intenta nuevamente.");router.replace("/login");}}>Salir</button></div></header>
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <section className="grid metrics" style={{ marginBottom: 16 }}>

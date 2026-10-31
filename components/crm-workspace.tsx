@@ -20,6 +20,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { signOutOfTenant } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
@@ -63,6 +64,7 @@ const nav = [
   ["files", "Archivos", FileText],
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
+  ["sessions", "Sesiones del equipo", Users],
   ["settings", "Configuración", Settings],
 ] as const;
 
@@ -70,13 +72,13 @@ const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
  automations:"Automatizaciones",files:"Archivos",channels:"Canales",
- integrations:"Conexiones",settings:"Configuración"
+ integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",files:"dashboard",channels:"settings",
- integrations:"settings",settings:"settings"
+ integrations:"settings",sessions:"settings",settings:"settings"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);
@@ -154,7 +156,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       <BrandLogo size="login"/>
       <h1>No tienes una empresa asignada</h1>
       <p className="muted">El propietario de la plataforma debe vincular tu cuenta a una empresa y asignarte un rol. No se crea una empresa automáticamente al registrarte.</p>
-      <button type="button" className="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login");}}>Volver a iniciar sesión</button>
+      <button type="button" className="button" onClick={async()=>{await supabase.auth.signOut({scope:"local"});router.replace("/login");}}>Volver a iniciar sesión</button>
     </section></main>;
   }
   if (!member) return <div className="loading" role="alert">{notice || "No se pudo preparar el workspace."}</div>;
@@ -162,6 +164,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
+    if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
     if(!familyMenuPermissions)return false; // fail closed while waiting
     const permission=permissionForSection[key]??key;
@@ -181,7 +184,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         </nav>
         <div className="sidebar-footer">
           <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
-          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
+          <button className="text-button" onClick={async () => { await signOutOfTenant(tenantId); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
         </div>
       </aside>
       <main className="content">

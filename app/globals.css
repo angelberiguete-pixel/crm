@@ -349,3 +349,12 @@ textarea{min-height:96px;resize:vertical}
 .platform-company-shortcut{position:fixed;right:270px;top:11px;z-index:32;display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #2c4166;border-radius:9px;background:#0B0F1A}
 .platform-company-shortcut a{color:#F5F8FF}
 @media(max-width:700px){.platform-company-shortcut{display:none}.mobile-module-panel .platform-company-shortcut{display:block;position:static;margin:8px 0;border:1px solid #2c4166}.mobile-module-panel .platform-company-shortcut a{display:flex;padding:7px}}
+
+/* Accessible sign-out for customer workspaces on desktop. Mobile uses the modules menu. */
+.tenant-session-exit{position:fixed;right:280px;top:10px;z-index:35}
+.tenant-session-exit button{display:inline-flex;align-items:center;gap:8px;min-height:42px;
+  padding:9px 14px;border:1px solid var(--border);border-radius:10px;
+  color:var(--text);background:var(--panel2);font:inherit;font-size:13px;cursor:pointer}
+.tenant-session-exit button:disabled{opacity:.65;cursor:wait}
+.tenant-session-exit small{display:block;max-width:240px}
+@media(max-width:700px){.tenant-session-exit{display:none}}
