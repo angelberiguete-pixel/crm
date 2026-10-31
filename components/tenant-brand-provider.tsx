@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {createContext,useContext,useEffect,useMemo,useState,type CSSProperties,type ReactNode} from "react";
 import {supabase} from "@/lib/supabase";
 import {
@@ -59,7 +60,18 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
      else if(originalHref!==null)favicon.setAttribute("href",originalHref);
    };
  },[brand,loading]);
- if(loading)return <div className="loading" role="status">Preparando el espacio de {fallback.name}…</div>;
+ if(loading){
+   // Never show Look Social Media's loading logo while entering a customer company.
+   const fallbackLogo=tenant.tenant_slug==="family-power"
+     ? "/client-brands/family-power/logo-negativo-sin-fondo.svg"
+     : tenant.tenant_slug==="eurevector" ? "/look-social-media-logo.svg" : null;
+   return <div className="tenant-brand-loading" role="status">
+     {fallbackLogo?<Image src={fallbackLogo} alt={"Logo de "+fallback.name}
+       width={144} height={90} unoptimized/>:
+       <div className="tenant-loading-initials">{fallback.initials}</div>}
+     <span>Preparando {fallback.name}…</span>
+   </div>;
+ }
  return <TenantBrandContext.Provider value={brand}>
    <div className="tenant-brand-scope" data-tenant-brand={brand.slug}
      style={tenantBrandStyle(brand) as CSSProperties}>
