@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { signOutOfTenant } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
