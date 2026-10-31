@@ -7,6 +7,7 @@ import CrmChannelSetup from "@/components/crm-channel-setup";
 import DigitalEmployeeStudio from "@/components/digital-employee-studio";
 import CrmIntegrationCenter from "@/components/crm-integration-center";
 import CrmMarketingPerformance from "@/components/crm-marketing-performance";
+import CrmTenantSessions from "@/components/crm-tenant-sessions";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 
 export default async function CrmPage({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -28,6 +29,8 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
               ? <CrmIntegrationCenter />
             : section === "marketing"
               ? <CrmMarketingPerformance />
+            : section === "sessions"
+              ? <CrmTenantSessions />
             : section === "employees"
               ? <DigitalEmployeeStudio />
             : <CrmWorkspace slug={slug} />}
