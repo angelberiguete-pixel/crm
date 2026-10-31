@@ -13,9 +13,10 @@ export default function MobileTenantNavigation() {
   const {canSee}=useTenantVisibleModules();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   if (!tenant) return null;
+  const currentTenantId=tenant.tenant_id;
   async function logout() {
     setBusy(true);setError("");
-    await supabase.rpc("crm_member_session_close",{p_tenant_id:tenant.tenant_id});
+    await supabase.rpc("crm_member_session_close",{p_tenant_id:currentTenantId});
     const result=await supabase.auth.signOut();
     setBusy(false);
     if(result.error) {setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
