@@ -37,7 +37,7 @@ test("product approval invalidates on price, stock or SKU changes",()=>{
 test("family power setup route stays under authenticated tenant permission gate",()=>{
   assert.match(routes,/family-power-setup/);
   assert.match(gate,/"family-power-setup": "settings"/);
-  assert.match(ui,/tenant\.tenant_slug!=="family-power"/);
+  assert.match(ui,/tenant\?\.tenant_slug==="family-power"/);
   assert.match(ui,/\["owner","admin"\]/);
   assert.match(ui,/La IA no puede confirmar pagos/);
 });
