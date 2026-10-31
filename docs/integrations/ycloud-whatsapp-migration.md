@@ -43,6 +43,8 @@ En un solo evento HTTP, YCloud envía `whatsapp.inbound_message.received`. Se co
 
 ## Archivos preparados en este PR
 - `lib/ycloud-whatsapp-webhook.ts`: normaliza eventos v2 de texto entrante; no admite medios, historial ni eventos falsos.
+- `supabase/functions/ycloud-whatsapp-send/index.ts`: prepara envío MANUAL de texto (nunca IA automática), requiere sesión activa, membresía del tenant, conversación asignada al vendedor, ruta validada y ventana reciente de 24h. No está desplegado, por defecto responde 503 salvo activación explícita del servidor.
+- `components/omnichannel-inbox.tsx`: compone respuesta YCloud desde el CRM cuando el canal figure como conectado; la función del servidor valida la ruta y permisos, no hay envío funcional hasta configuración y QA.
 - `supabase/functions/ycloud-whatsapp-inbound/index.ts`: verifica firma y antigüedad de solicitud, tamaño, cuerpo crudo, secreto en servidor y endpoint ID opcional. No envía mensajes ni usa OpenAI.
 - `supabase/migrations/20261030230000_ycloud_verified_whatsapp_routes.sql`: tablas `ycloud_whatsapp_routes`, `ycloud_whatsapp_inbound_receipts` y RPC `ingest_verified_ycloud_whatsapp_text`, aisladas por tenant/empresa y clave de mensaje idempotente.
 - Tests de contrato sin credenciales.
@@ -57,7 +59,7 @@ En un solo evento HTTP, YCloud envía `whatsapp.inbound_message.received`. Se co
    Suscribirse a `whatsapp.inbound_message.received`. Para recibir también actualizaciones de costo/estado, suscribirse más adelante a `whatsapp.message.updated` y desarrollar su procesamiento. Copiar la **firma secreta del webhook**, NO la X-API-Key de envío, a los secretos Supabase.
 6. En Superadministración, conservar tenant `eurevector` (Look Social Media) y canal WhatsApp preexistente; **no crear tenants duplicados**. En servidor solamente, cotejar WABA ID+número de YCloud y crear una ruta en `ycloud_whatsapp_routes`, `verified_reference` con un rastro de auditoría, `is_enabled` inicialmente false. La marca `channels.status='connected'` sólo después de prueba y autorización de QA. NUNCA permitir que los datos de webhook decidan tenant.
 7. Enviar un único mensaje voluntario desde otro teléfono a Look Social Media; verificar firma, un contacto, una conversación, un mensaje, una tarea y duplicación sin nuevo registro. Probar con cuenta autorizada `/crm/inbox` y que un usuario de Family Power NO pueda acceder.
-8. Activar respuesta humana desde CRM solo cuando exista el módulo de **salida** YCloud (actualmente no implementado) con token servidor, aprobación, consentimiento, plantillas y ventana de 24 h. Para IA operativa falta configuración de conocimiento, proveedor, presupuesto y QA. `auto_reply` se mantiene false.
+8. Activar respuesta humana desde CRM sólo después de revisar y desplegar el módulo de **salida** YCloud, autenticación, pertenencia a empresa, responsables, confirmación de destino, limitación de ventana de 24h y protección contra reintentos. Se requiere suscripción a `whatsapp.message.updated` y persistencia de estados reales; todavía no implementada. Plantillas, campañas y mensajes automáticos permanecen desactivados. Para IA operativa falta configuración de conocimiento, proveedor, presupuesto y QA. `auto_reply` se mantiene false.
 9. Recién tras probar conexión YCloud y estabilidad de WhatsApp Business, retirar el proveedor anterior del portafolio Meta según las instrucciones de migración y cancelar cualquier suscripción de 360dialog con cargo, si existe, desde su cuenta. No se ha efectuado esa acción.
 
 ## Restricciones activas
@@ -65,3 +67,9 @@ En un solo evento HTTP, YCloud envía `whatsapp.inbound_message.received`. Se co
 - No compartir API keys ni secretos en capturas, chat, GitHub, Make URL pública ni `NEXT_PUBLIC_*`.
 - Los datos históricos de Family Power y el usuario del doctor siguen protegidos y sin migrar.
 - La ausencia de clave/cuenta YCloud conectada impide una prueba extremo a extremo hasta alta real.
+
+## Alcance dual solicitado: Ángel Berigüete y Family Power
+- La coexistencia autorizada en el celular de Ángel Berigüete también constituye acceso API; no convertir a modalidad API exclusiva si eso exige borrar la cuenta WhatsApp Business innecesariamente.
+- Número del titular: +1 849-570-6550. Teléfono visible como conectado a YCloud en WhatsApp Business; **WABA/canal API en consola YCloud no comprobados**.
+- Número del cliente Family Power: +1 809-685-0011. Se configura como canal separado y sólo cuando el titular del número apruebe el alta/transferencia de proveedor y, si corresponde, la pérdida de acceso desde la app. No se actúa sobre la cuenta del cliente sin su autorización.
+- El plan gratuito anuncia dos canales, pero su disponibilidad para ambas WABAs y el uso de una cuenta profesional común deben confirmarse en consola YCloud. Cada conexión se valida por WABA + número de origen de la empresa y se cobra al tenant que corresponda.
