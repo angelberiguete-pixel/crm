@@ -27,7 +27,7 @@ const money=(v:number|undefined,c:string)=>{
 };
 function Logo({tenant,brand}:{tenant:Tenant;brand:Brand|null}){
  const fallback=tenant.tenant_slug==="family-power"?"/client-brands/family-power/logo-negativo-sin-fondo.svg":tenant.tenant_slug==="eurevector"?"/look-social-media-logo.svg":null;
- const src=safeTenantAsset(brand?.logo_on_dark_url)||safeTenantAsset(brand?.logo_url)||fallback;
+ const src=tenant.tenant_slug==="family-power"?fallback:(safeTenantAsset(brand?.logo_on_dark_url)||safeTenantAsset(brand?.logo_url)||fallback);
  return <div className={styles.logo}>{src?<Image src={src} alt={"Logo de "+tenant.tenant_name} width={240} height={120} unoptimized/>:<strong>{tenant.tenant_name.slice(0,2).toUpperCase()}</strong>}</div>;
 }
 export default function PlatformCompanyPortfolio(){
@@ -98,7 +98,7 @@ export default function PlatformCompanyPortfolio(){
       style={{borderTopColor:safeHex(b?.primary_color,t.tenant_slug==="family-power"?"#C91425":"#6489d6")}} disabled={busy}
       aria-label={"Entrar como administrador en "+t.tenant_name}
       onClick={()=>void enter(t)}>
-      <Logo tenant={t} brand={b}/><strong>{b?.brand_name||t.tenant_name}</strong>
+      <Logo tenant={t} brand={b}/><strong>{t.tenant_slug==="family-power"?"Family Power":b?.brand_name||t.tenant_name}</strong>
       <small>{t.tenant_slug==="eurevector"?"Operación propia":"Empresa cliente"} · {n(t.member_count||0)} usuarios registrados</small>
       <span>Entrar como administrador <ArrowRight size={16}/></span>
     </button>;
