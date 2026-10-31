@@ -355,3 +355,112 @@ drop trigger if exists crm_family_approved_quotation_progress on public.quotatio
 create trigger crm_family_approved_quotation_progress
  before update of status on public.quotations
  for each row execute function private.crm_family_guard_quote_progress();
+
+
+-- Quotation operations: authoritative price/tax calculation + transaction audit.
+create or replace function public.crm_family_create_quotation(
+ p_tenant_id uuid,p_contact_id uuid,p_valid_until date,p_notes text
+) returns uuid language plpgsql security definer set search_path=''
+as $$
+declare v_contact public.contacts%rowtype;v_id uuid;v_number text;
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+   raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ select * into v_contact from public.contacts where tenant_id=p_tenant_id and id=p_contact_id;
+ if not found then raise exception 'Verified tenant contact required' using errcode='22023';end if;
+ if p_valid_until is not null and
+   (p_valid_until<current_date or p_valid_until>current_date+90)
+ then raise exception 'Validity must be within 90 days' using errcode='22023';end if;
+ if length(coalesce(p_notes,''))>1000 then raise exception 'Notes too long' using errcode='22023';end if;
+ v_number:='FP-'||upper(left(replace(gen_random_uuid()::text,'-',''),12));
+ insert into public.quotations(
+   tenant_id,quote_number,contact_id,company_id,status,currency,valid_until,notes,
+   subtotal,discount_total,tax_total,total,created_by
+ ) values(p_tenant_id,v_number,p_contact_id,v_contact.company_id,'draft','DOP',
+   p_valid_until,nullif(btrim(p_notes),''),0,0,0,0,auth.uid())
+ returning id into v_id;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_draft_created','quotation',v_id,
+   jsonb_build_object('contact_id',p_contact_id,'quote_number',v_number));
+ return v_id;
+end; $$;
+revoke all on function public.crm_family_create_quotation(uuid,uuid,date,text) from public,anon,authenticated;
+grant execute on function public.crm_family_create_quotation(uuid,uuid,date,text) to authenticated;
+
+create or replace function public.crm_family_add_quote_item(
+ p_tenant_id uuid,p_quote_id uuid,p_product_id uuid,p_quantity numeric,p_discount_percent numeric
+) returns jsonb language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;
+ v_product public.products%rowtype;v_approval public.crm_family_product_approvals%rowtype;
+ v_item uuid;v_position integer;
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+   raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ if p_quantity is null or p_quantity<=0 or p_quantity>10000
+   or p_discount_percent is null or p_discount_percent<0 or p_discount_percent>100
+ then raise exception 'Invalid quantity or discount' using errcode='22023';end if;
+ select * into v_quote from public.quotations where tenant_id=p_tenant_id
+   and id=p_quote_id for update;
+ if not found or v_quote.status<>'draft'
+ then raise exception 'Draft quotation required' using errcode='42501';end if;
+ select * into v_product from public.products where tenant_id=p_tenant_id
+   and id=p_product_id and status='active';
+ select * into v_approval from public.crm_family_product_approvals
+ where tenant_id=p_tenant_id and product_id=p_product_id;
+ if v_product.id is null or v_approval.product_id is null
+   or v_product.sale_price is distinct from v_approval.approved_price
+   or v_product.tax_rate is distinct from v_approval.approved_tax_rate
+   or v_product.currency is distinct from v_approval.currency
+   or v_product.currency is distinct from v_quote.currency
+   or v_product.stock_snapshot is null or v_product.stock_snapshot<p_quantity
+ then raise exception 'Product price, tax, currency and stock require approval'
+ using errcode='42501';end if;
+ select coalesce(max(position),0)+1 into v_position from public.quotation_items
+ where tenant_id=p_tenant_id and quotation_id=p_quote_id;
+ insert into public.quotation_items(
+  tenant_id,quotation_id,product_id,position,sku_snapshot,description,quantity,
+  unit_price,discount_percent,tax_rate
+ ) values(p_tenant_id,p_quote_id,p_product_id,v_position,v_product.sku,v_product.name,
+   p_quantity,v_approval.approved_price,p_discount_percent,v_approval.approved_tax_rate)
+ returning id into v_item;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_item_added','quotation',p_quote_id,
+   jsonb_build_object('item_id',v_item,'product_id',p_product_id,'quantity',p_quantity,
+     'discount_percent',p_discount_percent,'tax_rate',v_approval.approved_tax_rate));
+ return jsonb_build_object('quotation_id',p_quote_id,'item_id',v_item);
+end; $$;
+revoke all on function public.crm_family_add_quote_item(uuid,uuid,uuid,numeric,numeric)
+ from public,anon,authenticated;
+grant execute on function public.crm_family_add_quote_item(uuid,uuid,uuid,numeric,numeric)
+ to authenticated;
+
+create or replace function public.crm_family_record_quote_decision(
+ p_tenant_id uuid,p_quote_id uuid,p_new_status text,p_evidence_reference text
+) returns jsonb language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;v_reference text:=btrim(coalesce(p_evidence_reference,''));
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+  raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ select * into v_quote from public.quotations where tenant_id=p_tenant_id
+ and id=p_quote_id for update;
+ if not found then raise exception 'Quotation not found' using errcode='P0002';end if;
+ if (p_new_status='sent' and v_quote.status<>'draft')
+  or (p_new_status='accepted' and v_quote.status<>'sent')
+  or p_new_status not in ('sent','accepted')
+ then raise exception 'Invalid quote state transition' using errcode='22023';end if;
+ if length(v_reference)<8 or length(v_reference)>250
+ then raise exception 'Human verification or communication reference required' using errcode='22023';end if;
+ update public.quotations set status=p_new_status,
+  accepted_at=case when p_new_status='accepted' then now() else accepted_at end
+ where tenant_id=p_tenant_id and id=p_quote_id;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_status_confirmed','quotation',p_quote_id,
+ jsonb_build_object('status',p_new_status,'reference',v_reference,'manual_human_review',true));
+ return jsonb_build_object('quotation_id',p_quote_id,'status',p_new_status);
+end; $$;
+revoke all on function public.crm_family_record_quote_decision(uuid,uuid,text,text)
+ from public,anon,authenticated;
+grant execute on function public.crm_family_record_quote_decision(uuid,uuid,text,text)
+ to authenticated;
