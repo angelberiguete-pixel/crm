@@ -123,3 +123,11 @@ grant execute on function public.ingest_verified_ycloud_whatsapp_text(
  text,text,text,text,text,text) to service_role;
 comment on function public.ingest_verified_ycloud_whatsapp_text(text,text,text,text,text,text)
  is 'Called only by signature-verified YCloud Edge receiver; transactionally routes by WABA+business phone; no sends.';
+
+
+-- A retry with the same clientRequestId cannot bill the provider twice,
+-- even after the pending external_message_id is replaced by the YCloud ID.
+create unique index if not exists ycloud_wa_human_send_once
+ on public.messages(tenant_id,conversation_id,((metadata ->> 'client_request_id')))
+ where direction='outbound' and metadata->>'provider'='ycloud'
+   and metadata ? 'client_request_id';
