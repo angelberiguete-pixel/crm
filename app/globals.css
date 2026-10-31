@@ -349,3 +349,14 @@ textarea{min-height:96px;resize:vertical}
 .platform-company-shortcut{position:fixed;right:270px;top:11px;z-index:32;display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #2c4166;border-radius:9px;background:#0B0F1A}
 .platform-company-shortcut a{color:#F5F8FF}
 @media(max-width:700px){.platform-company-shortcut{display:none}.mobile-module-panel .platform-company-shortcut{display:block;position:static;margin:8px 0;border:1px solid #2c4166}.mobile-module-panel .platform-company-shortcut a{display:flex;padding:7px}}
+
+/* Only the active tenant identity may appear during navigations. */
+.tenant-company-current{display:inline-flex;align-items:center;max-width:100%;overflow:hidden;
+  padding:8px 13px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
+.tenant-company-label{font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loading::before{width:40px;height:40px;border-radius:50%;background:none;
+  border:3px solid color-mix(in srgb,var(--brand-blue,#2563eb) 18%,transparent);
+  border-top-color:var(--brand-blue,#2563eb);box-shadow:none;animation:look-loading-pulse 1s linear infinite}
+.tenant-brand-scope .loading::before{width:min(160px,42vw);height:112px;border:none;
+  background:var(--tenant-loading-image) center/contain no-repeat;box-shadow:none;border-radius:0}
+@media(prefers-reduced-motion:reduce){.loading::before{animation:none}}
