@@ -75,6 +75,7 @@ try{
   assert.equal(reports,1,"owner can view session report");
 
   await owner.locator(".mobile-tenant-navigation summary").click();
+  await owner.getByRole("navigation",{name:"Otros módulos de Empresa QA"}).getByRole("link",{name:"Sesiones del equipo"}).waitFor();
   await owner.getByRole("button",{name:"Salir",exact:true}).click();
   await owner.waitForURL(/\/login/,{timeout:15000});
   assert.equal(closes,1,"close RPC is called before logout");

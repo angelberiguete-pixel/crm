@@ -156,7 +156,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       <BrandLogo size="login"/>
       <h1>No tienes una empresa asignada</h1>
       <p className="muted">El propietario de la plataforma debe vincular tu cuenta a una empresa y asignarte un rol. No se crea una empresa automáticamente al registrarte.</p>
-      <button type="button" className="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login");}}>Volver a iniciar sesión</button>
+      <button type="button" className="button" onClick={async()=>{await supabase.auth.signOut({scope:"local"});router.replace("/login");}}>Volver a iniciar sesión</button>
     </section></main>;
   }
   if (!member) return <div className="loading" role="alert">{notice || "No se pudo preparar el workspace."}</div>;

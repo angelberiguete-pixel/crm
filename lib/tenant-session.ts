@@ -11,5 +11,5 @@ export async function signOutOfTenant(tenantId:string|null) {
       // Logout must remain possible even if presence tracking is unavailable.
     }
   }
-  return supabase.auth.signOut();
+  return supabase.auth.signOut({scope:"local"});
 }
