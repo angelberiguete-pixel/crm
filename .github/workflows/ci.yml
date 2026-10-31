@@ -72,6 +72,8 @@ jobs:
         run: node tests/digital-staff-commercial-demo-browser.test.mjs
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
+      - name: Company session presence, owner report and logout browser regression tests
+        run: node tests/member-session-presence-browser.test.mjs
       - name: Password recovery browser regression tests
         run: node tests/auth-browser.test.mjs
       - name: Owner initial password browser regression tests
