@@ -24,12 +24,12 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>;
 }
 export default function CrmCommercialDashboard(){
-  const {canSee}=useTenantVisibleModules();
   const tenant=useActiveTenant();
   if(tenant?.tenant_slug==="family-power")return <EnergyServiceDashboard/>;
   return <GeneralCommercialDashboard/>;
 }
 function GeneralCommercialDashboard(){
+  const {canSee}=useTenantVisibleModules();
   const tenant=useActiveTenant(),tenantId=tenant?.tenant_id??null;
   const tenantBrand=useTenantBrand();
   const roleLabel=tenant?.membership_role==="owner"?"Propietario":tenant?.membership_role==="admin"?"Administrador":tenant?.membership_role==="manager"?"Gerente":tenant?.membership_role==="agent"?"Vendedor":"Equipo";
