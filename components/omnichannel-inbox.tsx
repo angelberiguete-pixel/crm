@@ -134,12 +134,12 @@ export default function OmnichannelInbox() {
   const opportunity = selected?.opportunity_id ? opportunityMap.get(selected.opportunity_id) : null;
   const channel = selected ? channelMap.get(selected.channel_id) : null;
 
-  const isSupervisor = ["owner","admin","manager"].includes(activeTenant?.membership_role??"");
+  const isSupervisor = ["owner","admin"].includes(activeTenant?.membership_role??"");
   const assignedName=(id:string|null)=>id ? (assignees.find(a=>a.user_id===id)?.display_name??"Asignado") : "Sin asignar";
   function openConversation(id:string) {setSelectedId(id);setMobileThreadOpen(true);setError("");setReplyDraft("");setReplyFeedback("");}
 
   const canReply=channel?.provider==="whatsapp"&&channel.status==="connected"&&
-    (isSupervisor||(activeTenant?.membership_role==="agent"&&!!currentUserId&&selected?.assigned_to===currentUserId));
+    (isSupervisor||(["agent","manager"].includes(activeTenant?.membership_role??"")&&!!currentUserId&&selected?.assigned_to===currentUserId));
 
   async function sendYCloudReply() {
     if(!canReply||!tenantId||!selected||replySending||!replyDraft.trim())return;
@@ -168,7 +168,10 @@ export default function OmnichannelInbox() {
     try{
       const r=await supabase.rpc("tenant_assign_conversation",{p_tenant_id:tenantId,p_conversation_id:currentId,p_assignee:assignee});
       if(r.error){setError(r.error.message);return;}
-      setConversations(rows=>rows.map(row=>row.id===currentId?{...row,assigned_to:assignee}:row));
+      if(!isSupervisor&&assignee!==currentUserId){
+         setConversations(rows=>rows.filter(row=>row.id!==currentId));
+         setSelectedId(null);setMessages([]);setMobileThreadOpen(false);
+       }else setConversations(rows=>rows.map(row=>row.id===currentId?{...row,assigned_to:assignee}:row));
     }catch{setError("No se pudo actualizar el responsable. Intenta nuevamente.");}
     finally{setAssigning(false);}
   }
@@ -203,7 +206,7 @@ export default function OmnichannelInbox() {
           <div className={styles.filters}><select aria-label="Filtrar por estado" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos los estados</option><option value="open">Abiertas</option><option value="pending">Pendientes</option><option value="snoozed">Pospuestas</option><option value="closed">Cerradas</option></select><button type="button" aria-pressed={onlyUnread} className={`button ${styles.filterUnread} ${onlyUnread?"primary":""}`} onClick={()=>setOnlyUnread(v=>!v)}>No leídos</button></div>
         </div>
         <label className="crm-assignment-filter">Canal<select aria-label="Filtrar conversaciones por canal" value={channelFilter} onChange={e=>setChannelFilter(e.target.value)}><option value="all">Todos los canales</option><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option><option value="email">Correo</option><option value="messenger">Messenger</option><option value="webchat">Chat web</option></select></label>
-        <label className="crm-assignment-filter">Responsable<select aria-label="Filtrar conversaciones por responsable" value={assignmentFilter} onChange={e=>setAssignmentFilter(e.target.value)}><option value="all">Todas las conversaciones</option><option value="mine">Mis conversaciones</option><option value="unassigned">Sin asignar</option></select></label>
+        <label className="crm-assignment-filter">Responsable<select aria-label="Filtrar conversaciones por responsable" value={assignmentFilter} onChange={e=>setAssignmentFilter(e.target.value)}><option value="all">{isSupervisor?"Todas las conversaciones":"Mis conversaciones y disponibles"}</option><option value="mine">Mis conversaciones</option><option value="unassigned">Sin asignar</option></select></label>
         <div className="stack gap-8" style={{ marginTop: 12 }}>
           <p role="status" className={styles.listSummary}>{filtered.length} {filtered.length===1?"conversación":"conversaciones"} con los filtros actuales</p>{filtered.length === 0 && <div className="empty"><strong>Sin conversaciones</strong><div>No hay conversaciones que coincidan con estos filtros.</div></div>}
           {filtered.map((row) => { const c = row.contact_id ? contactMap.get(row.contact_id) : null; const ch = channelMap.get(row.channel_id); return <button key={row.id} type="button" onClick={() => openConversation(row.id)} aria-current={selectedId===row.id?"true":undefined} className={`card ${styles.threadItem}`}><div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><strong>{c?.display_name ?? row.subject ?? "Conversación"}</strong>{row.unread_count > 0 && <span className="badge">{row.unread_count}</span>}</div><div className="muted">{channelLabel[ch?.provider??""]??"Canal"} · {priorityLabel[row.priority]??row.priority}</div><div className="muted">Responsable: {assignedName(row.assigned_to)}</div><small className="muted">{row.last_message_at ? when.format(new Date(row.last_message_at)) : "Sin mensajes"}</small></button>; })}
