@@ -80,7 +80,7 @@ export default function PlatformCompanyPortfolio(){
   setBusy(true);setError("");
   const r=await supabase.rpc("platform_join_tenant_as_admin",{p_tenant_id:tenant.tenant_id});
   if(r.error){setError(r.error.message);setBusy(false);return;}
-  const lock=await supabase.rpc("crm_lock_client_portal",{p_tenant_id:chosen.tenant_id});
+  const lock=await supabase.rpc("crm_lock_client_portal",{p_tenant_id:tenant.tenant_id});
   if(lock.error){setError("No se pudo aislar la sesión del cliente. "+lock.error.message);setBusy(false);return;}
   notifyTenantContextChanged();
   window.location.assign("/crm");
