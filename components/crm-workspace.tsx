@@ -27,6 +27,7 @@ import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
+import {useTenantVisibleModules} from "@/components/tenant-visible-modules";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
@@ -64,6 +65,7 @@ const nav = [
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
   ["settings", "Configuración", Settings],
+  ["sessions", "Sesiones y actividad", Users],
 ] as const;
 
 const familyLabels:Record<string,string>={
@@ -87,6 +89,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
   const activeTenant = useActiveTenant();
+  const visibleMenu=useTenantVisibleModules();
   const [onboarding, setOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -162,6 +165,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
+    if(!visibleMenu.canSee(key))return false;
     if(!isFamilyPower)return true;
     if(!familyMenuPermissions)return false; // fail closed while waiting
     const permission=permissionForSection[key]??key;
@@ -181,14 +185,14 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         </nav>
         <div className="sidebar-footer">
           <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
-          <button className="text-button" onClick={async () => { await supabase.auth.signOut(); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
+          <button className="text-button" onClick={async () => { await supabase.rpc("crm_member_session_close",{p_tenant_id:tenantId}); await supabase.auth.signOut(); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
         </div>
       </aside>
       <main className="content">
         <header className="topbar">
           <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
-            <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>
+            {member.tenant_slug==="eurevector"&&<Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>}
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
           </div>
         </header>

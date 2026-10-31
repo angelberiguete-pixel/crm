@@ -57,22 +57,22 @@ try {
   const two = await context.newPage();
   await two.goto(base+'/crm/companies');
   await two.getByRole('heading',{name:'Acceso a tu portal'}).waitFor();
-  await one.getByRole('button',{name:'QA A',exact:true}).click();
-  await one.getByText('Empresa A',{exact:true}).waitFor();
-  await two.getByText('Empresa A',{exact:true}).waitFor();
-  assert.ok(reads.every(id=>id==='eq.'+A),'explicit server selection beats stale localStorage');
-  await one.getByRole('button',{name:'+ Nueva empresa'}).click();
-  await one.getByLabel('Nombre',{exact:true}).fill('Borrador privado A');
-  await two.getByLabel('Empresa activa').selectOption(B);
-  await two.getByText('Empresa B',{exact:true}).waitFor();
+  // Explicitly choose QA B once for this authenticated browser session.
+  // Switching tenant inside a customer session is forbidden: re-login required.
+  await one.getByRole('button',{name:'QA B',exact:true}).click();
   await one.getByText('Empresa B',{exact:true}).waitFor();
-  assert.equal(await one.getByRole('button',{name:'+ Nueva empresa'}).count(),1,'switching tenants closes previous draft');
+  await two.getByText('Empresa B',{exact:true}).waitFor();
+  assert.ok(reads.every(id=>id==='eq.'+B),'explicit server selection beats stale localStorage');
+  assert.equal(await one.getByLabel('Empresa activa').locator('select').count(),0,
+    "customer portal must display current company, not another company's selection dropdown");
+  assert.equal(await one.getByLabel('Empresa activa').textContent(),'QA B');
+  assert.equal(await two.getByLabel('Empresa activa').textContent(),'QA B');
+  assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'no other tenant content appears');
+  assert.equal(await one.getByRole('link',{name:'Mis empresas'}).count(),0,
+    'owner-only global tools must not show in customer workspaces');
   await one.getByRole('button',{name:'+ Nueva empresa'}).click();
-  assert.equal(await one.getByLabel('Nombre',{exact:true}).inputValue(),'','tenant change discards previous form');
-  assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'previous tenant rows are removed');
-  assert.equal(await one.getByLabel('Empresa activa').inputValue(),B);
   const mobileHeader=await one.locator('.workspace-header').boundingBox();
-  assert.ok(mobileHeader&&mobileHeader.height<=90,'tenant dropdown and mobile module menu fit in one compact header');
+  assert.ok(mobileHeader&&mobileHeader.height<=90,'current company badge and mobile menu fit in one compact header');
   await one.locator('.mobile-tenant-navigation summary').click();
   assert.ok(await one.getByRole('navigation',{name:'Otros módulos de QA B'}).getByRole('link',{name:'Cotizaciones'}).isVisible(),'secondary modules are reachable');
   await one.locator('.mobile-tenant-navigation summary').click();
@@ -91,7 +91,7 @@ try {
   await one.goto(base+'/crm/sales');
   await one.getByRole('heading',{name:'Esta función no está disponible'}).waitFor();
   assert.equal(await one.getByText('Pipeline',{exact:true}).count(),0,'sales alias cannot bypass pipeline permission');
-  console.log('PASS: tenant switching, responsive header/menu, mobile company save, dashboard quick action, overflow and sales RBAC gate (controlled API); SQL tenant CRUD validated separately.');
+  console.log('PASS: pinned tenant portal, no company switcher or global tools, mobile business save, dashboard access and RBAC gate (controlled API).');
 } finally {
   if (browser) await browser.close();
   if (server) server.kill();

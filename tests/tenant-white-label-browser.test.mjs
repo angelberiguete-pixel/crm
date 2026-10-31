@@ -65,7 +65,12 @@ try{
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"eurevector");
   assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#2563eb");
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0,"other brand must not leak");
-  await page.getByLabel("Empresa activa").selectOption(B);
+  // Customer company selection was intentionally removed from the header.
+  // Simulate a fresh separately authenticated tenant session in the mocked backend.
+  assert.equal(await page.getByLabel("Empresa activa").locator("select").count(),0,
+    "client portal must not expose a cross-company dropdown");
+  activeId=B;
+  await page.goto(base+"/crm");
   await page.getByRole("heading",{name:"Portal de Sublimaciones Lazala"}).waitFor();
   await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).waitFor();
   assert.equal(await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).count(),0,"client portal cannot display platform logo");
@@ -80,12 +85,14 @@ try{
   await page.getByText("Lazala Personalizados",{exact:true}).first().waitFor();
   assert.equal(rows.get(A).brand_name,"Look Social Media","save cannot mutate other business branding");
   assert.equal(rows.get(B).brand_name,"Lazala Personalizados");
-  await page.getByLabel("Empresa activa").selectOption(A);
+  // A second mock login context brings Look back, never by switching in the portal.
+  activeId=A;
+  await page.goto(base+"/crm/settings");
   await page.getByRole("heading",{name:"Configuración"}).waitFor();
   await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).waitFor();
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0);
   assert.ok(reads.includes(A)&&reads.includes(B),"both brand configs were tenant-scoped");
-  console.log("PASS: tenant-specific logo, CSS, title, settings update and switching isolation on Android viewport.");
+  console.log("PASS: tenant logo and theme isolation across separately simulated logins, with no customer company-switch dropdown.");
 }finally{
   if(browser)await browser.close();
   if(server)server.kill("SIGTERM");

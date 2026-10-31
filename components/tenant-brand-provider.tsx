@@ -1,6 +1,7 @@
 "use client";
 
-import {createContext,useContext,useEffect,useMemo,useState,type CSSProperties,type ReactNode} from "react";
+import Image from "next/image";
+import {createContext,useContext,useEffect,useLayoutEffect,useMemo,useState,type CSSProperties,type ReactNode} from "react";
 import {supabase} from "@/lib/supabase";
 import {
   resolveTenantBrand,tenantBrandStyle,
@@ -40,10 +41,10 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
    void load().catch(()=>{if(active){setSettings(null);setLoading(false);}});
    return()=>{active=false;window.removeEventListener(TENANT_BRAND_UPDATED,changed);};
  },[tenant.tenant_id]);
- useEffect(()=>{
-   if(loading)return;
-   const previous=document.title;
-   document.title=brand.name+" | CRM";
+ useLayoutEffect(()=>{
+   // Paint the selected tenant identity immediately, even before settings load.
+   const visibleBrand=loading?fallback:brand;
+   document.title=visibleBrand.name+" | CRM";
    let favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
    const created=!favicon;
    if(!favicon){
@@ -52,14 +53,25 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
      document.head.appendChild(favicon);
    }
    const originalHref=favicon.getAttribute("href");
-   favicon.href=brand.faviconUrl??(brand.officialLookBrand?"/look-social-media-logo.svg":"/tenant-crm-icon.svg");
+   favicon.href=visibleBrand.faviconUrl??(visibleBrand.officialLookBrand?"/look-social-media-logo.svg":visibleBrand.slug==="family-power"?"/client-brands/family-power/logo-compacto.svg":"/tenant-crm-icon.svg");
    return()=>{
-     document.title=previous;
+     document.title="CRM";
      if(created)favicon.remove();
-     else if(originalHref!==null)favicon.setAttribute("href",originalHref);
+     else favicon.setAttribute("href","/tenant-crm-icon.svg");
    };
- },[brand,loading]);
- if(loading)return <div className="loading" role="status">Preparando el espacio de {fallback.name}…</div>;
+ },[brand,fallback,loading]);
+ if(loading){
+   // Never show Look Social Media's loading logo while entering a customer company.
+   const fallbackLogo=tenant.tenant_slug==="family-power"
+     ? "/client-brands/family-power/logo-negativo-sin-fondo.svg"
+     : tenant.tenant_slug==="eurevector" ? "/look-social-media-logo.svg" : null;
+   return <div className="tenant-brand-loading" role="status">
+     {fallbackLogo?<Image src={fallbackLogo} alt={"Logo de "+fallback.name}
+       width={144} height={90} unoptimized/>:
+       <div className="tenant-loading-initials">{fallback.initials}</div>}
+     <span>Preparando {fallback.name}…</span>
+   </div>;
+ }
  return <TenantBrandContext.Provider value={brand}>
    <div className="tenant-brand-scope" data-tenant-brand={brand.slug}
      style={tenantBrandStyle(brand) as CSSProperties}>

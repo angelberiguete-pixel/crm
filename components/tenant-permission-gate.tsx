@@ -7,7 +7,6 @@ import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { resolveTenantContext } from "@/lib/tenant-context";
 import TenantSwitcher from "@/components/tenant-switcher";
-import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import BrandLogo from "@/components/brand-logo";
 import TenantBrandProvider from "@/components/tenant-brand-provider";
@@ -25,6 +24,7 @@ const sectionPermission: Record<string, string> = {
   channels: "settings",
   integrations: "settings",
   marketing: "settings",
+  sessions: "settings",
   employees: "settings",
   products: "products",
   quotations: "quotations",
@@ -104,6 +104,14 @@ export default function TenantPermissionGate({ section, children }: { section: s
         notifyTenantContextChanged();
       }
 
+      // A client session must stay pinned to the selected company. This RPC
+      // enforces the lock in the database, not only through hidden navigation.
+      const lock = await supabase.rpc("crm_lock_client_portal",{p_tenant_id:activeTenant.tenant_id});
+      if(!alive)return;
+      if(lock.error){
+        setReason("No se pudo aislar de forma segura tu sesión de empresa. Cierra sesión e inicia nuevamente.");
+        setState("deny");return;
+      }
       if (tenantRef.current && tenantRef.current !== activeTenant.tenant_id) setState("loading");
       const tenantId = activeTenant.tenant_id;
       const permissionKey = sectionPermission[section] ?? section;
@@ -141,6 +149,18 @@ export default function TenantPermissionGate({ section, children }: { section: s
     });
     return () => { alive = false; };
   }, [section, contextVersion, router]);
+
+  useEffect(()=>{
+    if(state!=="allow"||!tenant?.tenant_id)return;
+    const tenantId=tenant.tenant_id;
+    // Presence is measured only while the authenticated tab is visible.
+    const ping=()=>{if(document.visibilityState==="visible")
+      void supabase.rpc("crm_member_session_heartbeat",{p_tenant_id:tenantId});};
+    ping();
+    const timer=window.setInterval(ping,60000);
+    document.addEventListener("visibilitychange",ping);
+    return()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",ping);};
+  },[state,tenant?.tenant_id]);
 
   useEffect(() => {
     const invalidate = () => {
@@ -181,15 +201,15 @@ export default function TenantPermissionGate({ section, children }: { section: s
 
   if (choices.length > 0) return <main className="auth-shell"><section className="auth-panel">
     <BrandLogo size="login"/><div className="eyebrow">Selecciona tu empresa</div><h1>Acceso a tu portal</h1>
-    <p className="muted">Verás únicamente los espacios a los que tu cuenta tiene acceso autorizado.</p>
+    <p className="muted">Selecciona tu empresa. Para cambiar a otra después tendrás que cerrar sesión e iniciar sesión nuevamente.</p>
     <div className="stack gap-16">{choices.map(tenant => <button type="button" className="button" key={tenant.tenant_id} disabled={selecting} onClick={() => selectTenant(tenant)}>{tenant.tenant_name}</button>)}</div>
     {reason && <div className="notice" role="alert">{reason}</div>}
   </section></main>;
 
-  if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
+  if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="tenant-gate-loading" role="status">Comprobando el acceso a tu empresa…</div>;
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;
