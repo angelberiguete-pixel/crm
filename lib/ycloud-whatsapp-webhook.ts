@@ -59,3 +59,38 @@ export function parseYCloudOutboundStatus(raw:unknown):OutboundYCloudStatus|null
     !["sent","delivered","read","failed"].includes(String(status)))return null;
   return {businessPhone,wabaId:waba,externalMessageId,status:status as OutboundYCloudStatus["status"]};
 }
+
+/** Media metadata only. Never trust provider download links, user filenames or a
+ * webhook tenant_id; route identity is resolved separately by the database.
+ * Binary bytes are intentionally NOT fetched, exposed or auto-approved.
+ */
+export type InboundYCloudMedia={
+ kind:"image"|"document";wabaId:string;businessPhone:string;from:string;
+ externalMessageId:string;contactName:string;mediaId:string;
+ mimeType:string;sha256:string|null;fileName:string|null;caption:string;
+};
+export function parseYCloudInboundMedia(raw:unknown):InboundYCloudMedia|null{
+ const evt=context(raw,"whatsapp.inbound_message.received");
+ const m=asObj(evt?.whatsappInboundMessage);
+ if(m?.type!=="image"&&m?.type!=="document")return null;
+ const kind=m.type;
+ const waba=m.wabaId,from=asPhone(m.from),to=asPhone(m.to);
+ const id=typeof m.wamid==="string"&&m.wamid.length>=3?m.wamid:m.id;
+ const media=asObj(m[kind]),mediaId=media?.id,mime=media?.mime_type;
+ if(typeof waba!=="string"||!/^\d{6,30}$/.test(waba)||!from||!to||
+  typeof id!=="string"||id.length<3||id.length>256||
+  typeof mediaId!=="string"||!/^[a-zA-Z0-9_-]{4,128}$/.test(mediaId)||
+  typeof mime!=="string"||
+  !(kind==="image"?["image/jpeg","image/png","image/webp"].includes(mime):
+    ["application/pdf"].includes(mime)))return null;
+ const rawHash=media?.sha256;
+ const sha256=typeof rawHash==="string"&&/^[a-zA-Z0-9+/]{43}=$/.test(rawHash)?rawHash:null;
+ const rawName=media?.filename;
+ const fileName=kind==="document"&&typeof rawName==="string"&&rawName.length<=128&&
+  /^[^\\/\x00-\x1f<>:"|?*]+\.pdf$/i.test(rawName)?rawName:null;
+ const n=asObj(m.customerProfile)?.name,caption=media?.caption;
+ return {kind,wabaId:waba,businessPhone:to,from,externalMessageId:id,
+  contactName:typeof n==="string"?n.trim().slice(0,120):"",
+  mediaId,mimeType:mime,sha256,fileName,
+  caption:typeof caption==="string"?caption.trim().slice(0,250):""};
+}

@@ -8,6 +8,7 @@ create table if not exists public.crm_family_product_approvals(
  photo_file_id uuid not null references public.tenant_files(id),
  technical_file_id uuid not null references public.tenant_files(id),
  approved_price numeric(16,2) not null check(approved_price>0),
+ approved_tax_rate numeric(5,2) not null check(approved_tax_rate between 0 and 100),
  currency text not null,
  approved_by uuid not null references auth.users(id),
  approved_at timestamptz not null default now(),
@@ -92,7 +93,7 @@ begin
  end if;
  select * into p from public.products
   where id=p_product_id and tenant_id=p_tenant_id and status='active';
- if not found or p.sale_price<=0 or p.stock_snapshot is null or p.stock_snapshot<=0
+ if not found or p.sale_price<=0 or p.stock_snapshot is null or p.stock_snapshot<=0 or p.tax_rate is null or p.tax_rate<0 or p.tax_rate>100
    or nullif(btrim(p.name),'') is null or nullif(btrim(p.sku),'') is null
  then raise exception 'Product model, stock and verified positive price required' using errcode='22023'; end if;
  if not exists(select 1 from public.tenant_files f where f.id=p_photo_file_id
@@ -103,16 +104,16 @@ begin
    and f.mime_type='application/pdf')
  then raise exception 'Ready private photo and technical PDF required' using errcode='22023'; end if;
  insert into public.crm_family_product_approvals
- (tenant_id,product_id,photo_file_id,technical_file_id,approved_price,currency,approved_by)
- values(p_tenant_id,p_product_id,p_photo_file_id,p_technical_file_id,p.sale_price,p.currency,auth.uid())
+ (tenant_id,product_id,photo_file_id,technical_file_id,approved_price,approved_tax_rate,currency,approved_by)
+ values(p_tenant_id,p_product_id,p_photo_file_id,p_technical_file_id,p.sale_price,p.tax_rate,p.currency,auth.uid())
  on conflict(tenant_id,product_id) do update set
  photo_file_id=excluded.photo_file_id,technical_file_id=excluded.technical_file_id,
- approved_price=excluded.approved_price,currency=excluded.currency,
+ approved_price=excluded.approved_price,approved_tax_rate=excluded.approved_tax_rate,currency=excluded.currency,
  approved_by=excluded.approved_by,approved_at=now();
  insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
  values(p_tenant_id,auth.uid(),'family_power.catalog_item_approved','product',p_product_id,
         jsonb_build_object('photo_file_id',p_photo_file_id,'technical_file_id',p_technical_file_id,
-          'price',p.sale_price,'currency',p.currency));
+          'price',p.sale_price,'tax_rate',p.tax_rate,'currency',p.currency));
  return jsonb_build_object('approved',true,'product_id',p_product_id);
 end; $$;
 revoke all on function public.crm_family_approve_product(uuid,uuid,uuid,uuid) from public,anon,authenticated;
@@ -124,7 +125,7 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 begin
  if old.name is distinct from new.name or old.sku is distinct from new.sku
-  or old.sale_price is distinct from new.sale_price or old.currency is distinct from new.currency
+  or old.sale_price is distinct from new.sale_price or old.tax_rate is distinct from new.tax_rate or old.currency is distinct from new.currency
   or old.stock_snapshot is distinct from new.stock_snapshot or old.status is distinct from new.status
  then delete from public.crm_family_product_approvals
     where tenant_id=old.tenant_id and product_id=old.id;
@@ -133,7 +134,7 @@ begin
 end; $$;
 drop trigger if exists crm_family_invalidate_product_approval on public.products;
 create trigger crm_family_invalidate_product_approval
-after update of name,sku,sale_price,currency,stock_snapshot,status on public.products
+after update of name,sku,sale_price,tax_rate,currency,stock_snapshot,status on public.products
 for each row execute function private.crm_family_invalidate_product_approval();
 
 create or replace function public.crm_family_submit_receipt(
@@ -228,3 +229,261 @@ begin
 end; $$;
 revoke all on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) from public,anon,authenticated;
 grant execute on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) to authenticated;
+
+
+-- Additional pre-release guards: a generic CRM route may NOT bypass reconciliation.
+-- Both triggers run BEFORE the existing marketing/automation event triggers.
+create or replace function private.crm_family_guard_order_payment()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_confirmed numeric(16,2);
+begin
+ if not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power') then
+   return new;
+ end if;
+ if tg_op='UPDATE' and new.tenant_id is distinct from old.tenant_id then
+   raise exception 'Cannot move Family Power order between tenants' using errcode='42501';
+ end if;
+ select coalesce(sum(r.amount),0) into v_confirmed
+ from public.crm_family_payment_receipts r where r.tenant_id=new.tenant_id
+  and r.order_id=new.id and r.status='confirmed';
+ if new.amount_paid is distinct from v_confirmed or new.amount_paid>new.total then
+   raise exception 'Family Power order payment requires confirmed bank receipts' using errcode='42501';
+ end if;
+ if tg_op='UPDATE' and v_confirmed>0 and
+   (new.total is distinct from old.total or new.currency is distinct from old.currency)
+ then raise exception 'Paid Family Power order total/currency is locked' using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_order_payment() from public,anon,authenticated;
+drop trigger if exists crm_family_order_reconciliation on public.orders;
+create trigger crm_family_order_reconciliation
+ before insert or update of tenant_id,amount_paid,total,currency on public.orders
+ for each row execute function private.crm_family_guard_order_payment();
+
+create or replace function private.crm_family_guard_opportunity_won()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if new.status<>'won' or (tg_op='UPDATE' and old.status='won')
+   or not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ if not exists(
+   select 1 from public.orders o
+   join public.quotations q on q.id=o.quotation_id and q.tenant_id=o.tenant_id
+   where o.tenant_id=new.tenant_id and o.opportunity_id=new.id
+    and o.total>0 and o.amount_paid>=o.total and q.status='accepted'
+    and (select coalesce(sum(r.amount),0)
+      from public.crm_family_payment_receipts r
+      where r.tenant_id=o.tenant_id and r.order_id=o.id
+        and r.status='confirmed') >= o.total
+ ) then raise exception 'Family Power sale requires fully reconciled accepted order' using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_opportunity_won() from public,anon,authenticated;
+drop trigger if exists crm_family_verified_opportunity_won on public.opportunities;
+create trigger crm_family_verified_opportunity_won
+ before insert or update of status on public.opportunities
+ for each row execute function private.crm_family_guard_opportunity_won();
+
+-- Approved-only quotation lines; require exact server-approved price and SKU.
+-- No client can create quote lines with unverified products via generic table APIs.
+create or replace function private.crm_family_guard_quotation_item()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;v_product public.products%rowtype;
+ v_approval public.crm_family_product_approvals%rowtype;
+begin
+ if tg_op='DELETE' then
+   if exists(select 1 from public.tenants where id=old.tenant_id and slug='family-power') then
+     select * into v_quote from public.quotations
+       where tenant_id=old.tenant_id and id=old.quotation_id;
+     if not found or v_quote.status<>'draft' then
+       raise exception 'Cannot remove item from accepted or sent Family Power quotation'
+       using errcode='42501';
+     end if;
+     insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+     values(old.tenant_id,auth.uid(),'family_power.quotation_item_removed','quotation',old.quotation_id,
+       jsonb_build_object('item_id',old.id));
+   end if;
+   return old;
+ end if;
+ if not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ select * into v_quote from public.quotations where tenant_id=new.tenant_id
+  and id=new.quotation_id;
+ if not found or v_quote.status<>'draft'
+ then raise exception 'Family Power quotation must be a draft' using errcode='42501';end if;
+ select * into v_product from public.products
+ where tenant_id=new.tenant_id and id=new.product_id and status='active';
+ select * into v_approval from public.crm_family_product_approvals
+ where tenant_id=new.tenant_id and product_id=new.product_id;
+ if v_product.id is null or v_approval.product_id is null
+   or v_product.stock_snapshot is null or v_product.stock_snapshot<new.quantity
+   or v_approval.approved_price is distinct from new.unit_price
+   or v_approval.approved_tax_rate is distinct from new.tax_rate
+   or v_product.tax_rate is distinct from new.tax_rate
+   or v_product.sale_price is distinct from new.unit_price
+   or v_product.currency is distinct from v_quote.currency
+   or v_approval.currency is distinct from v_quote.currency
+   or new.sku_snapshot is distinct from v_product.sku
+ then raise exception 'Family Power quote requires approved product, stock, currency and price'
+ using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_quotation_item() from public,anon,authenticated;
+drop trigger if exists crm_family_verified_quotation_item on public.quotation_items;
+create trigger crm_family_verified_quotation_item
+ before insert or update or delete on public.quotation_items
+ for each row execute function private.crm_family_guard_quotation_item();
+
+-- Service-approved totals are still calculated by existing quotation_items_recalculate.
+-- Reject status progression with no approved product or stale pricing.
+create or replace function private.crm_family_guard_quote_progress()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if new.status not in ('sent','accepted') or
+  not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ -- Only the evidence-audited decision RPC may advance a commercial quote.
+ -- A generic Supabase UPDATE from a salesperson cannot impersonate acceptance.
+ if pg_catalog.current_setting('crm.family_quote_decision',true) is distinct from
+      new.id::text||':'||new.status||':'||auth.uid()::text
+ then raise exception 'Family Power quote status requires human evidence RPC'
+   using errcode='42501';end if;
+ if new.total<=0 or new.contact_id is null
+  or not exists(select 1 from public.quotation_items qi where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id)
+  or exists(
+   select 1 from public.quotation_items qi
+   left join public.products p on p.tenant_id=qi.tenant_id and p.id=qi.product_id and p.status='active'
+   left join public.crm_family_product_approvals a on a.tenant_id=qi.tenant_id and a.product_id=qi.product_id
+   where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id
+    and (a.product_id is null or p.id is null
+         or p.sale_price is distinct from qi.unit_price
+         or a.approved_price is distinct from qi.unit_price
+         or a.currency is distinct from new.currency
+         or a.approved_tax_rate is distinct from qi.tax_rate
+         or p.tax_rate is distinct from qi.tax_rate
+         or p.stock_snapshot is null or p.stock_snapshot<qi.quantity)
+ ) then raise exception 'Cannot send/accept Family Power quote without approved customer and items'
+ using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_quote_progress() from public,anon,authenticated;
+drop trigger if exists crm_family_approved_quotation_progress on public.quotations;
+create trigger crm_family_approved_quotation_progress
+ before insert or update of status on public.quotations
+ for each row execute function private.crm_family_guard_quote_progress();
+
+
+-- Quotation operations: authoritative price/tax calculation + transaction audit.
+create or replace function public.crm_family_create_quotation(
+ p_tenant_id uuid,p_contact_id uuid,p_valid_until date,p_notes text
+) returns uuid language plpgsql security definer set search_path=''
+as $$
+declare v_contact public.contacts%rowtype;v_id uuid;v_number text;
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+   raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ select * into v_contact from public.contacts where tenant_id=p_tenant_id and id=p_contact_id;
+ if not found then raise exception 'Verified tenant contact required' using errcode='22023';end if;
+ if p_valid_until is not null and
+   (p_valid_until<current_date or p_valid_until>current_date+90)
+ then raise exception 'Validity must be within 90 days' using errcode='22023';end if;
+ if length(coalesce(p_notes,''))>1000 then raise exception 'Notes too long' using errcode='22023';end if;
+ v_number:='FP-'||upper(left(replace(gen_random_uuid()::text,'-',''),12));
+ insert into public.quotations(
+   tenant_id,quote_number,contact_id,company_id,status,currency,valid_until,notes,
+   subtotal,discount_total,tax_total,total,created_by
+ ) values(p_tenant_id,v_number,p_contact_id,v_contact.company_id,'draft','DOP',
+   p_valid_until,nullif(btrim(p_notes),''),0,0,0,0,auth.uid())
+ returning id into v_id;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_draft_created','quotation',v_id,
+   jsonb_build_object('contact_id',p_contact_id,'quote_number',v_number));
+ return v_id;
+end; $$;
+revoke all on function public.crm_family_create_quotation(uuid,uuid,date,text) from public,anon,authenticated;
+grant execute on function public.crm_family_create_quotation(uuid,uuid,date,text) to authenticated;
+
+create or replace function public.crm_family_add_quote_item(
+ p_tenant_id uuid,p_quote_id uuid,p_product_id uuid,p_quantity numeric,p_discount_percent numeric
+) returns jsonb language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;
+ v_product public.products%rowtype;v_approval public.crm_family_product_approvals%rowtype;
+ v_item uuid;v_position integer;
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+   raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ if p_quantity is null or p_quantity<=0 or p_quantity>10000
+   or p_discount_percent is null or p_discount_percent<0 or p_discount_percent>100
+ then raise exception 'Invalid quantity or discount' using errcode='22023';end if;
+ select * into v_quote from public.quotations where tenant_id=p_tenant_id
+   and id=p_quote_id for update;
+ if not found or v_quote.status<>'draft'
+ then raise exception 'Draft quotation required' using errcode='42501';end if;
+ select * into v_product from public.products where tenant_id=p_tenant_id
+   and id=p_product_id and status='active';
+ select * into v_approval from public.crm_family_product_approvals
+ where tenant_id=p_tenant_id and product_id=p_product_id;
+ if v_product.id is null or v_approval.product_id is null
+   or v_product.sale_price is distinct from v_approval.approved_price
+   or v_product.tax_rate is distinct from v_approval.approved_tax_rate
+   or v_product.currency is distinct from v_approval.currency
+   or v_product.currency is distinct from v_quote.currency
+   or v_product.stock_snapshot is null or v_product.stock_snapshot<p_quantity
+ then raise exception 'Product price, tax, currency and stock require approval'
+ using errcode='42501';end if;
+ select coalesce(max(position),0)+1 into v_position from public.quotation_items
+ where tenant_id=p_tenant_id and quotation_id=p_quote_id;
+ insert into public.quotation_items(
+  tenant_id,quotation_id,product_id,position,sku_snapshot,description,quantity,
+  unit_price,discount_percent,tax_rate
+ ) values(p_tenant_id,p_quote_id,p_product_id,v_position,v_product.sku,v_product.name,
+   p_quantity,v_approval.approved_price,p_discount_percent,v_approval.approved_tax_rate)
+ returning id into v_item;
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_item_added','quotation',p_quote_id,
+   jsonb_build_object('item_id',v_item,'product_id',p_product_id,'quantity',p_quantity,
+     'discount_percent',p_discount_percent,'tax_rate',v_approval.approved_tax_rate));
+ return jsonb_build_object('quotation_id',p_quote_id,'item_id',v_item);
+end; $$;
+revoke all on function public.crm_family_add_quote_item(uuid,uuid,uuid,numeric,numeric)
+ from public,anon,authenticated;
+grant execute on function public.crm_family_add_quote_item(uuid,uuid,uuid,numeric,numeric)
+ to authenticated;
+
+create or replace function public.crm_family_record_quote_decision(
+ p_tenant_id uuid,p_quote_id uuid,p_new_status text,p_evidence_reference text
+) returns jsonb language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;v_reference text:=btrim(coalesce(p_evidence_reference,''));
+begin
+ if not private.crm_family_admin_allowed(p_tenant_id) then
+  raise exception 'Family Power owner/admin required' using errcode='42501';end if;
+ select * into v_quote from public.quotations where tenant_id=p_tenant_id
+ and id=p_quote_id for update;
+ if not found then raise exception 'Quotation not found' using errcode='P0002';end if;
+ if (p_new_status='sent' and v_quote.status<>'draft')
+  or (p_new_status='accepted' and v_quote.status<>'sent')
+  or p_new_status not in ('sent','accepted')
+ then raise exception 'Invalid quote state transition' using errcode='22023';end if;
+ if length(v_reference)<8 or length(v_reference)>250
+ then raise exception 'Human verification or communication reference required' using errcode='22023';end if;
+ perform pg_catalog.set_config('crm.family_quote_decision',
+    p_quote_id::text||':'||p_new_status||':'||auth.uid()::text,true);
+ update public.quotations set status=p_new_status,
+  accepted_at=case when p_new_status='accepted' then now() else accepted_at end
+ where tenant_id=p_tenant_id and id=p_quote_id;
+ perform pg_catalog.set_config('crm.family_quote_decision','',true);
+ insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+ values(p_tenant_id,auth.uid(),'family_power.quotation_status_confirmed','quotation',p_quote_id,
+ jsonb_build_object('status',p_new_status,'reference',v_reference,'manual_human_review',true));
+ return jsonb_build_object('quotation_id',p_quote_id,'status',p_new_status);
+end; $$;
+revoke all on function public.crm_family_record_quote_decision(uuid,uuid,text,text)
+ from public,anon,authenticated;
+grant execute on function public.crm_family_record_quote_decision(uuid,uuid,text,text)
+ to authenticated;

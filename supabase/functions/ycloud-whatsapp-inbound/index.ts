@@ -4,7 +4,7 @@
  * Deploy only after review with verify_jwt=false and YCLOUD_WEBHOOK_SECRET set.
  */
 import {createClient} from "npm:@supabase/supabase-js@2.116.0";
-import {parseYCloudInboundText,parseYCloudOutboundStatus} from "../../../lib/ycloud-whatsapp-webhook.ts";
+import {parseYCloudInboundText,parseYCloudInboundMedia,parseYCloudOutboundStatus} from "../../../lib/ycloud-whatsapp-webhook.ts";
 const enc=new TextEncoder();
 function json(value:unknown,status=200){
  return new Response(JSON.stringify(value),{status,
@@ -52,8 +52,9 @@ Deno.serve(async request=>{
  try{event=JSON.parse(raw);}
  catch{return json({error:"invalid_json"},400);}
  const inbound=parseYCloudInboundText(event);
- const outgoing= !inbound ? parseYCloudOutboundStatus(event) : null;
- if(!inbound&&!outgoing)return json({received:true,processed:false});
+ const media=!inbound?parseYCloudInboundMedia(event):null;
+ const outgoing= !inbound&&!media ? parseYCloudOutboundStatus(event) : null;
+ if(!inbound&&!media&&!outgoing)return json({received:true,processed:false});
  const db=createClient(url,serviceRole,{auth:{persistSession:false,autoRefreshToken:false}});
  if(outgoing){
    const {data,error}=await db.rpc("ycloud_mark_verified_message_status",{
@@ -62,6 +63,22 @@ Deno.serve(async request=>{
    });
    if(error){console.error("ycloud_status_failed",error.code??"db_error");return json({error:"retry_later"},503);}
    return json({received:true,status:data});
+ }
+ if(media){
+   // Persist only a signed provider media reference in the tenant's private CRM.
+   // Never download from the webhook URL: it can be short-lived or forged.
+   // No payment status, quote acceptance, sales or AI are changed here.
+   const {data,error}=await db.rpc("ingest_verified_ycloud_whatsapp_media",{
+     p_waba_id:media.wabaId,p_business_phone:media.businessPhone,
+     p_message_id:media.externalMessageId,p_from:media.from,
+     p_contact_name:media.contactName,p_kind:media.kind,
+     p_media_id:media.mediaId,p_mime_type:media.mimeType,
+     p_sha256:media.sha256,p_filename:media.fileName,p_caption:media.caption
+   });
+   if(error){console.error("ycloud_media_ingest_failed",error.code??"db_error");return json({error:"retry_later"},503);}
+   if(!["stored","duplicate","unverified_route","invalid_media"].includes(data))
+     return json({error:"unexpected_result"},503);
+   return json({received:true,media:data==="stored",requires_human:true});
  }
  if(!inbound)return json({received:true,processed:false});
  const {data,error}=await db.rpc("ingest_verified_ycloud_whatsapp_text",{

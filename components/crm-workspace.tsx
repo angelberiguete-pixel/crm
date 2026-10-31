@@ -27,6 +27,7 @@ import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerQuotations from "@/components/family-power-quotations";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
@@ -204,7 +205,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && <Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
-        {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "automations" && <AutomationStudio tenantId={tenantId} notice={setNotice} />}
