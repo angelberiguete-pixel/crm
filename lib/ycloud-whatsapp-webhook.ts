@@ -52,7 +52,7 @@ export function parseYCloudOutboundStatus(raw:unknown):OutboundYCloudStatus|null
   const m=asObj(evt?.whatsappMessage);
   const businessPhone=asPhone(m?.from);
   const waba=m?.wabaId;
-  const externalMessageId=typeof m?.wamid==="string"&&m.wamid.length>=3?m.wamid:m?.id;
+  const externalMessageId=typeof m?.id==="string"&&m.id.length>=3?m.id:m?.wamid;
   const status=m?.status;
   if(!businessPhone||typeof waba!=="string"||!/^\d{6,30}$/.test(waba)||
     typeof externalMessageId!=="string"||externalMessageId.length<3||externalMessageId.length>256||
