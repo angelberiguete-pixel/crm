@@ -39,7 +39,7 @@ export default function FamilyPowerQuoteDocument(){
     if(!alive)return;
     if(a.error||!a.data){setError("Cotización no encontrada o acceso denegado.");return;}
     const q=a.data as Quote;
-    const [b,c,a]=await Promise.all([
+    const [b,c,approvalRows]=await Promise.all([
       supabase.from("quotation_items").select("id,position,product_id,sku_snapshot,description,quantity,unit_price,discount_percent,tax_rate,line_subtotal")
         .eq("tenant_id",tenantId).eq("quotation_id",quoteId).order("position"),
       q.contact_id
@@ -49,9 +49,9 @@ export default function FamilyPowerQuoteDocument(){
         .eq("tenant_id",tenantId)
     ]);
     if(!alive)return;
-    if(b.error||a.error){setError("Cotización no validada: no se pudo verificar el catálogo comercial autorizado.");return;}
+    if(b.error||approvalRows.error){setError("Cotización no validada: no se pudo verificar el catálogo comercial autorizado.");return;}
     setQuote(q);setItems((b.data??[]) as Item[]);
-    setApprovals((a.data??[]) as Approval[]);setVerified(true);
+    setApprovals((approvalRows.data??[]) as Approval[]);setVerified(true);
     setContact((c.data as {display_name?:string}|null)?.display_name??null);
    }catch{if(alive)setError("No se pudo cargar la cotización.");}
    finally{if(alive)setLoading(false);}
