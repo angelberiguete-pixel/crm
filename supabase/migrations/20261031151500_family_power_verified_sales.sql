@@ -345,3 +345,28 @@ drop trigger if exists crm_family_guard_order_payment on public.orders;
 create trigger crm_family_guard_order_payment
 before insert or update of amount_paid,total on public.orders
 for each row execute function private.crm_family_guard_order_payment();
+
+
+-- For this pilot a won opportunity is not a collected sale. A sales win must
+-- be backed by the idempotent outbox created after full receipt reconciliation.
+create or replace function private.crm_family_guard_opportunity_win()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if new.status='won' and (tg_op='INSERT' or old.status is distinct from 'won')
+    and exists(select 1 from public.tenants t where t.id=new.tenant_id and t.slug='family-power')
+    and not exists(
+      select 1 from public.orders o join public.crm_family_purchase_outbox x
+        on x.tenant_id=o.tenant_id and x.order_id=o.id
+      where o.tenant_id=new.tenant_id and o.opportunity_id=new.id
+       and o.total>0 and o.amount_paid>=o.total
+    )
+ then raise exception 'Family Power sales require full verified payment' using errcode='42501';
+ end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_opportunity_win() from public,anon,authenticated;
+drop trigger if exists crm_family_guard_opportunity_win on public.opportunities;
+create trigger crm_family_guard_opportunity_win
+before insert or update of status on public.opportunities
+for each row execute function private.crm_family_guard_opportunity_win();
