@@ -163,7 +163,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
     let active=true;
     const touch=async()=>{
       if(!active||document.visibilityState!=="visible")return;
-      try{await supabase.rpc("tenant_session_heartbeat",{p_tenant_id:tenant.tenant_id});}catch{}
+      try{await supabase.rpc("crm_member_session_heartbeat",{p_tenant_id:tenant.tenant_id});}catch{}
     };
     void touch();
     const timer=window.setInterval(()=>void touch(),60_000);
