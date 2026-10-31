@@ -40,14 +40,18 @@ export default function TenantSessionReport(){
     setRows([]);setError("");
     if(!tenantId||!permitted){setLoading(false);return()=>{alive=false;};}
     setLoading(true);
-    void supabase.rpc("crm_tenant_member_session_report",{p_tenant_id:tenantId})
-      .then(({data,error:rpcError})=>{
+    void (async()=>{
+      try {
+        const {data,error:rpcError}=await supabase.rpc("crm_tenant_member_session_report",{p_tenant_id:tenantId});
         if(!alive)return;
         if(rpcError){setError("No se pudo consultar el historial de sesiones autorizado.");return;}
         setRows((data??[]) as SessionRow[]);
-      }).catch(()=>{
+      } catch {
         if(alive)setError("No se pudo consultar el historial de sesiones autorizado.");
-      }).finally(()=>{if(alive)setLoading(false);});
+      } finally {
+        if(alive)setLoading(false);
+      }
+    })();
     return()=>{alive=false;};
   },[tenantId,permitted,revision]);
 

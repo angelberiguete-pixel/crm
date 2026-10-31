@@ -13,9 +13,10 @@ export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   if (!tenant) return null;
+  const tenantId=tenant.tenant_id;
   async function logout() {
     setBusy(true);setError("");
-    const result=await signOutOfTenant(tenant.tenant_id);
+    const result=await signOutOfTenant(tenantId);
     setBusy(false);
     if(result.error) {setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
     router.replace("/login");
