@@ -65,7 +65,9 @@ try{
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"eurevector");
   assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#2563eb");
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0,"other brand must not leak");
-  await page.getByLabel("Empresa activa").selectOption(B);
+  assert.equal(await page.getByLabel("Empresa activa").count(),0,"no tenant selector in client header");
+  activeId=B;
+  await page.reload();
   await page.getByRole("heading",{name:"Portal de Sublimaciones Lazala"}).waitFor();
   await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).waitFor();
   assert.equal(await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).count(),0,"client portal cannot display platform logo");
@@ -80,12 +82,13 @@ try{
   await page.getByText("Lazala Personalizados",{exact:true}).first().waitFor();
   assert.equal(rows.get(A).brand_name,"Look Social Media","save cannot mutate other business branding");
   assert.equal(rows.get(B).brand_name,"Lazala Personalizados");
-  await page.getByLabel("Empresa activa").selectOption(A);
+  activeId=A;
+  await page.reload();
   await page.getByRole("heading",{name:"Configuración"}).waitFor();
   await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).waitFor();
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0);
   assert.ok(reads.includes(A)&&reads.includes(B),"both brand configs were tenant-scoped");
-  console.log("PASS: tenant-specific logo, CSS, title, settings update and switching isolation on Android viewport.");
+  console.log("PASS: tenant-specific logo, CSS, title, settings update and isolated company context on Android viewport.");
 }finally{
   if(browser)await browser.close();
   if(server)server.kill("SIGTERM");
