@@ -75,7 +75,7 @@ export function parseYCloudInboundMedia(raw:unknown):InboundYCloudMedia|null{
  const m=asObj(evt?.whatsappInboundMessage);
  const kind=m?.type;
  if(kind!=="image"&&kind!=="document")return null;
- const file=asObj(m[kind]),waba=m?.wabaId,from=asPhone(m?.from),to=asPhone(m?.to);
+ const file=asObj(m?.[kind]),waba=m?.wabaId,from=asPhone(m?.from),to=asPhone(m?.to);
  const id=typeof m?.wamid==="string"&&m.wamid.length>=3?m.wamid:m?.id;
  const mediaId=file?.id,mime=file?.mime_type,url=file?.link;
  if(typeof waba!=="string"||!/^\d{6,30}$/.test(waba)||!from||!to
