@@ -69,7 +69,7 @@ try{
   await owner.getByRole("heading",{name:"Sesiones del equipo"}).waitFor({timeout:15000});
   await owner.getByRole("table",{name:"Historial de sesiones del equipo"}).waitFor();
   await owner.getByText("2 min 5 s").waitFor();
-  await owner.getByText("En línea").waitFor();
+  await owner.getByRole("cell",{name:"En línea",exact:true}).waitFor();
   assert.ok(heartbeats>=1,"authenticated tenant view must record presence");
   assert.ok(heartbeatedTenants.every(x=>x===tenantId),"presence must use verified tenant context");
   assert.equal(reports,1,"owner can view session report");
