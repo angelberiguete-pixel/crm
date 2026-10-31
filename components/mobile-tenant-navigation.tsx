@@ -8,7 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["marketing", "Marketing"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
+const links = [["marketing", "Marketing"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["family-power-setup", "Preparación Family Power"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -29,11 +29,12 @@ export default function MobileTenantNavigation() {
         const permissions=(p.data??{}) as Record<string,unknown>;
         const modules=(m.data??[]) as Array<{module_key:string;enabled:boolean}>;
         const permissionKey=(name:string)=>(
-          ["channels","integrations","marketing","sessions","settings"].includes(name)?"settings":
+          ["channels","integrations","marketing","sessions","family-power-setup","settings"].includes(name)?"settings":
           name==="files"?"dashboard":name
         );
         setAllowed(links.filter(([path])=>{
           if(path==="sessions"&&!["owner","admin"].includes(role))return false;
+          if(path==="family-power-setup"&&(tenant.tenant_slug!=="family-power"||!["owner","admin"].includes(role)))return false;
           const key=permissionKey(path);
           return (permissions.all===true||permissions[key]===true)
             &&modules.find(mod=>mod.module_key===key)?.enabled!==false;
