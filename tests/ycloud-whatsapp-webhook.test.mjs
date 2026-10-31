@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {parseYCloudInboundText,parseYCloudOutboundStatus} from "../lib/ycloud-whatsapp-webhook.ts";
+import {parseYCloudInboundText,parseYCloudInboundMedia,parseYCloudOutboundStatus} from "../lib/ycloud-whatsapp-webhook.ts";
 
 const signedExample={id:"evt_example_01",type:"whatsapp.inbound_message.received",
  apiVersion:"v2",whatsappInboundMessage:{
@@ -64,4 +64,27 @@ test("Verified CTA & buttons must be bound to WABA, original provider message an
    "rec.external_message_id=p_message_id","request_logged_no_automatic_approval"].filter(x=>x!=="request_logged_no_automatic_approval"))
   assert.ok(migration.includes(marker),marker);
  assert.doesNotMatch(migration,/update\s+public\.quotations\s+set\s+status/i);
+});
+
+test("signed YCloud image/PDF webhook retains metadata only, never trusts transient URLs",()=>{
+ const base=signedExample.whatsappInboundMessage;
+ const image={...signedExample,whatsappInboundMessage:{...base,type:"image",image:{
+  id:"592623615738103",link:"https://evil.invalid/payload",mime_type:"image/jpeg",
+  caption:"Comprobante para revisión"}}};
+ const parsed=parseYCloudInboundMedia({...image,tenant_id:"forged"});
+ assert.equal(parsed?.kind,"image");
+ assert.equal(parsed?.mimeType,"image/jpeg");
+ assert.equal(parsed?.caption,"Comprobante para revisión");
+ assert.equal("link" in (parsed??{}),false);
+ assert.equal("tenant_id" in (parsed??{}),false);
+ const pdf={...signedExample,whatsappInboundMessage:{...base,type:"document",document:{
+  id:"948915536111569",filename:"comprobante.pdf",mime_type:"application/pdf"}}};
+ assert.equal(parseYCloudInboundMedia(pdf)?.fileName,"comprobante.pdf");
+ for(const mime of ["text/html","image/svg+xml","application/x-msdownload"]){
+  assert.equal(parseYCloudInboundMedia({...image,whatsappInboundMessage:{...image.whatsappInboundMessage,image:{id:"592623615738103",mime_type:mime}}}),null);
+ }
+ const edge=readFileSync(new URL("../supabase/functions/ycloud-whatsapp-inbound/index.ts",import.meta.url),"utf8");
+ assert.match(edge,/ingest_verified_ycloud_whatsapp_media/);
+ assert.ok(edge.indexOf("validSignature(raw")<edge.indexOf("ingest_verified_ycloud_whatsapp_media"));
+ assert.doesNotMatch(edge,/fetch\(media\.link/);
 });
