@@ -48,7 +48,8 @@ test("PDF quotation is built only from tenant-scoped real quote and line items",
   assert.match(doc,/from\("quotation_items"\)/);
   assert.match(doc,/\.eq\("tenant_id",tenantId\)/);
   assert.match(doc,/items\.length>0/);
-  assert.match(doc,/quote\.status==="draft"/);
+  assert.match(doc,/\["sent","accepted"\]\.includes\(quote\.status\)/);
+  assert.match(doc,/BORRADOR O NO VALIDADO/);
   assert.match(doc,/window\.print\(\)/);
 });
 test("inbox refresh uses RLS and tenant-scoped visible-tab polling until realtime is authorized",()=>{
