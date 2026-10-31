@@ -6,6 +6,7 @@ import OmnichannelInbox from "@/components/omnichannel-inbox";
 import CrmChannelSetup from "@/components/crm-channel-setup";
 import DigitalEmployeeStudio from "@/components/digital-employee-studio";
 import CrmIntegrationCenter from "@/components/crm-integration-center";
+import CrmMarketingPerformance from "@/components/crm-marketing-performance";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 
 export default async function CrmPage({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -25,6 +26,8 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
               ? <CrmChannelSetup />
             : section === "integrations"
               ? <CrmIntegrationCenter />
+            : section === "marketing"
+              ? <CrmMarketingPerformance />
             : section === "employees"
               ? <DigitalEmployeeStudio />
             : <CrmWorkspace slug={slug} />}
