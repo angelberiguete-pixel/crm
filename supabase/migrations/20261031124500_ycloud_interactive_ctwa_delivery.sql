@@ -114,7 +114,7 @@ begin
  where r.waba_id=p_waba_id and r.business_phone_e164=p_business_phone
   and r.is_enabled and m.direction='outbound'
   and m.metadata->>'provider'='ycloud'
- for update of m limit 1;
+ limit 1 for update of m;
  if v_row.id is null then return 'unverified';end if;
  if (case v_row.status when 'created' then 0 when 'queued' then 1
       when 'sent' then 2 when 'delivered' then 3 when 'read' then 4 else 5 end)
