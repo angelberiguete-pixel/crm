@@ -8,6 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
+import {useTenantVisibleModules} from "@/components/tenant-visible-modules";
 import EnergyServiceDashboard from "@/components/energy-service-dashboard";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
@@ -23,6 +24,7 @@ function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>;
 }
 export default function CrmCommercialDashboard(){
+  const {canSee}=useTenantVisibleModules();
   const tenant=useActiveTenant();
   if(tenant?.tenant_slug==="family-power")return <EnergyServiceDashboard/>;
   return <GeneralCommercialDashboard/>;
@@ -78,7 +80,7 @@ function GeneralCommercialDashboard(){
   const due=deals.filter(d=>d.next_action_at&&new Date(d.next_action_at).getTime()<Date.now());
   return <div className="shell">
     <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name} · {roleLabel}</span></div>
-      <nav className="nav" aria-label="Módulos del CRM"><PlatformCompaniesShortcut/>{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
+      <nav className="nav" aria-label="Módulos del CRM"><PlatformCompaniesShortcut/>{nav.filter(([key])=>canSee(key)).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
     </aside>
     <main className="content">
       <header className="topbar"><div><div className="eyebrow">Panel principal · CRM personalizado</div><h1>Portal de {tenantBrand?.name??tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>
@@ -141,6 +143,6 @@ function GeneralCommercialDashboard(){
         </section>
       </>}
     </main>
-    <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===""?"page":undefined} className={key===""?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
+    <nav className="mobile-nav" aria-label="Navegación principal">{nav.filter(([key])=>canSee(key)).slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===""?"page":undefined} className={key===""?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
   </div>;
 }
