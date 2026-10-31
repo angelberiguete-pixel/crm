@@ -294,6 +294,20 @@ as $$
 declare v_quote public.quotations%rowtype;v_product public.products%rowtype;
  v_approval public.crm_family_product_approvals%rowtype;
 begin
+ if tg_op='DELETE' then
+   if exists(select 1 from public.tenants where id=old.tenant_id and slug='family-power') then
+     select * into v_quote from public.quotations
+       where tenant_id=old.tenant_id and id=old.quotation_id;
+     if not found or v_quote.status<>'draft' then
+       raise exception 'Cannot remove item from accepted or sent Family Power quotation'
+       using errcode='42501';
+     end if;
+     insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+     values(old.tenant_id,auth.uid(),'family_power.quotation_item_removed','quotation',old.quotation_id,
+       jsonb_build_object('item_id',old.id));
+   end if;
+   return old;
+ end if;
  if not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
  then return new;end if;
  select * into v_quote from public.quotations where tenant_id=new.tenant_id
@@ -320,7 +334,7 @@ end; $$;
 revoke all on function private.crm_family_guard_quotation_item() from public,anon,authenticated;
 drop trigger if exists crm_family_verified_quotation_item on public.quotation_items;
 create trigger crm_family_verified_quotation_item
- before insert or update on public.quotation_items
+ before insert or update or delete on public.quotation_items
  for each row execute function private.crm_family_guard_quotation_item();
 
 -- Service-approved totals are still calculated by existing quotation_items_recalculate.
@@ -359,7 +373,7 @@ end; $$;
 revoke all on function private.crm_family_guard_quote_progress() from public,anon,authenticated;
 drop trigger if exists crm_family_approved_quotation_progress on public.quotations;
 create trigger crm_family_approved_quotation_progress
- before update of status on public.quotations
+ before insert or update of status on public.quotations
  for each row execute function private.crm_family_guard_quote_progress();
 
 
