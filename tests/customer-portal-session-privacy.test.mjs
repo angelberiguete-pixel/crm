@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 const root=new URL("../",import.meta.url);
 const read=(p)=>readFileSync(new URL(p,root),"utf8");
 const view=read("supabase/migrations/20261031160000_lock_platform_client_view.sql");
-const privacy=read("supabase/migrations/20261031161000_conversation_privacy_rls.sql");
+const privacy=read("tests/private-agent-chat-rls.sql");
 const sessions=read("components/tenant-session-activity.tsx");
 const shortcut=read("components/platform-companies-shortcut.tsx");
 const switcher=read("components/tenant-switcher.tsx");
@@ -22,13 +22,10 @@ test("platform owner support view is session-locked and company scoped, never a 
  assert.doesNotMatch(switcher,/<select\b|set_active_tenant|list_my_tenants/i);
  assert.ok(mobile.includes('tenant.tenant_slug==="eurevector"'));
 });
-test("no coworker can read or update a human-assigned conversation through REST policies",()=>{
- for(const marker of ["private.crm_can_view_conversation","conversations_select","messages_select",
- "messages_update","messages_insert","messages_delete",
- "p_assigned_to is null","p_assigned_to=(select auth.uid())",
- "private.has_tenant_role(p_tenant_id,array['owner','admin']",
- "crm_guard_non_supervisor_conversation_updates",
- "Only owner/admin may reassign sellers","tenant_assign_conversation"])
+test("production RLS assertions preserve private seller histories and AI-only queue",()=>{
+ for(const marker of ["crm_can_view_conversation","messages_select",
+  "crm_is_ai_handoff_queue","crm_can_edit_conversation",
+  "crm_can_insert_conversation_message","assignment_requires_ai_queue"])
  assert.ok(privacy.includes(marker),marker);
  assert.doesNotMatch(inbox,/const isSupervisor = \["owner","admin","manager"\]/);
  assert.ok(inbox.includes("setMessages([]);setMobileThreadOpen(false)"));
