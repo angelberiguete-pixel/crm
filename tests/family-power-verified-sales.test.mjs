@@ -73,3 +73,11 @@ test("Family Power manual quote is an atomic audited RPC from approved products"
  assert.match(quote,/crm_family_product_approvals/);
  assert.match(quote,/status==="active"/);
 });
+
+test("Family Power won pipeline requires idempotent paid outbox evidence",()=>{
+ assert.match(migration,/crm_family_guard_opportunity_win/);
+ assert.match(migration,/new\.status='won'/);
+ assert.match(migration,/public\.crm_family_purchase_outbox x/);
+ assert.match(migration,/o\.amount_paid>=o\.total/);
+ assert.match(migration,/raise exception 'Family Power sales require full verified payment'/);
+});
