@@ -63,16 +63,21 @@ try {
   assert.ok(reads.every(id=>id==='eq.'+A),'explicit server selection beats stale localStorage');
   await one.getByRole('button',{name:'+ Nueva empresa'}).click();
   await one.getByLabel('Nombre',{exact:true}).fill('Borrador privado A');
-  await two.getByLabel('Empresa activa').selectOption(B);
+  assert.equal(await two.getByLabel('Empresa activa').count(),0,'client header must not expose a tenant selector');
+  // Simulate a server-side tenant change from the authorized agency workflow;
+  // the client workspace does not expose a control to do this.
+  activeId=B;
+  await two.reload();
+  await one.reload();
   await two.getByText('Empresa B',{exact:true}).waitFor();
   await one.getByText('Empresa B',{exact:true}).waitFor();
   assert.equal(await one.getByRole('button',{name:'+ Nueva empresa'}).count(),1,'switching tenants closes previous draft');
   await one.getByRole('button',{name:'+ Nueva empresa'}).click();
   assert.equal(await one.getByLabel('Nombre',{exact:true}).inputValue(),'','tenant change discards previous form');
   assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'previous tenant rows are removed');
-  assert.equal(await one.getByLabel('Empresa activa').inputValue(),B);
+  assert.ok(await one.getByLabel('Empresa de esta sesión').getByText('QA B').isVisible());
   const mobileHeader=await one.locator('.workspace-header').boundingBox();
-  assert.ok(mobileHeader&&mobileHeader.height<=90,'tenant dropdown and mobile module menu fit in one compact header');
+  assert.ok(mobileHeader&&mobileHeader.height<=90,'tenant identity and mobile menu fit in one compact header');
   await one.locator('.mobile-tenant-navigation summary').click();
   assert.ok(await one.getByRole('navigation',{name:'Otros módulos de QA B'}).getByRole('link',{name:'Cotizaciones'}).isVisible(),'secondary modules are reachable');
   await one.locator('.mobile-tenant-navigation summary').click();
