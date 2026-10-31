@@ -64,7 +64,7 @@ try {
   await two.getByText('Empresa B',{exact:true}).waitFor();
   assert.ok(reads.every(id=>id==='eq.'+B),'explicit server selection beats stale localStorage');
   assert.equal(await one.getByLabel('Empresa activa').locator('select').count(),0,
-    'customer portal must display current company, not another company's selection dropdown');
+    "customer portal must display current company, not another company's selection dropdown");
   assert.equal(await one.getByLabel('Empresa activa').textContent(),'QA B');
   assert.equal(await two.getByLabel('Empresa activa').textContent(),'QA B');
   assert.equal(await one.getByText('Empresa A',{exact:true}).count(),0,'no other tenant content appears');
