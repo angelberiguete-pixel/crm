@@ -8,6 +8,7 @@ create table if not exists public.crm_family_product_approvals(
  photo_file_id uuid not null references public.tenant_files(id),
  technical_file_id uuid not null references public.tenant_files(id),
  approved_price numeric(16,2) not null check(approved_price>0),
+ approved_tax_rate numeric(5,2) not null check(approved_tax_rate between 0 and 100),
  currency text not null,
  approved_by uuid not null references auth.users(id),
  approved_at timestamptz not null default now(),
@@ -92,7 +93,7 @@ begin
  end if;
  select * into p from public.products
   where id=p_product_id and tenant_id=p_tenant_id and status='active';
- if not found or p.sale_price<=0 or p.stock_snapshot is null or p.stock_snapshot<=0
+ if not found or p.sale_price<=0 or p.stock_snapshot is null or p.stock_snapshot<=0 or p.tax_rate is null or p.tax_rate<0 or p.tax_rate>100
    or nullif(btrim(p.name),'') is null or nullif(btrim(p.sku),'') is null
  then raise exception 'Product model, stock and verified positive price required' using errcode='22023'; end if;
  if not exists(select 1 from public.tenant_files f where f.id=p_photo_file_id
@@ -103,16 +104,16 @@ begin
    and f.mime_type='application/pdf')
  then raise exception 'Ready private photo and technical PDF required' using errcode='22023'; end if;
  insert into public.crm_family_product_approvals
- (tenant_id,product_id,photo_file_id,technical_file_id,approved_price,currency,approved_by)
- values(p_tenant_id,p_product_id,p_photo_file_id,p_technical_file_id,p.sale_price,p.currency,auth.uid())
+ (tenant_id,product_id,photo_file_id,technical_file_id,approved_price,approved_tax_rate,currency,approved_by)
+ values(p_tenant_id,p_product_id,p_photo_file_id,p_technical_file_id,p.sale_price,p.tax_rate,p.currency,auth.uid())
  on conflict(tenant_id,product_id) do update set
  photo_file_id=excluded.photo_file_id,technical_file_id=excluded.technical_file_id,
- approved_price=excluded.approved_price,currency=excluded.currency,
+ approved_price=excluded.approved_price,approved_tax_rate=excluded.approved_tax_rate,currency=excluded.currency,
  approved_by=excluded.approved_by,approved_at=now();
  insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
  values(p_tenant_id,auth.uid(),'family_power.catalog_item_approved','product',p_product_id,
         jsonb_build_object('photo_file_id',p_photo_file_id,'technical_file_id',p_technical_file_id,
-          'price',p.sale_price,'currency',p.currency));
+          'price',p.sale_price,'tax_rate',p.tax_rate,'currency',p.currency));
  return jsonb_build_object('approved',true,'product_id',p_product_id);
 end; $$;
 revoke all on function public.crm_family_approve_product(uuid,uuid,uuid,uuid) from public,anon,authenticated;
@@ -124,7 +125,7 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 begin
  if old.name is distinct from new.name or old.sku is distinct from new.sku
-  or old.sale_price is distinct from new.sale_price or old.currency is distinct from new.currency
+  or old.sale_price is distinct from new.sale_price or old.tax_rate is distinct from new.tax_rate or old.currency is distinct from new.currency
   or old.stock_snapshot is distinct from new.stock_snapshot or old.status is distinct from new.status
  then delete from public.crm_family_product_approvals
     where tenant_id=old.tenant_id and product_id=old.id;
@@ -133,7 +134,7 @@ begin
 end; $$;
 drop trigger if exists crm_family_invalidate_product_approval on public.products;
 create trigger crm_family_invalidate_product_approval
-after update of name,sku,sale_price,currency,stock_snapshot,status on public.products
+after update of name,sku,sale_price,tax_rate,currency,stock_snapshot,status on public.products
 for each row execute function private.crm_family_invalidate_product_approval();
 
 create or replace function public.crm_family_submit_receipt(
@@ -306,6 +307,8 @@ begin
  if v_product.id is null or v_approval.product_id is null
    or v_product.stock_snapshot is null or v_product.stock_snapshot<new.quantity
    or v_approval.approved_price is distinct from new.unit_price
+   or v_approval.approved_tax_rate is distinct from new.tax_rate
+   or v_product.tax_rate is distinct from new.tax_rate
    or v_product.sale_price is distinct from new.unit_price
    or v_product.currency is distinct from v_quote.currency
    or v_approval.currency is distinct from v_quote.currency
@@ -329,18 +332,20 @@ begin
  if new.status not in ('sent','accepted') or
   not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
  then return new;end if;
- if new.total<=0 or new.contact_id is null or not exists(
+ if new.total<=0 or new.contact_id is null
+  or not exists(select 1 from public.quotation_items qi where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id)
+  or exists(
    select 1 from public.quotation_items qi
-   join public.products p on p.tenant_id=qi.tenant_id and p.id=qi.product_id and p.status='active'
-   join public.crm_family_product_approvals a on a.tenant_id=qi.tenant_id and a.product_id=qi.product_id
-   where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id
-    and p.sale_price=qi.unit_price and a.approved_price=qi.unit_price
-    and a.currency=new.currency
- ) or exists(
-   select 1 from public.quotation_items qi
+   left join public.products p on p.tenant_id=qi.tenant_id and p.id=qi.product_id and p.status='active'
    left join public.crm_family_product_approvals a on a.tenant_id=qi.tenant_id and a.product_id=qi.product_id
    where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id
-    and a.product_id is null
+    and (a.product_id is null or p.id is null
+         or p.sale_price is distinct from qi.unit_price
+         or a.approved_price is distinct from qi.unit_price
+         or a.currency is distinct from new.currency
+         or a.approved_tax_rate is distinct from qi.tax_rate
+         or p.tax_rate is distinct from qi.tax_rate
+         or p.stock_snapshot is null or p.stock_snapshot<qi.quantity)
  ) then raise exception 'Cannot send/accept Family Power quote without approved customer and items'
  using errcode='42501';end if;
  return new;
