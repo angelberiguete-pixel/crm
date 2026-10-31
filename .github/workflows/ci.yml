@@ -2,7 +2,7 @@ name: CRM CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/family-power-sales-security-media-20261031] # temporary stacked PR QA
   pull_request:
     branches: [main]
   workflow_dispatch:
