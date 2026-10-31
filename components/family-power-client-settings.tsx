@@ -18,7 +18,7 @@ export default function FamilyPowerClientSettings(){
       if(!alive)return;
       if(err)setError("No se pudo consultar la configuración autorizada.");
       else setInfo(data as Settings|null);
-    }).catch(()=>{if(alive)setError("No se pudo consultar la configuración autorizada.");});
+    }).then(undefined,()=>{if(alive)setError("No se pudo consultar la configuración autorizada.");});
    return()=>{alive=false;};
  },[tenantId,allowed]);
  if(!allowed)return <div className="notice" role="alert">Solo administración autorizada de Family Power.</div>;
