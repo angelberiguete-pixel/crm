@@ -34,6 +34,10 @@ jobs:
         run: node --experimental-strip-types --test tests/digital-employees.test.mjs tests/digital-employee-trials-reviews.test.mjs tests/ai-employee-provider.test.mjs
       - name: Verified WhatsApp inbound routing, HMAC and tenant isolation contracts
         run: node --experimental-strip-types --test tests/meta-whatsapp-inbound.test.mjs
+      - name: YCloud guarded manual WhatsApp sending contracts
+        run: node --experimental-strip-types --test tests/ycloud-whatsapp-send.test.mjs
+      - name: YCloud signed WhatsApp receiver and tenant isolation contracts
+        run: node --experimental-strip-types --test tests/ycloud-whatsapp-webhook.test.mjs
       - name: Look Digital Staff commercial demo, sales logging and onboarding safety contracts
         run: node --experimental-strip-types --test tests/digital-staff-commercial-readiness.test.mjs
       - name: CRM per-tenant integrations, safe backend health and no-secret contracts
