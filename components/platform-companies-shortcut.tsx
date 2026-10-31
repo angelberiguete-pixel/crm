@@ -11,9 +11,12 @@ export default function PlatformCompaniesShortcut(){
  const [allowed,setAllowed]=useState(false);
  useEffect(()=>{
    let alive=true;
-   void supabase.rpc("platform_current_access").then(({data,error})=>{
-     if(alive)setAllowed(!error&&Boolean((data as {is_platform_admin?:boolean}|null)?.is_platform_admin));
-   }).catch(()=>{if(alive)setAllowed(false);});
+   void (async()=>{
+     try{
+       const {data,error}=await supabase.rpc("platform_current_access");
+       if(alive)setAllowed(!error&&Boolean((data as {is_platform_admin?:boolean}|null)?.is_platform_admin));
+     }catch{if(alive)setAllowed(false);}
+   })();
    return()=>{alive=false;};
  },[]);
  return allowed?<Link href="/mis-empresas" aria-label="Mis empresas cliente"><Building2 size={16}/> Mis empresas</Link>:null;
