@@ -37,3 +37,13 @@ test("button IDs are bound to quote UUID and only three allowed options",()=>{
  assert.ok(helper.includes("parseQuoteButtonReply"));
  assert.ok(helper.includes("not from raw customer-supplied text"));
 });
+
+test("interactive reply recording is server-only and requires a verified provider receipt plus customer-matching quote",()=>{
+ const s=readFileSync(new URL("../supabase/migrations/20261031031000_verified_quote_button_activity.sql",import.meta.url),"utf8");
+ for(const token of ["auth.role() is distinct from 'service_role'",
+  "public.meta_whatsapp_inbound_receipts","r.external_message_id=m.external_message_id",
+  "q.contact_id=v_message_contact","q.tenant_id=p_tenant_id",
+  "'request_logged_no_automatic_approval'",
+  "grant execute on function public.marketing_record_verified_quote_reply(uuid,uuid,text)"])assert.ok(s.includes(token),token);
+ assert.doesNotMatch(s,/update\s+public\.quotations\s+set\s+status/i);
+});
