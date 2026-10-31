@@ -41,3 +41,13 @@ test("family power setup route stays under authenticated tenant permission gate"
   assert.match(ui,/\["owner","admin"\]/);
   assert.match(ui,/La IA no puede confirmar pagos/);
 });
+
+test("PDF quotation is built only from tenant-scoped real quote and line items",()=>{
+  const doc=readFileSync("components/family-power-quote-document.tsx","utf8");
+  assert.match(doc,/from\("quotations"\)/);
+  assert.match(doc,/from\("quotation_items"\)/);
+  assert.match(doc,/\.eq\("tenant_id",tenantId\)/);
+  assert.match(doc,/items\.length>0/);
+  assert.match(doc,/quote\.status==="draft"/);
+  assert.match(doc,/window\.print\(\)/);
+});

@@ -135,6 +135,12 @@ export default function FamilyPowerLaunchCenter(){
     <h2>2. Cotización y aceptación</h2>
     <p>Primero se envían producto, fotografía y PDF técnico; después, una cotización con importe y condiciones aprobados. El botón de WhatsApp <strong>«Quiero aprobar»</strong> registra la intención, no un pago. Un vendedor autorizado confirma la aceptación comercial conforme a la política del cliente.</p>
     <p><Link href="/crm/quotations" className="button">Abrir cotizaciones</Link>{" "}<Link href="/crm/inbox" className="button">Abrir conversaciones</Link></p>
+    <div style={{display:"grid",gap:8}}>
+      {quotes.slice(0,50).map(q=><div key={q.id} style={{display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10}}>
+        <span>{q.quote_number} · {money(q.total,q.currency)} · {q.status==="draft"?"Borrador":q.status}</span>
+        <Link className="button" href={`/crm/family-power-quote?id=${encodeURIComponent(q.id)}`}>Ver documento para PDF</Link>
+      </div>)}
+    </div>
     <p className="muted">Hasta que conectemos YCloud y validemos el envío de archivos y botones, ningún PDF ni mensaje sale automáticamente.</p>
    </section>
    <section style={card}>
