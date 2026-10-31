@@ -84,8 +84,8 @@ export default function PlatformCompanyPortfolio(){
     // A customer portal must use a fresh real authentication session.
     // The owner is granted an audited tenant-admin membership first,
     // then explicitly signs in again through the client login.
-    const signedOut=await supabase.auth.signOut();
-    if(signedOut.error){setError("No se pudo cerrar la sesión global. Intenta nuevamente.");setBusy(false);return;}
+    // The target login page ends the existing session before exposing any
+    // customer form; direct navigation avoids a sign-out callback race.
     window.location.assign("/login?empresa="+encodeURIComponent(tenant.tenant_slug));
     return;
   }
