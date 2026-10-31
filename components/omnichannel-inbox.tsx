@@ -19,6 +19,8 @@ type Company = { id: string; name: string };
 type Opportunity = { id: string; title: string; value: number; currency: string; status: string; next_action: string | null; next_action_at: string | null };
 type Conversation = { id: string; channel_id: string; contact_id: string | null; opportunity_id: string | null; subject: string | null; status: string; priority: string; assigned_to: string | null; unread_count: number; last_message_at: string | null; metadata: Record<string, unknown> };
 type Message = { id: string; conversation_id: string; direction: string; sender_type: string; message_type: string; body: string | null; status: string; sent_at: string | null; delivered_at: string | null; read_at: string | null; created_at: string };
+type MediaAttachment={id:string;message_id:string;kind:string;file_name:string|null;mime_type:string|null;storage_bucket:string|null;storage_path:string|null};
+type MediaPreview=MediaAttachment&{url:string|null};
 
 const when = new Intl.DateTimeFormat("es-DO", { dateStyle: "short", timeStyle: "short" });
 const money = new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 0 });
@@ -32,6 +34,7 @@ export default function OmnichannelInbox() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [mediaByMessage,setMediaByMessage]=useState<Record<string,MediaPreview[]>>({});
   const [assignees,setAssignees]=useState<Assignee[]>([]);
   const [currentUserId,setCurrentUserId]=useState<string|null>(null);
   const [assignmentFilter,setAssignmentFilter]=useState("all");
@@ -54,7 +57,7 @@ export default function OmnichannelInbox() {
   useEffect(() => {
     // Reset the visible conversation immediately when the active company changes.
     setChannels([]); setConversations([]); setContacts([]); setCompanies([]);
-    setOpportunities([]); setAssignees([]); setMessages([]); setSelectedId(null);
+    setOpportunities([]); setAssignees([]); setMessages([]); setMediaByMessage({}); setSelectedId(null);
     setCurrentUserId(null); setMobileThreadOpen(false); setQuery(""); setStatus("all");
     setOnlyUnread(false); setAssignmentFilter("all"); setChannelFilter("all");
     setReplyDraft(""); setReplyFeedback("");
@@ -117,6 +120,34 @@ export default function OmnichannelInbox() {
     })();
     return () => { active = false; };
   }, [tenantId, selectedId, reload]);
+
+  useEffect(()=>{
+    let active=true;
+    setMediaByMessage({});
+    if(!tenantId||!selectedId||messages.length===0)return()=>{active=false;};
+    const ids=messages.map(m=>m.id);
+    void(async()=>{
+      try{
+        const attachments=await supabase.from("message_attachments")
+          .select("id,message_id,kind,file_name,mime_type,storage_bucket,storage_path")
+          .eq("tenant_id",tenantId).in("message_id",ids).limit(100);
+        if(!active||attachments.error)return;
+        const previews=await Promise.all(((attachments.data??[]) as MediaAttachment[]).map(async a=>{
+          let url:string|null=null;
+          if(a.storage_bucket==="crm-documents"&&a.storage_path?.startsWith(tenantId+"/whatsapp-inbound/")){
+            const signed=await supabase.storage.from("crm-documents").createSignedUrl(a.storage_path,120);
+            if(!signed.error)url=signed.data?.signedUrl??null;
+          }
+          return {...a,url} as MediaPreview;
+        }));
+        if(!active)return;
+        const grouped:Record<string,MediaPreview[]>={};
+        for(const item of previews)(grouped[item.message_id]??=[]).push(item);
+        setMediaByMessage(grouped);
+      }catch{if(active)setMediaByMessage({});}
+    })();
+    return()=>{active=false;};
+  },[tenantId,selectedId,messages]);
 
   const contactMap = useMemo(() => new Map(contacts.map((row) => [row.id, row])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((row) => [row.id, row])), [companies]);
@@ -224,6 +255,13 @@ export default function OmnichannelInbox() {
             {!messagesLoading&&messages.map(msg=><div key={msg.id} className={`card ${styles.messageBubble} ${msg.direction==="outbound"?styles.outgoingBubble:""}`}>
               <div className="eyebrow">{msg.direction==="outbound"?"Equipo":"Contacto"} · {messageTypeLabel[msg.message_type]??msg.message_type}</div>
               <div>{msg.body||"[Mensaje sin texto]"}</div>
+              {(mediaByMessage[msg.id]??[]).map(a=><div key={a.id} style={{marginTop:8}}>
+                {a.url?<a href={a.url} rel="noopener noreferrer" target="_blank">
+                  {a.kind==="image"?<img alt={a.file_name||"Imagen recibida por WhatsApp"} loading="lazy"
+                    src={a.url} style={{display:"block",maxWidth:220,maxHeight:220,borderRadius:10,objectFit:"contain"}}/>
+                  :<span>Ver PDF privado: {a.file_name||"Documento recibido"}</span>}
+                </a>:<small>Adjunto privado · sin permiso de lectura o vista temporal caducada</small>}
+              </div>)}
               <small className={`muted ${styles.messageMeta}`}>{when.format(new Date(msg.sent_at??msg.created_at))} · {messageStatusLabel[msg.status]??msg.status}{msg.read_at?" · leído":msg.delivered_at?" · entregado":""}</small>
             </div>)}
           </div>

@@ -59,3 +59,48 @@ export function parseYCloudOutboundStatus(raw:unknown):OutboundYCloudStatus|null
     !["sent","delivered","read","failed"].includes(String(status)))return null;
   return {businessPhone,wabaId:waba,externalMessageId,status:status as OutboundYCloudStatus["status"]};
 }
+
+
+/** Signed, inbound YCloud image or PDF metadata, NOT a public download URL.
+ * Download links must never be written into message bodies, client metadata or logs.
+ */
+export type InboundYCloudMedia={
+ kind:"image"|"document";wabaId:string;businessPhone:string;from:string;
+ externalMessageId:string;contactName:string;providerMediaId:string;
+ downloadUrl:string;mimeType:string;filename:string;caption:string;
+ sha256:string|null;
+};
+export function parseYCloudInboundMedia(raw:unknown):InboundYCloudMedia|null{
+ const evt=context(raw,"whatsapp.inbound_message.received");
+ const m=asObj(evt?.whatsappInboundMessage);
+ const kind=m?.type;
+ if(kind!=="image"&&kind!=="document")return null;
+ const file=asObj(m?.[kind]),waba=m?.wabaId,from=asPhone(m?.from),to=asPhone(m?.to);
+ const id=typeof m?.wamid==="string"&&m.wamid.length>=3?m.wamid:m?.id;
+ const mediaId=file?.id,mime=file?.mime_type,url=file?.link;
+ if(typeof waba!=="string"||!/^\d{6,30}$/.test(waba)||!from||!to
+  ||typeof id!=="string"||id.length<3||id.length>256
+  ||typeof mediaId!=="string"||!/^[A-Za-z0-9_-]{5,128}$/.test(mediaId)
+  ||typeof mime!=="string"||typeof url!=="string"||url.length>2000)return null;
+ if(kind==="image"&&!["image/jpeg","image/png","image/webp"].includes(mime))return null;
+ if(kind==="document"&&mime!=="application/pdf")return null;
+ try{
+  const u=new URL(url);
+  if(u.protocol!=="https:"||u.hostname!=="api.ycloud.com"||u.port
+   ||u.username||u.password||u.hash
+   ||u.pathname!=="/v2/whatsapp/media/download/"+mediaId)return null;
+ }catch{return null;}
+ const rawName=typeof file?.filename==="string"?file.filename:"";
+ const filename=rawName.replace(/[^\w. -]/g,"_").slice(0,120)
+  ||(kind==="image"?"imagen-recibida":"comprobante-recibido.pdf");
+ const rawCaption=typeof file?.caption==="string"?file.caption.trim():"";
+ const rawHash=file?.sha256;
+ const sha256=typeof rawHash==="string"&&/^[a-zA-Z0-9+/]{43}=$/.test(rawHash)?rawHash:null;
+ const name=asObj(m?.customerProfile)?.name;
+ return {
+  kind,wabaId:waba,businessPhone:to,from,externalMessageId:id,
+  contactName:typeof name==="string"?name.trim().slice(0,120):"",
+  providerMediaId:mediaId,downloadUrl:url,mimeType:mime,filename,
+  caption:rawCaption.slice(0,400),sha256
+ };
+}
