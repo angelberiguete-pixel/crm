@@ -12,6 +12,7 @@ type Provider="whatsapp"|"instagram"|"email";
 type Channel={id:string;provider:Provider;name:string;record_status:string;verified:boolean};
 type Health={tenant_id:string;whatsapp_verified_route:boolean;ai_spending_blocked:boolean;staff_profiles:number;channels:Channel[]};
 type RequestRow={channel_id:string;provider:Provider;display_name:string;request_identifier:string|null;record_status:string;request_stage:string;requested_at:string};
+type YCloudStatus={tenant_id:string;provider_ready:boolean;outbound_send_tested:boolean;meta_events_export_enabled:boolean;routes:Array<{channel_name:string;phone:string;waba_id:string;is_enabled:boolean;channel_status:string;verified_at:string;inbound_message_count:number;last_inbound_at:string|null}>};
 const formLabel:{[K in Provider]:{title:string;label:string;placeholder:string;description:string;external:string;externalLabel:string}}={
  whatsapp:{
   title:"WhatsApp Business",label:"Número del negocio",placeholder:"+1 849 570 6550",
@@ -33,6 +34,7 @@ const formLabel:{[K in Provider]:{title:string;label:string;placeholder:string;d
  },
 };
 const route="https://ygipjqgyreeahslzorik.supabase.co/functions/v1/meta-whatsapp-inbound";
+const ycloudRoute="https://ygipjqgyreeahslzorik.supabase.co/functions/v1/ycloud-whatsapp-inbound";
 
 function integrationState(kind:Provider,health:Health|null,requests:RequestRow[]){
  const channels=(health?.channels??[]).filter(c=>c.provider===kind);
@@ -50,6 +52,7 @@ export default function CrmIntegrationCenter(){
  const admin=["owner","admin"].includes(tenant?.membership_role??"");
  const activeId=useRef(id);activeId.current=id;
  const [health,setHealth]=useState<Health|null>(null);
+ const [ycloud,setYcloud]=useState<YCloudStatus|null>(null);
  const [requests,setRequests]=useState<RequestRow[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -64,13 +67,14 @@ export default function CrmIntegrationCenter(){
  useEffect(()=>{setProvider(null);setIdentifier("");setNotice("");setError("");},[id]);
  useEffect(()=>{
   let alive=true;
-  setHealth(null);setRequests([]);
+  setHealth(null);setYcloud(null);setRequests([]);
   setLoading(true);setError("");
   if(!id||!admin){setLoading(false);return;}
   (async()=>{
-   const [h,r]=await Promise.all([
+   const [h,r,y]=await Promise.all([
      supabase.rpc("tenant_integration_health",{p_tenant_id:id}),
-     supabase.rpc("tenant_channel_requests_overview",{p_tenant_id:id})
+     supabase.rpc("tenant_channel_requests_overview",{p_tenant_id:id}),
+     supabase.rpc("tenant_ycloud_connection_status",{p_tenant_id:id})
    ]);
    if(!alive||activeId.current!==id)return;
    if(h.error||r.error)throw h.error??r.error;
@@ -78,6 +82,8 @@ export default function CrmIntegrationCenter(){
    if(data.tenant_id!==id)throw new Error("La respuesta no pertenece al negocio actual.");
    setHealth(data);
    setRequests((r.data??[]) as RequestRow[]);
+   if(!y.error && (y.data as YCloudStatus|null)?.tenant_id===id) setYcloud(y.data as YCloudStatus);
+   else setYcloud(null);
   })().catch(e=>{if(alive&&activeId.current===id)setError("No se pudo verificar el estado: "+(e instanceof Error?e.message:"Intenta actualizar."));})
   .finally(()=>{if(alive&&activeId.current===id)setLoading(false);});
   return()=>{alive=false;};
@@ -170,6 +176,22 @@ export default function CrmIntegrationCenter(){
        </form>
        <p className={styles.smallPrint}>No introduzcas tokens, contraseñas, códigos SMS ni secretos. El registro no autoriza el envío de mensajes.</p>
     </section>}
+   <section className={styles.panel} aria-label="Conexión YCloud API" style={{margin:"22px 0"}}>
+     <div className={styles.eyebrow}>PROVEEDOR PRINCIPAL · YCLOUD</div>
+     <h2>WhatsApp Business API · estado real</h2>
+     <p>Receptor firmado de WhatsApp. Cada conversación se asigna por WABA y número autorizado, nunca por datos de empresa suministrados por el mensaje.</p>
+     <div className={styles.webhook}><small>Webhook YCloud (URL pública; no es una contraseña)</small><code>{ycloudRoute}</code>
+       <button type="button" onClick={()=>void navigator.clipboard.writeText(ycloudRoute).then(()=>setNotice("URL de YCloud copiada. No compartas el secreto de firma."))}><ClipboardCopy size={16}/> Copiar YCloud</button></div>
+     <p>En YCloud → Developers → Webhooks, registra esta URL y suscríbete a <code>whatsapp.inbound_message.received</code> y <code>whatsapp.message.updated</code>. Guarda el secreto de firma solo en Supabase.</p>
+     {!ycloud ? <div className={styles.record}><span>Estado del proveedor no comprobado</span><small>No se considera conectado.</small></div> :
+       ycloud.routes.length===0 ? <div className={styles.record}><span>Sin rutas YCloud autorizadas</span><small>Este negocio todavía no tiene WABA y número verificados en el CRM.</small></div> :
+       ycloud.routes.map(c=><div className={styles.record} key={c.phone}><span>{c.channel_name} · {c.phone}</span>
+         <small>{c.is_enabled&&c.channel_status==="connected"?"Ruta habilitada":"Ruta inactiva"} · {c.inbound_message_count} mensajes recibidos por webhook</small></div>)
+     }
+     <p>Look Social Media y Family Power tienen rutas y permisos independientes. El envío continúa bloqueado hasta verificar el proveedor y la autorización de cada titular.</p>
+     <div className={styles.footerActions}><a className={styles.secondary} href="https://www.ycloud.com/console/" target="_blank" rel="noopener noreferrer">Abrir YCloud</a>
+       <Link className={styles.secondary} href="/crm/marketing">Marketing y conversiones</Link></div>
+   </section>
    <section className={styles.footerGrid}>
      <div className={styles.panel}>
        <div className={styles.eyebrow}>ORQUESTACIÓN COMERCIAL</div><h2>Del canal al empleado digital</h2>
