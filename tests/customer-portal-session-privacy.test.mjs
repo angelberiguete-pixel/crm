@@ -5,7 +5,7 @@ const root=new URL("../",import.meta.url);
 const read=(p)=>readFileSync(new URL(p,root),"utf8");
 const view=read("supabase/migrations/20261031160000_lock_platform_client_view.sql");
 const privacy=read("supabase/migrations/20261031161000_conversation_privacy_rls.sql");
-const sessions=read("supabase/migrations/20261031162000_tenant_access_sessions.sql");
+const sessions=read("components/tenant-session-activity.tsx");
 const shortcut=read("components/platform-companies-shortcut.tsx");
 const switcher=read("components/tenant-switcher.tsx");
 const inbox=read("components/omnichannel-inbox.tsx");
@@ -33,13 +33,11 @@ test("no coworker can read or update a human-assigned conversation through REST 
  assert.doesNotMatch(inbox,/const isSupervisor = \["owner","admin","manager"\]/);
  assert.ok(inbox.includes("setMessages([]);setMobileThreadOpen(false)"));
 });
-test("member session activity is based on JWT session and auditable heartbeats, not telemetry guesses",()=>{
- for(const marker of ["auth.jwt()->>'session_id'","tenant_session_heartbeat",
- "tenant_session_end","tenant_session_activity_overview",
- "private.has_tenant_role(p_tenant_id,array['owner','admin']",
- "active_seconds","last_seen_at","ended_at"])assert.ok(sessions.includes(marker),marker);
- assert.ok(gate.includes("tenant_session_heartbeat"));
- assert.ok(mobile.includes("tenant_session_end"));
+test("member session activity reuses existing CRM member sessions instead of duplicating a registry",()=>{
+ for(const marker of ["crm_tenant_member_session_report","active_seconds","signed_in_at","last_seen_at","signed_out_at"])
+   assert.ok(sessions.includes(marker),marker);
+ assert.ok(gate.includes("crm_member_session_heartbeat"));
+ assert.ok(mobile.includes("crm_member_session_close"));
  assert.ok(read("components/tenant-session-exit.tsx").includes("supabase.auth.signOut"));
  assert.ok(read("components/tenant-session-activity.tsx").includes("aproximadamente cada minuto"));
 });
