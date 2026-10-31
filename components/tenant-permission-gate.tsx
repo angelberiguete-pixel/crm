@@ -128,7 +128,10 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const hasPermission = permissions.all === true || permissions[permissionKey] === true;
       const moduleEnabled = module ? module.enabled : true;
 
-      if (hasPermission && moduleEnabled) {
+      const familyPowerRestriction=activeTenant.tenant_slug==="family-power"
+        &&(section==="companies" ||
+          (section==="settings"&&!["owner","admin"].includes(activeTenant.membership_role)));
+      if (hasPermission && moduleEnabled && !familyPowerRestriction) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
         setValidatedSection(section);

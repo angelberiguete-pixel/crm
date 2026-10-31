@@ -1,6 +1,7 @@
 "use client";
 
 import {createContext,useContext,useEffect,useMemo,useState,type CSSProperties,type ReactNode} from "react";
+import Image from "next/image";
 import {supabase} from "@/lib/supabase";
 import {
   resolveTenantBrand,tenantBrandStyle,
@@ -41,9 +42,9 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
    return()=>{active=false;window.removeEventListener(TENANT_BRAND_UPDATED,changed);};
  },[tenant.tenant_id]);
  useEffect(()=>{
-   if(loading)return;
+   const shown=loading?fallback:brand;
    const previous=document.title;
-   document.title=brand.name+" | CRM";
+   document.title=shown.name+" | CRM";
    let favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
    const created=!favicon;
    if(!favicon){
@@ -52,14 +53,19 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
      document.head.appendChild(favicon);
    }
    const originalHref=favicon.getAttribute("href");
-   favicon.href=brand.faviconUrl??(brand.officialLookBrand?"/look-social-media-logo.svg":"/tenant-crm-icon.svg");
+   favicon.href=shown.faviconUrl??(shown.officialLookBrand?"/look-social-media-logo.svg":"/tenant-crm-icon.svg");
    return()=>{
      document.title=previous;
      if(created)favicon.remove();
      else if(originalHref!==null)favicon.setAttribute("href",originalHref);
    };
- },[brand,loading]);
- if(loading)return <div className="loading" role="status">Preparando el espacio de {fallback.name}…</div>;
+ },[brand,fallback,loading]);
+ if(loading)return <div className="tenant-identity-loading" role="status" data-loading-tenant={fallback.slug}>
+   {fallback.slug==="family-power"
+     ? <Image src="/client-brands/family-power/logo-color-sin-fondo.svg" width={220} height={110} alt="Family Power" priority unoptimized/>
+     : <strong>{fallback.name}</strong>}
+   <span>Preparando el espacio de {fallback.name}…</span>
+ </div>;
  return <TenantBrandContext.Provider value={brand}>
    <div className="tenant-brand-scope" data-tenant-brand={brand.slug}
      style={tenantBrandStyle(brand) as CSSProperties}>

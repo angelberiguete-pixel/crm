@@ -33,6 +33,7 @@ export default function MobileTenantNavigation() {
           name==="files"?"dashboard":name
         );
         setAllowed(links.filter(([path])=>{
+          if(path==="settings"&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;
           if(path==="sessions"&&!["owner","admin"].includes(role))return false;
           const key=permissionKey(path);
           return (permissions.all===true||permissions[key]===true)

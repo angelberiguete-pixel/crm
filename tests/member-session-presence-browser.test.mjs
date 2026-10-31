@@ -74,6 +74,7 @@ try{
   assert.ok(heartbeatedTenants.every(x=>x===tenantId),"presence must use verified tenant context");
   assert.equal(reports,1,"owner can view session report");
   await owner.setViewportSize({width:1280,height:850});
+  await owner.locator(".tenant-session-exit summary").click();
   await owner.getByRole("button",{name:"Cerrar sesión del cliente"}).waitFor();
   await owner.setViewportSize({width:390,height:844});
 
