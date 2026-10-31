@@ -56,6 +56,8 @@ jobs:
         run: node --test tests/ycloud-integrations-live-status.test.mjs
       - name: Family Power verified products, receipts and conversion safety contracts
         run: node --test tests/family-power-verified-sales.test.mjs
+      - name: Family Power audited quotation, financial and YCloud media contracts
+        run: node --test tests/family-power-financial-guards.test.mjs tests/ycloud-media-private-intake.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
