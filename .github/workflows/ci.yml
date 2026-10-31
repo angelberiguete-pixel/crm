@@ -48,6 +48,8 @@ jobs:
         run: node --experimental-strip-types --test tests/family-power-unified-tenant.test.mjs
       - name: Tenant white-label identity and input safety tests
         run: node --experimental-strip-types --test tests/tenant-white-label.test.mjs
+      - name: WhatsApp marketing events, tenant KPI safety and quote buttons
+        run: node --test tests/marketing-conversation-events.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
