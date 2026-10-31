@@ -26,7 +26,7 @@ test("family colors and logo never leak across other companies",()=>{
  assert.match(page,/BrandLogo size="sidebar"/);
 });
 test("staged SQL limits Family Power branding updates to platform admin",()=>{
- const sql=read("supabase/migrations/20261031180000_family_power_platform_only_brand_settings.sql");
+ const sql=read("supabase/migrations/20261031190105_family_power_platform_only_brand_settings_20261031.sql");
  assert.match(sql,/tenant_settings_update/);
  assert.match(sql,/private\.crm_is_platform_admin\(\)/);
  assert.match(sql,/t.slug <> 'family-power'/);
