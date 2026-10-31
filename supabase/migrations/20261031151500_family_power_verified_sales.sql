@@ -228,3 +228,125 @@ begin
 end; $$;
 revoke all on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) from public,anon,authenticated;
 grant execute on function public.crm_family_verify_receipt(uuid,uuid,boolean,text) to authenticated;
+
+
+-- Additional pre-release guards: a generic CRM route may NOT bypass reconciliation.
+-- Both triggers run BEFORE the existing marketing/automation event triggers.
+create or replace function private.crm_family_guard_order_payment()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_confirmed numeric(16,2);
+begin
+ if not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power') then
+   return new;
+ end if;
+ if tg_op='UPDATE' and new.tenant_id is distinct from old.tenant_id then
+   raise exception 'Cannot move Family Power order between tenants' using errcode='42501';
+ end if;
+ select coalesce(sum(r.amount),0) into v_confirmed
+ from public.crm_family_payment_receipts r where r.tenant_id=new.tenant_id
+  and r.order_id=new.id and r.status='confirmed';
+ if new.amount_paid is distinct from v_confirmed or new.amount_paid>new.total then
+   raise exception 'Family Power order payment requires confirmed bank receipts' using errcode='42501';
+ end if;
+ if tg_op='UPDATE' and v_confirmed>0 and
+   (new.total is distinct from old.total or new.currency is distinct from old.currency)
+ then raise exception 'Paid Family Power order total/currency is locked' using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_order_payment() from public,anon,authenticated;
+drop trigger if exists crm_family_order_reconciliation on public.orders;
+create trigger crm_family_order_reconciliation
+ before insert or update of tenant_id,amount_paid,total,currency on public.orders
+ for each row execute function private.crm_family_guard_order_payment();
+
+create or replace function private.crm_family_guard_opportunity_won()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if new.status<>'won' or (tg_op='UPDATE' and old.status='won')
+   or not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ if not exists(
+   select 1 from public.orders o
+   join public.quotations q on q.id=o.quotation_id and q.tenant_id=o.tenant_id
+   where o.tenant_id=new.tenant_id and o.opportunity_id=new.id
+    and o.total>0 and o.amount_paid>=o.total and q.status='accepted'
+    and (select coalesce(sum(r.amount),0)
+      from public.crm_family_payment_receipts r
+      where r.tenant_id=o.tenant_id and r.order_id=o.id
+        and r.status='confirmed') >= o.total
+ ) then raise exception 'Family Power sale requires fully reconciled accepted order' using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_opportunity_won() from public,anon,authenticated;
+drop trigger if exists crm_family_verified_opportunity_won on public.opportunities;
+create trigger crm_family_verified_opportunity_won
+ before insert or update of status on public.opportunities
+ for each row execute function private.crm_family_guard_opportunity_won();
+
+-- Approved-only quotation lines; require exact server-approved price and SKU.
+-- No client can create quote lines with unverified products via generic table APIs.
+create or replace function private.crm_family_guard_quotation_item()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_quote public.quotations%rowtype;v_product public.products%rowtype;
+ v_approval public.crm_family_product_approvals%rowtype;
+begin
+ if not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ select * into v_quote from public.quotations where tenant_id=new.tenant_id
+  and id=new.quotation_id;
+ if not found or v_quote.status<>'draft'
+ then raise exception 'Family Power quotation must be a draft' using errcode='42501';end if;
+ select * into v_product from public.products
+ where tenant_id=new.tenant_id and id=new.product_id and status='active';
+ select * into v_approval from public.crm_family_product_approvals
+ where tenant_id=new.tenant_id and product_id=new.product_id;
+ if v_product.id is null or v_approval.product_id is null
+   or v_product.stock_snapshot is null or v_product.stock_snapshot<new.quantity
+   or v_approval.approved_price is distinct from new.unit_price
+   or v_product.sale_price is distinct from new.unit_price
+   or v_product.currency is distinct from v_quote.currency
+   or v_approval.currency is distinct from v_quote.currency
+   or new.sku_snapshot is distinct from v_product.sku
+ then raise exception 'Family Power quote requires approved product, stock, currency and price'
+ using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_quotation_item() from public,anon,authenticated;
+drop trigger if exists crm_family_verified_quotation_item on public.quotation_items;
+create trigger crm_family_verified_quotation_item
+ before insert or update on public.quotation_items
+ for each row execute function private.crm_family_guard_quotation_item();
+
+-- Service-approved totals are still calculated by existing quotation_items_recalculate.
+-- Reject status progression with no approved product or stale pricing.
+create or replace function private.crm_family_guard_quote_progress()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if new.status not in ('sent','accepted') or
+  not exists(select 1 from public.tenants where id=new.tenant_id and slug='family-power')
+ then return new;end if;
+ if new.total<=0 or new.contact_id is null or not exists(
+   select 1 from public.quotation_items qi
+   join public.products p on p.tenant_id=qi.tenant_id and p.id=qi.product_id and p.status='active'
+   join public.crm_family_product_approvals a on a.tenant_id=qi.tenant_id and a.product_id=qi.product_id
+   where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id
+    and p.sale_price=qi.unit_price and a.approved_price=qi.unit_price
+    and a.currency=new.currency
+ ) or exists(
+   select 1 from public.quotation_items qi
+   left join public.crm_family_product_approvals a on a.tenant_id=qi.tenant_id and a.product_id=qi.product_id
+   where qi.tenant_id=new.tenant_id and qi.quotation_id=new.id
+    and a.product_id is null
+ ) then raise exception 'Cannot send/accept Family Power quote without approved customer and items'
+ using errcode='42501';end if;
+ return new;
+end; $$;
+revoke all on function private.crm_family_guard_quote_progress() from public,anon,authenticated;
+drop trigger if exists crm_family_approved_quotation_progress on public.quotations;
+create trigger crm_family_approved_quotation_progress
+ before update of status on public.quotations
+ for each row execute function private.crm_family_guard_quote_progress();
