@@ -62,6 +62,14 @@ begin
           from public.opportunities o where o.tenant_id=p_tenant_id group by o.currency
         ) x
       ),'[]'::jsonb),
+    'branding', (
+      select pg_catalog.jsonb_build_object(
+        'brand_name',s.brand_name,'logo_url',s.logo_url,
+        'logo_on_dark_url',s.settings #>> '{branding,logo_on_dark_url}',
+        'logo_on_light_url',s.settings #>> '{branding,logo_on_light_url}',
+        'primary_color',s.primary_color,'secondary_color',s.secondary_color)
+      from public.tenant_settings s where s.tenant_id=p_tenant_id
+    ),
     'channel_status',
       coalesce((
         select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
@@ -93,7 +101,15 @@ begin
               where o.tenant_id=p_tenant_id and o.owner_user_id=m.user_id and o.status='won'),
             'quotations_authored',(
               select count(*) from public.quotations q
-              where q.tenant_id=p_tenant_id and q.created_by=m.user_id)
+              where q.tenant_id=p_tenant_id and q.created_by=m.user_id),
+            'quotations_by_currency',coalesce((
+              select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+                'currency',z.currency,'count',z.n,'total',z.total) order by z.currency)
+              from (select q.currency,count(*) n,coalesce(sum(q.total),0) total
+                    from public.quotations q
+                    where q.tenant_id=p_tenant_id and q.created_by=m.user_id
+                    group by q.currency) z
+            ),'[]'::jsonb)
           ) order by m.role,m.user_id)
         from public.memberships m
         where m.tenant_id=p_tenant_id and m.status='active'
