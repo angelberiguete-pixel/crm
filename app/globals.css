@@ -344,3 +344,8 @@ textarea{min-height:96px;resize:vertical}
 .platform-company-shortcut a{display:inline-flex;gap:6px;align-items:center;color:var(--text);font-size:13px;text-decoration:none;font-weight:600}
 .platform-company-shortcut a:hover{text-decoration:underline}
 @media(max-width:560px){.platform-company-shortcut{padding:0 4px}.platform-company-shortcut a{font-size:12px}}
+
+/* Compact owner shortcut stays visible without changing the CRM grid layout. */
+.platform-company-shortcut{position:fixed;right:270px;top:11px;z-index:32;display:inline-flex;align-items:center;padding:9px 12px;border:1px solid #2c4166;border-radius:9px;background:#0B0F1A}
+.platform-company-shortcut a{color:#F5F8FF}
+@media(max-width:700px){.platform-company-shortcut{display:none}.mobile-module-panel .platform-company-shortcut{display:block;position:static;margin:8px 0;border:1px solid #2c4166}.mobile-module-panel .platform-company-shortcut a{display:flex;padding:7px}}
