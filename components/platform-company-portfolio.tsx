@@ -80,8 +80,15 @@ export default function PlatformCompanyPortfolio(){
   setBusy(true);setError("");
   const r=await supabase.rpc("platform_join_tenant_as_admin",{p_tenant_id:tenant.tenant_id});
   if(r.error){setError(r.error.message);setBusy(false);return;}
-  const lock=await supabase.rpc("crm_lock_client_portal",{p_tenant_id:tenant.tenant_id});
-  if(lock.error){setError("No se pudo aislar la sesión del cliente. "+lock.error.message);setBusy(false);return;}
+  if(tenant.tenant_slug!=="eurevector"){
+    // A customer portal must use a fresh real authentication session.
+    // The owner is granted an audited tenant-admin membership first,
+    // then explicitly signs in again through the client login.
+    const signedOut=await supabase.auth.signOut();
+    if(signedOut.error){setError("No se pudo cerrar la sesión global. Intenta nuevamente.");setBusy(false);return;}
+    window.location.assign("/login?empresa="+encodeURIComponent(tenant.tenant_slug));
+    return;
+  }
   notifyTenantContextChanged();
   window.location.assign("/crm");
  }
