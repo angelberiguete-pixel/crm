@@ -84,6 +84,8 @@ jobs:
         run: node tests/owner-first-access-edge-live.test.mjs
       - name: Super Admin mobile browser regression tests
         run: node tests/platform-admin-browser.test.mjs
+      - name: Family Power portfolio direct-entry browser regression
+        run: node tests/family-power-portfolio-browser.test.mjs
       - name: Private tenant files browser regression tests
         run: node tests/tenant-files-browser.test.mjs
       - name: Spanish team conversations and assignment browser tests
