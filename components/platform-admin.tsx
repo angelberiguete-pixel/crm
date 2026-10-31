@@ -278,6 +278,12 @@ export default function PlatformAdmin() {
     setNotice("");
     const r = await supabase.rpc("platform_join_tenant_as_admin", { p_tenant_id: selectedId });
     if (r.error) return setNotice(r.error.message);
+    if(selected?.tenant_slug && selected.tenant_slug!=="eurevector"){
+      const result=await supabase.auth.signOut();
+      if(result.error)return setNotice("No se pudo cerrar la sesión global.");
+      window.location.href="/login?empresa="+encodeURIComponent(selected.tenant_slug);
+      return;
+    }
     notifyTenantContextChanged();
     window.location.href = "/crm";
   }
