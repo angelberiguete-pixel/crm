@@ -358,3 +358,20 @@ textarea{min-height:96px;resize:vertical}
 .tenant-session-exit button:disabled{opacity:.65;cursor:wait}
 .tenant-session-exit small{display:block;max-width:240px}
 @media(max-width:700px){.tenant-session-exit{display:none}}
+
+/* UX phase 1: shared, authorization-aware navigation and a clear daily priority. */
+.crm-nav-loading{display:block;color:#AEBBD1;font-size:13px;padding:12px;line-height:1.4}
+.crm-unified-bottom-nav a{min-height:54px;min-width:0;flex:1;text-align:center;outline-offset:-2px}
+.crm-unified-bottom-nav a:focus-visible,.nav a:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px}
+.crm-unified-bottom-nav a span{font-size:11px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.crm-today-card{padding:22px;border-left:4px solid var(--accent);background:var(--panel)}
+.crm-today-card h2{margin:6px 0 7px;font-size:clamp(20px,3vw,26px)}
+.crm-today-card .muted{margin:0;line-height:1.5}
+.crm-today-card .dashboard-actions .button{min-height:44px}
+@media(max-width:760px){
+  .crm-today-card{padding:17px}
+  .crm-unified-bottom-nav{align-items:stretch}
+  .crm-unified-bottom-nav a{min-height:58px;max-width:none}
+  .crm-unified-bottom-nav a span{max-width:90px;overflow:visible;text-overflow:clip;white-space:normal;font-size:11px}
+  .crm-unified-bottom-nav .crm-nav-loading{color:#fff}
+}

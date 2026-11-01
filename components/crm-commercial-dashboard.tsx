@@ -11,6 +11,7 @@ import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut"
 import EnergyServiceDashboard from "@/components/energy-service-dashboard";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
+import { CrmSidebar, CrmBottomNav } from "@/components/crm-app-navigation";
 
 type Counts = { companies:number|null; contacts:number|null; opportunities:number|null; conversations:number|null; quotations:number|null; events:number|null };
 type Deal = { id:string; title:string; status:string; next_action:string|null; next_action_at:string|null };
@@ -77,34 +78,36 @@ function GeneralCommercialDashboard(){
   if(!tenantId)return <CrmWorkspace slug={[]} />;
   const due=deals.filter(d=>d.next_action_at&&new Date(d.next_action_at).getTime()<Date.now());
   return <div className="shell">
-    <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name} · {roleLabel}</span></div>
-      <nav className="nav" aria-label="Módulos del CRM"><PlatformCompaniesShortcut/>{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===""?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
-    </aside>
+    <CrmSidebar activeSection="" />
     <main className="content">
       <header className="topbar"><div><div className="eyebrow">Panel principal · CRM personalizado</div><h1>Portal de {tenantBrand?.name??tenant?.tenant_name}</h1><p className="muted">Acceso: {roleLabel}</p></div>
         <div className="top-actions"><button className="button" type="button" onClick={()=>setReload(n=>n+1)}><RefreshCw size={16}/> Actualizar</button></div>
       </header>
       {error&&<div className="notice" role="alert">{error}</div>}
       <section className="dashboard-intro"><div className="eyebrow" style={{color:"#b6ddff"}}>Tu empresa en un solo lugar</div>
-        <h2>Organiza clientes y convierte oportunidades en ventas.</h2>
-        <p className="muted">Los indicadores corresponden únicamente a los registros de esta empresa.</p>
+        <h2>{canManage?"Esto necesita tu atención hoy":"Continúa con tus clientes y seguimientos"}</h2>
+        <p className="muted">{canManage?"Consulta los pendientes de tu equipo y toma la siguiente decisión.":"Revisa mensajes, contactos y oportunidades sin salir de tu espacio."}</p>
         <div className="dashboard-actions">
-          {canManage&&<Link className="button primary" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>}
+          {canManage?<Link className="button primary" href="/crm/contacts?new=1"><Users size={16}/> Nuevo cliente</Link>:<Link className="button primary" href="/crm/inbox"><Inbox size={16}/> Abrir mensajes</Link>}
           <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
           <Link className="button" href="/crm/revenue"><Target size={16}/> Ver oportunidades</Link>
           <Link className="button" href="/crm/inbox"><Inbox size={16}/> {canManage?"Conversaciones":"Mis conversaciones"}</Link>
         </div>
       </section>
+      <section className="card crm-today-card section-gap" aria-label="Pendientes de hoy">
+        <div className="eyebrow">Siguiente paso</div>
+        <h2>{loading?"Consultando tus pendientes…":due.length>0?`${due.length} seguimiento${due.length===1?"":"s"} vencido${due.length===1?"":"s"}`:"Revisa tu trabajo pendiente"}</h2>
+        <p className="muted">{loading?"Comprobando la información de tu empresa.":due.length>0?"Hay oportunidades que necesitan una próxima acción.":"Abre tus conversaciones o revisa el proceso comercial para continuar."}</p>
+        <div className="dashboard-actions"><Link href="/crm/revenue" className="button primary"><Target size={16}/> Ver seguimientos</Link><Link href="/crm/inbox" className="button"><Inbox size={16}/> Ver mensajes</Link></div>
+      </section>
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
         <section className="grid dashboard-kpis section-gap" aria-label="Indicadores de esta empresa">
-          <Metric label="Empresas" value={countText(counts.companies)} sub="Registros de clientes"/>
-          <Metric label="Contactos" value={countText(counts.contacts)} sub="Personas registradas"/>
-          <Metric label="Oportunidades" value={countText(counts.opportunities)} sub="Todas las etapas"/>
+          <Metric label={canManage?"Oportunidades":"Mis oportunidades"} value={countText(counts.opportunities)} sub="Oportunidades visibles"/>
+          <Metric label="Conversaciones" value={countText(counts.conversations)} sub="Conversaciones del equipo"/>
+          <Metric label="Seguimientos vencidos" value={String(due.length)} sub="Entre los próximos 8 registros"/>
           <Metric label="Cotizaciones" value={countText(counts.quotations)} sub="Documentos registrados"/>
-          <Metric label="Proceso abierto" value={revenue?money(Number(revenue.open_pipeline_mrr??0)):"—"} sub="Valor registrado en el CRM"/>
-          <Metric label="Ingresos recurrentes" value={revenue?money(Number(revenue.current_mrr??0)):"—"} sub="MRR registrado"/>
-          <Metric label="Conversaciones" value={countText(counts.conversations)} sub="Mensajes de esta empresa"/>
-          <Metric label="Eventos" value={countText(counts.events)} sub="Calendario de la empresa"/>
+          {canManage&&<Metric label="Contactos" value={countText(counts.contacts)} sub="Personas registradas"/>}
+          {canManage&&<Metric label="Proceso abierto" value={revenue?money(Number(revenue.open_pipeline_mrr??0)):"—"} sub="Valor de oportunidades"/>}
         </section>
         {canManage&&counts.companies===0&&counts.contacts===0&&counts.opportunities===0&&<section className="card section-gap" aria-label="Primeros pasos comerciales">
           <div className="eyebrow">Primeros pasos · {tenant?.tenant_name}</div>
@@ -141,6 +144,6 @@ function GeneralCommercialDashboard(){
         </section>
       </>}
     </main>
-    <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===""?"page":undefined} className={key===""?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
+    <CrmBottomNav activeSection="" />
   </div>;
 }
