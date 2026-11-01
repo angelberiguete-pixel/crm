@@ -89,7 +89,7 @@ function GeneralCommercialDashboard(){
         <p className="muted">{canManage?"Consulta los pendientes de tu equipo y toma la siguiente decisión.":"Revisa mensajes, contactos y oportunidades sin salir de tu espacio."}</p>
         <div className="dashboard-actions">
           {canManage?<Link className="button primary" href="/crm/contacts?new=1"><Users size={16}/> Nuevo cliente</Link>:<Link className="button primary" href="/crm/inbox"><Inbox size={16}/> Abrir mensajes</Link>}
-          <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
+          {canManage?<Link className="button" href="/crm/companies?new=1"><Building2 size={16}/> Nueva empresa</Link>:<Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>}
           <Link className="button" href="/crm/revenue"><Target size={16}/> Ver oportunidades</Link>
           <Link className="button" href="/crm/inbox"><Inbox size={16}/> {canManage?"Conversaciones":"Mis conversaciones"}</Link>
         </div>
