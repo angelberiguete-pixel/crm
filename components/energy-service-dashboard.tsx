@@ -57,7 +57,7 @@ export default function EnergyServiceDashboard(){
        <div style={{flex:"1 1 280px"}}>
          <h1 style={{color:"#FFFFFF",margin:"10px 0 12px"}}>{brand?.name??tenant?.tenant_name??"Family Power"}</h1>
          <p style={{color:"#E4E5E8",lineHeight:1.55,maxWidth:480}}>
-           Clientes, solicitudes, cotizaciones y trabajos en un solo lugar. La información se muestra exclusivamente para esta empresa.
+           Clientes, ventas y equipo digital.
          </p>
          <Link className="button primary" href="/crm/inbox" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
            <MessageCircle size={16}/> Abrir mensajes
@@ -76,7 +76,7 @@ export default function EnergyServiceDashboard(){
        </button>
      </div>
      {error&&<div className="notice" role="alert">{error}</div>}
-     {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #D20A14"}}><Bot size={30} color="#D20A14"/><span style={{flex:1}}><strong>Family Power ARM · Centro de operaciones inteligentes</strong><br/><small className="muted">Equipo digital, seguimiento y revisión humana dentro de este CRM</small></span><ArrowRight size={19}/></Link>}
+     {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #D20A14"}}><Bot size={30} color="#D20A14"/><span style={{flex:1}}><strong>Agentes</strong></span><ArrowRight size={19}/></Link>}
      <div className="grid two-col" style={{marginTop:18}}>
        {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,description,Icon,key})=><Link href={href} key={key}
          className="card" style={{display:"flex",alignItems:"center",gap:16,textDecoration:"none",borderLeft:"4px solid #D20A14"}}>
@@ -96,15 +96,15 @@ export default function EnergyServiceDashboard(){
    </section>
    <section className="grid two-col section-gap">
      <div className="card">
-       <div className="eyebrow">Atención al cliente</div>
+       <div className="eyebrow">Canales</div>
        <h2>Canales de comunicación</h2>
-       <p className="muted">Conecta los canales autorizados antes de recibir o enviar mensajes reales. Ninguna cuenta de WhatsApp, Instagram ni correo se activa por mostrar esta pantalla.</p>
+       <p className="muted">Sin conexión activa.</p>
        {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/integrations" className="button">Gestionar canales</Link>}
      </div>
      <div className="card">
        <div className="eyebrow">Equipo y acceso</div>
        <h2>Operación segura</h2>
-       <p className="muted">Los usuarios deben recibir invitaciones individuales y sus permisos se revisan antes de operar. No se importan contraseñas del CRM anterior.</p>
+       <p className="muted">Usuarios y permisos.</p>
        {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/settings" className="button">Configuración de la empresa</Link>}
      </div>
    </section>

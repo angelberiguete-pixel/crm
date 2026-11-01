@@ -8,7 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["marketing", "Marketing"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Centro ARM"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
+const links = [["inbox", "Conversaciones"], ["marketing", "Marketing"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -30,10 +30,12 @@ export default function MobileTenantNavigation() {
         const modules=(m.data??[]) as Array<{module_key:string;enabled:boolean}>;
         const permissionKey=(name:string)=>(
           ["channels","integrations","marketing","sessions","settings"].includes(name)?"settings":
-          name==="files"||name==="arm"?"dashboard":name
+          ["files","arm","reports"].includes(name)?"dashboard":name==="tasks"?"operations":name
         );
         setAllowed(links.filter(([path])=>{
-          if(path==="arm"&&tenant.tenant_slug!=="family-power")return false;
+          const familyKeys=["inbox","products","quotations","arm","tasks","reports","settings"];
+          if(tenant.tenant_slug==="family-power"&&!familyKeys.includes(path))return false;
+          if(tenant.tenant_slug!=="family-power"&&["arm","tasks","reports"].includes(path))return false;
           if(path==="settings"&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;
           if(path==="sessions"&&!["owner","admin"].includes(role))return false;
           const key=permissionKey(path);

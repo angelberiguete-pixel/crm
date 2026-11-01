@@ -6,8 +6,8 @@ test("Family Power hides global company list and proprietary branding controls",
  const gate=read("components/tenant-permission-gate.tsx"),workspace=read("components/crm-workspace.tsx");
  const settings=read("components/family-power-client-settings.tsx");
  assert.match(gate,/familyPowerRestriction/);
- assert.match(gate,/section==="companies"/);
- assert.match(workspace,/isFamilyPower&&key==="companies"/);
+ assert.match(gate,/restrictedFamilySections=\["companies","sales"/);
+ assert.match(workspace,/isFamilyPower&&!familyKeys.includes\(key\)/);
  assert.match(workspace,/FamilyPowerClientSettings/);
  assert.doesNotMatch(settings,/Guardar identidad visual|type="color"/);
 });

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerMenu from "@/components/family-power-menu";
 import styles from "@/components/crm-commercial.module.css";
 import CustomerHistory from "@/components/customer-history";
 import { contactVCardFilename, exportContactToVCard } from "@/lib/contact-vcard";
@@ -135,7 +136,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  }
  return <div className="shell">
    <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenantBrand?.name??tenant?.tenant_name??"Clientes y contactos"}</span></div>
-     <nav className="nav" aria-label="Módulos del CRM">{nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===kind?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
+     {tenant?.tenant_slug==="family-power"?<FamilyPowerMenu active={kind} variant="sidebar"/>:<nav className="nav" aria-label="Módulos del CRM">{nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===kind?"active":""}><Icon size={17}/>{label}</Link>)}</nav>}
    </aside>
    <main className="content">
      <header className="topbar"><div><div className="eyebrow">Gestión comercial · {tenant?.tenant_name??"Empresa"}</div><h1>{isCompany?"Empresas":"Contactos"}</h1></div>
@@ -209,7 +210,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
    {activeRecord&&tenantId&&<CustomerHistory key={tenantId+":"+activeRecord.kind+":"+activeRecord.id} tenantId={tenantId} record={activeRecord}
      contacts={contacts}
      opportunities={opportunities} onClose={()=>setActiveRecord(null)}/>}
-   <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
+   {tenant?.tenant_slug==="family-power"?<FamilyPowerMenu active={kind} variant="mobile"/>:<nav className="mobile-nav" aria-label="Navegación principal">{nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>}
  </div>;
 }
 

@@ -6,6 +6,7 @@ import { Building2, CalendarDays, FileText, Gauge, Inbox, Package, Plus, Refresh
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerMenu from "@/components/family-power-menu";
 import styles from "@/components/crm-commercial.module.css";
 
 type Opportunity = {
@@ -205,11 +206,11 @@ export default function CrmSales360() {
   return <div className="shell">
     <aside className="sidebar">
       <div className="brand"><BrandLogo size="sidebar"/><span>{tenant?.tenant_name ?? "Gestión comercial"}</span></div>
-      <nav className="nav" aria-label="Módulos del CRM">
+      {tenant?.tenant_slug==="family-power"?<FamilyPowerMenu active="revenue" variant="sidebar"/>:<nav className="nav" aria-label="Módulos del CRM">
         {nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").map(([key, label, Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} className={key === "revenue" ? "active" : ""}>
           <Icon size={17} />{label}
         </Link>)}
-      </nav>
+      </nav>}
     </aside>
     <main className="content">
       <header className="topbar">
@@ -302,8 +303,8 @@ export default function CrmSales360() {
         </form>
       </div>}
     </main>
-    <nav className="mobile-nav" aria-label="Navegación principal">
-      {nav.slice(0,5).map(([key,label,Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} aria-current={key === "revenue" ? "page" : undefined} className={key === "revenue" ? "active" : ""}><Icon size={19}/><span>{label}</span></Link>)}
-    </nav>
+    {tenant?.tenant_slug==="family-power"?<FamilyPowerMenu active="revenue" variant="mobile"/>:<nav className="mobile-nav" aria-label="Navegación principal">
+      {nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").slice(0,5).map(([key,label,Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} aria-current={key === "revenue" ? "page" : undefined} className={key === "revenue" ? "active" : ""}><Icon size={19}/><span>{label}</span></Link>)}
+    </nav>}
   </div>;
 }
