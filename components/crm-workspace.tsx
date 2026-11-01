@@ -446,6 +446,10 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
     setRows((q.data ?? []).map((x) => ({ ...x, total: Number(x.total) })) as Quotation[]);
     setCompanies((c.data ?? []) as Company[]);
     setProducts((p.data ?? []).map(x=>({...x,sale_price:Number(x.sale_price),stock_snapshot:x.stock_snapshot===null?null:Number(x.stock_snapshot)})) as Product[]);
+    // A verified catalog card may preselect its product in the existing quotation form.
+    const requestedProduct=typeof window!=="undefined"?new URLSearchParams(window.location.search).get("product"):null;
+    if(requestedProduct&&p.data?.some(item=>item.id===requestedProduct))setProductId(requestedProduct);
+
     setItems((i.data??[]).map(x=>({...x,quantity:Number(x.quantity),unit_price:Number(x.unit_price),line_subtotal:x.line_subtotal===null?null:Number(x.line_subtotal)})));
   })(); }, [tenantId, reloadKey, notice]);
 
