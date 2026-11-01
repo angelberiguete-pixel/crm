@@ -42,6 +42,13 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
    return()=>{active=false;window.removeEventListener(TENANT_BRAND_UPDATED,changed);};
  },[tenant.tenant_id]);
  useEffect(()=>{
+   // Presentation preference only. NEVER use this value for permission checks.
+   try{
+     if(tenant.tenant_slug==="family-power")window.sessionStorage.setItem("crm:login-intent","family-power");
+     else window.sessionStorage.removeItem("crm:login-intent");
+   }catch{}
+ },[tenant.tenant_slug]);
+ useEffect(()=>{
    const shown=loading?fallback:brand;
    const previous=document.title;
    document.title=shown.name+" | CRM";

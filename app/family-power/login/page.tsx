@@ -49,6 +49,7 @@ export default function FamilyPowerLogin(){
  },[router]);
 
  useEffect(()=>{
+   try{window.sessionStorage.setItem("crm:login-intent","family-power");}catch{}
    let mounted=true;
    // Read URL only for a harmless fixed success notice, never for a redirect.
    if(new URLSearchParams(window.location.search).get("reset")==="done")

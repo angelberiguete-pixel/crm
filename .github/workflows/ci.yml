@@ -56,6 +56,8 @@ jobs:
         run: node --test tests/ycloud-integrations-live-status.test.mjs
       - name: Family Power brand and portal authorization contracts
         run: node --experimental-strip-types --test tests/family-power-brand-admin.test.mjs
+      - name: Family Power branded login and private Drive evidence library contracts
+        run: node --test tests/family-power-drive-library.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build

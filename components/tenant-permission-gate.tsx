@@ -63,7 +63,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
       if (!session?.user) {
-        router.replace("/login");
+        const branded=(()=>{try{return window.sessionStorage.getItem("crm:login-intent")==="family-power";}catch{return false;}})();
+        router.replace(branded?"/family-power/login":"/login");
         setState("loading");
         return;
       }

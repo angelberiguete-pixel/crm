@@ -421,3 +421,16 @@ textarea{min-height:96px;resize:vertical}
 .session-state{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:4px 9px}
 .session-state.online{color:#11613c;background:#e8f7ef;border-color:#b9e5c9}
 @media(max-width:700px){.tenant-session-exit{display:none}}
+
+
+/* Family Power protected Drive reference gallery; no invented commercial catalog */
+.family-evidence-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+.family-evidence-tile{border:1px solid var(--border);border-radius:12px;padding:13px;min-height:100px;
+ display:flex;flex-direction:column;align-items:flex-start;gap:6px;cursor:pointer;
+ background:var(--panel2);color:var(--text);text-align:left}
+.family-evidence-tile span{font-weight:700;overflow-wrap:anywhere;font-size:13px}
+.family-evidence-tile small{color:var(--muted)}
+.family-evidence-tile[aria-pressed="true"]{border:2px solid var(--accent);
+ background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
+.family-evidence-preview{border:1px solid var(--border);border-radius:15px;padding:16px;background:var(--panel)}
+.family-evidence-preview h3{overflow-wrap:anywhere;font-size:17px}

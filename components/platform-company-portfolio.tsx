@@ -80,6 +80,10 @@ export default function PlatformCompanyPortfolio(){
   setBusy(true);setError("");
   const r=await supabase.rpc("platform_join_tenant_as_admin",{p_tenant_id:target.tenant_id});
   if(r.error){setError(r.error.message);setBusy(false);return;}
+  try{
+    if(target.tenant_slug==="family-power")window.sessionStorage.setItem("crm:login-intent","family-power");
+    else window.sessionStorage.removeItem("crm:login-intent");
+  }catch{}
   notifyTenantContextChanged();
   window.location.assign("/crm");
  }
