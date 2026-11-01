@@ -209,7 +209,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
    {activeRecord&&tenantId&&<CustomerHistory key={tenantId+":"+activeRecord.kind+":"+activeRecord.id} tenantId={tenantId} record={activeRecord}
      contacts={contacts}
      opportunities={opportunities} onClose={()=>setActiveRecord(null)}/>}
-   <nav className="mobile-nav" aria-label="Navegación principal">{nav.slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
+   <nav className="mobile-nav" aria-label="Navegación principal">{nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").slice(0,5).map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} aria-current={key===kind?"page":undefined} className={key===kind?"active":""}><Icon size={19}/><span>{label}</span></Link>)}</nav>
  </div>;
 }
 

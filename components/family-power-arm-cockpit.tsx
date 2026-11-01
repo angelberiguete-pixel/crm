@@ -84,12 +84,12 @@ export default function FamilyPowerArmCockpit(){
     <div style={{flex:"1 1 270px"}}>
      <h1 style={{color:"#FFFFFF",margin:"8px 0 12px"}}>Family Power ARM</h1>
      <p style={{color:"#E6E7E9",lineHeight:1.6}}>Centro de operaciones inteligentes</p>
-     <p style={{color:"#E6E7E9",maxWidth:560}}>Clientes, oportunidades y agentes supervisados dentro del CRM general. Cada consulta se limita a los datos de Family Power.</p>
+
     </div>
     <div style={{width:225,maxWidth:"100%"}}><BrandLogo size="login" surface="dark"/></div>
    </div>
   </header>
-  <div className="notice section-gap" role="status"><ShieldCheck size={17}/> Agentes en preparación: ningún modelo de IA ni envío por WhatsApp se considera activo desde esta pantalla. Las decisiones comerciales requieren revisión humana.</div>
+
   {error&&<div className="notice" role="alert">{error}</div>}
   <section className="section-gap">
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
@@ -110,34 +110,33 @@ export default function FamilyPowerArmCockpit(){
   </section>
   <section className="section-gap">
    <div className="eyebrow">Equipo digital</div>
-   <h2>Cinco especialidades del ARM</h2>
-   <p className="muted">Muestra las configuraciones reales de esta empresa. No confunde funciones planificadas con agentes conectados.</p>
+   <h2>Agentes</h2>
+
    <div className="grid two-col" style={{marginTop:14}}>
     {roles.map(role=>{
      const agent=findAgent(role.key,role.legacy);
      return <article key={role.key} className="card" style={{borderLeft:"4px solid #D20A14"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}><Bot size={21} color="#D20A14"/><strong>{role.name}</strong></div>
-      <p className="muted">{role.description}</p>
+
       <p style={{display:"flex",alignItems:"center",gap:7}}>
        {agent?<CheckCircle2 size={15}/>:<ClipboardCheck size={15}/>}
        <span>{agent?(agent.status==="draft"?"Configurado como borrador":"Estado registrado: "+agent.status):"Pendiente de configuración"}</span>
       </p>
-      {agent&&<small className="muted">Revisión: {agent.approval_mode==="human_approval"?"humana obligatoria":agent.approval_mode}. No indica conexión del modelo.</small>}
+
      </article>;
     })}
    </div>
   </section>
   <section className="section-gap card">
-   <div className="eyebrow">Acciones comerciales</div>
-   <h2>Trabajar con los módulos existentes</h2>
+   <h2>Accesos rápidos</h2>
    <div className="grid two-col" style={{marginTop:14}}>
     {links.map(({href,label,icon:Icon})=><Link className="button" key={href} href={href}><Icon size={17}/>{label}<ArrowRight size={15}/></Link>)}
    </div>
-   {isAdmin&&<Link className="button primary" href="/crm/employees" style={{marginTop:16,display:"inline-flex",alignItems:"center",gap:8}}><Bot size={17}/> Configurar empleados y probar borradores</Link>}
+   {isAdmin&&<Link className="button primary" href="/crm/employees" style={{marginTop:16,display:"inline-flex",alignItems:"center",gap:8}}><Bot size={17}/> Configurar</Link>}
   </section>
   {isAdmin&&tenantId&&<section className="section-gap card" aria-label="Revisión humana de agentes">
    <div className="eyebrow">Gobierno de agentes</div><h2>Cola de aprobaciones</h2>
-   <p className="muted">Revisiones registradas en el CRM general y asociadas únicamente a Family Power. Aprobar borradores no envía mensajes ni confirma una venta.</p>
+
    <DigitalEmployeeReviewQueue tenantId={tenantId}/>
   </section>}
  </main>;

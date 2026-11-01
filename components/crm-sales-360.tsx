@@ -303,7 +303,7 @@ export default function CrmSales360() {
       </div>}
     </main>
     <nav className="mobile-nav" aria-label="Navegación principal">
-      {nav.slice(0,5).map(([key,label,Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} aria-current={key === "revenue" ? "page" : undefined} className={key === "revenue" ? "active" : ""}><Icon size={19}/><span>{label}</span></Link>)}
+      {nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").slice(0,5).map(([key,label,Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} aria-current={key === "revenue" ? "page" : undefined} className={key === "revenue" ? "active" : ""}><Icon size={19}/><span>{label}</span></Link>)}
     </nav>
   </div>;
 }

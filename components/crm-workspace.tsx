@@ -28,7 +28,9 @@ import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
 import FamilyPowerClientSettings from "@/components/family-power-client-settings";
-import FamilyPowerEvidenceLibrary from "@/components/family-power-evidence-library";
+import FamilyPowerProductCatalog from "@/components/family-power-product-catalog";
+import FamilyPowerTasks from "@/components/family-power-tasks";
+import FamilyPowerReports from "@/components/family-power-reports";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
@@ -63,7 +65,9 @@ const nav = [
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
-  ["arm", "Centro ARM", Bot],
+  ["arm", "Agentes", Bot],
+  ["tasks", "Tareas", CalendarDays],
+  ["reports", "Reportes", BarChart3],
   ["files", "Archivos", FileText],
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
@@ -74,13 +78,13 @@ const nav = [
 const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
- automations:"Automatizaciones",arm:"Centro ARM",files:"Archivos",channels:"Canales",
+ automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
- automations:"automations",arm:"dashboard",files:"dashboard",channels:"settings",
+ automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
@@ -167,8 +171,9 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    if(isFamilyPower&&key==="companies")return false;
-    if(!isFamilyPower&&key==="arm")return false;
+    const familyKeys=["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"];
+    if(isFamilyPower&&!familyKeys.includes(key))return false;
+    if(!isFamilyPower&&["arm","tasks","reports"].includes(key))return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
@@ -181,7 +186,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
-        <nav className="nav"><PlatformCompaniesShortcut/>
+        <nav className="nav">{!isFamilyPower&&<PlatformCompaniesShortcut/>}
           {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
               <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
@@ -195,9 +200,9 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       </aside>
       <main className="content">
         <header className="topbar">
-          <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
+          <div>{!isFamilyPower&&<div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div>}<h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
-            <Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>
+            {!isFamilyPower&&<Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>}
             <button className="button" onClick={refresh}><RefreshCw size={14} /> Actualizar</button>
           </div>
         </header>
@@ -207,10 +212,12 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "contacts" && <Contacts tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
-        {section === "products" && <>{isFamilyPower&&<FamilyPowerEvidenceLibrary/>}<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} /></>}
+        {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "tasks" && isFamilyPower && <FamilyPowerTasks tenantId={tenantId} />}
+        {section === "reports" && isFamilyPower && <FamilyPowerReports tenantId={tenantId} />}
         {section === "automations" && <AutomationStudio tenantId={tenantId} notice={setNotice} />}
         {section === "files" && <TenantFiles />}
         {section === "settings" && (isFamilyPower ? <FamilyPowerClientSettings/> : <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />)}
