@@ -141,7 +141,7 @@ export default function DigitalEmployeeStudio(){
   return <main className="content" style={{maxWidth:1300,margin:"0 auto"}}>
     <header className="topbar">
       <div><div className="eyebrow">{tenant.tenant_slug==="family-power"?"Family Power · ARM":"Look Social Media · Digital Staff"}</div>
-<h1>Agentes digitales</h1>{tenant.tenant_slug!=="family-power"&&<p className="muted">{tenant.tenant_name} · Configuración por empresa</p>}</div>
+<h1>{tenant.tenant_slug==="family-power"?"Agentes digitales":"Empleados digitales con IA"}</h1>{tenant.tenant_slug!=="family-power"&&<p className="muted">{tenant.tenant_name} · Configuración por empresa</p>}</div>
       <div className="top-actions">
         <Link className="button" href="/crm">Volver al CRM</Link>
         <button type="button" className="button" onClick={()=>setReload(v=>v+1)}><RefreshCw size={15}/> Actualizar</button>
