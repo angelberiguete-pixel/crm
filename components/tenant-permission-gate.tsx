@@ -11,6 +11,7 @@ import TenantSessionPresence from "@/components/tenant-session-presence";
 import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
+import BrandLogo from "@/components/brand-logo";
 import RouteLoadingBrand from "@/components/route-loading-brand";
 import TenantBrandProvider from "@/components/tenant-brand-provider";
 import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
