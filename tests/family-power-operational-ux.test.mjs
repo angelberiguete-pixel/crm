@@ -9,12 +9,16 @@ test("Family Power sidebar, topbar and mobile menus exclude agency sales center 
  const gate=read("components/tenant-permission-gate.tsx");
  const sales=read("components/crm-sales-360.tsx");
  const contacts=read("components/crm-customers.tsx");
+ const menu=read("components/family-power-menu.tsx");
  assert.match(ws,/const familyKeys=\["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"\]/);
  assert.match(ws,/!isFamilyPower&&<Link className="button" href="\/revenue-command-center"/);
  assert.match(gate,/restrictedFamilySections=\["companies","sales"/);
  assert.match(mobile,/const familyKeys=\["inbox","products","quotations","arm","tasks","reports","settings"\]/);
- assert.match(sales,/tenant\?\.tenant_slug!=="family-power"\|\|key!=="companies"/);
- assert.match(contacts,/tenant\?\.tenant_slug!=="family-power"\|\|key!=="companies"/);
+ assert.match(sales,/<FamilyPowerMenu active="revenue" variant="sidebar"\/>/);
+ assert.match(contacts,/<FamilyPowerMenu active=\{kind\} variant="sidebar"\/>/);
+ assert.match(menu,/tenant_current_permissions/);
+ assert.match(menu,/tenant_effective_modules/);
+ assert.match(menu,/permissions\.all===true/);
 });
 test("Family Power products display image cards and separate original Drive references from approved inventory",()=>{
  const c=read("components/family-power-product-catalog.tsx");
