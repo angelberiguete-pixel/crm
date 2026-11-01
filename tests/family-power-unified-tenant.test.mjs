@@ -107,15 +107,19 @@ test("Family Power screens hide inaccessible actions for each role",()=>{
  assert.doesNotMatch(dashboard,/href:"\/crm\/tasks"|href:"\/crm\/orders"/);
 });
 
-test("Family Power sidebar hides denied sections and uses Spanish business labels",()=>{
+test("Family Power uses the shared permission-aware sidebar and localized labels",()=>{
  const workspace=read("../components/crm-workspace.tsx");
- assert.match(workspace,/familyMenuPermissions/);
- assert.match(workspace,/familyEnabledModules/);
- assert.match(workspace,/familyEnabledModules\[permission\]!==false/);
- assert.match(workspace,/if\(!familyMenuPermissions\)return false/);
- assert.match(workspace,/supabase\.rpc\("tenant_current_permissions"/);
- assert.match(workspace,/supabase\.rpc\("tenant_effective_modules"/);
- assert.match(workspace,/familyLabels/);
- assert.match(workspace,/isFamilyPower\?familyPowerRoleLabel\(member\.role\):member\.role/);
- assert.match(workspace,/isFamilyPower\?"\/family-power\/login":"\/login"/);
+ const menu=read("../components/crm-app-navigation.tsx");
+ const gate=read("../components/tenant-permission-gate.tsx");
+ assert.match(workspace,/<CrmSidebar activeSection=\{section\}/);
+ assert.match(workspace,/<CrmBottomNav activeSection=\{section\}/);
+ assert.match(menu,/tenant_current_permissions/);
+ assert.match(menu,/tenant_effective_modules/);
+ assert.match(menu,/permissions\.all===true/);
+ assert.match(menu,/modules\.find\(mod=>mod\.module_key===item\.permission\)\?\.enabled!==false/);
+ assert.match(menu,/tenant\.tenant_slug==="family-power"&&item\.path==="companies"/);
+ assert.match(menu,/item\.familyLabel\?\?item\.label/);
+ assert.match(menu,/familyLabel:"Clientes"/);
+ assert.match(menu,/familyLabel:"Instalaciones"/);
+ assert.match(gate,/TenantSessionExit/);
 });
