@@ -63,6 +63,7 @@ const nav = [
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
+  ["arm", "Centro ARM", Bot],
   ["files", "Archivos", FileText],
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
@@ -73,13 +74,13 @@ const nav = [
 const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
- automations:"Automatizaciones",files:"Archivos",channels:"Canales",
+ automations:"Automatizaciones",arm:"Centro ARM",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
- automations:"automations",files:"dashboard",channels:"settings",
+ automations:"automations",arm:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
@@ -167,6 +168,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
     if(isFamilyPower&&key==="companies")return false;
+    if(!isFamilyPower&&key==="arm")return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;

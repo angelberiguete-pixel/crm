@@ -28,6 +28,7 @@ const sectionPermission: Record<string, string> = {
   integrations: "settings",
   marketing: "settings",
   employees: "settings",
+  arm: "dashboard",
   products: "products",
   quotations: "quotations",
   operations: "operations",
@@ -129,9 +130,10 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const hasPermission = permissions.all === true || permissions[permissionKey] === true;
       const moduleEnabled = module ? module.enabled : true;
 
-      const familyPowerRestriction=activeTenant.tenant_slug==="family-power"
+      const familyPowerRestriction=(section==="arm"&&activeTenant.tenant_slug!=="family-power")
+        || (activeTenant.tenant_slug==="family-power"
         &&(section==="companies" ||
-          (section==="settings"&&!["owner","admin"].includes(activeTenant.membership_role)));
+          (section==="settings"&&!["owner","admin"].includes(activeTenant.membership_role))));
       if (hasPermission && moduleEnabled && !familyPowerRestriction) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);

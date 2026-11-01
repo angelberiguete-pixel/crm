@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3} from "lucide-react";
+import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
@@ -76,6 +76,7 @@ export default function EnergyServiceDashboard(){
        </button>
      </div>
      {error&&<div className="notice" role="alert">{error}</div>}
+     {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #D20A14"}}><Bot size={30} color="#D20A14"/><span style={{flex:1}}><strong>Family Power ARM · Centro de operaciones inteligentes</strong><br/><small className="muted">Equipo digital, seguimiento y revisión humana dentro de este CRM</small></span><ArrowRight size={19}/></Link>}
      <div className="grid two-col" style={{marginTop:18}}>
        {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,description,Icon,key})=><Link href={href} key={key}
          className="card" style={{display:"flex",alignItems:"center",gap:16,textDecoration:"none",borderLeft:"4px solid #D20A14"}}>
