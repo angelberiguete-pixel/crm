@@ -11,7 +11,7 @@ import TenantSessionPresence from "@/components/tenant-session-presence";
 import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
-import BrandLogo from "@/components/brand-logo";
+import RouteLoadingBrand from "@/components/route-loading-brand";
 import TenantBrandProvider from "@/components/tenant-brand-provider";
 import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 import { TenantContextProvider, type ActiveTenant } from "@/components/tenant-context";
@@ -189,13 +189,13 @@ export default function TenantPermissionGate({ section, children }: { section: s
   }
 
   if (choices.length > 0) return <main className="auth-shell"><section className="auth-panel">
-    <BrandLogo size="login"/><div className="eyebrow">Selecciona tu empresa</div><h1>Acceso a tu portal</h1>
+    <RouteLoadingBrand size="login"/><div className="eyebrow">Selecciona tu empresa</div><h1>Acceso a tu portal</h1>
     <p className="muted">Verás únicamente los espacios a los que tu cuenta tiene acceso autorizado.</p>
     <div className="stack gap-16">{choices.map(tenant => <button type="button" className="button" key={tenant.tenant_id} disabled={selecting} onClick={() => selectTenant(tenant)}>{tenant.tenant_name}</button>)}</div>
     {reason && <div className="notice" role="alert">{reason}</div>}
   </section></main>;
 
-  if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading">Comprobando permisos…</div>;
+  if (state === "loading" || (state === "allow" && validatedSection !== section)) return <div className="loading tenant-access-loading" role="status"><RouteLoadingBrand size="loading"/>Comprobando permisos…</div>;
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
       <TenantSessionPresence tenantId={tenant.tenant_id}/>
@@ -206,7 +206,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <BrandLogo size="compact"/><ShieldAlert size={32} />
+      <RouteLoadingBrand size="compact"/><ShieldAlert size={32} />
       <div className="eyebrow" style={{ marginTop: 12 }}>Acceso restringido</div>
       <h1>Esta función no está disponible</h1>
       <p className="muted">{reason}</p>

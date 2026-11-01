@@ -44,6 +44,8 @@ jobs:
         run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Branding and tenant portal regression tests
         run: node --experimental-strip-types --test tests/official-brand-and-portals.test.mjs
+      - name: Tenant-safe loading and Family Power identity across modules
+        run: node --test tests/family-power-loading-logo.test.mjs
       - name: Family Power unified tenant and approved brand variants
         run: node --experimental-strip-types --test tests/family-power-unified-tenant.test.mjs
       - name: Family Power ARM within existing tenant and protected route
