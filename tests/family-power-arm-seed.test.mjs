@@ -2,8 +2,8 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
-test("four additional agent profiles are draft-only, no services or permissions activated",()=>{
- const sql=read("supabase/migrations/20261101234500_family_power_arm_safe_draft_profiles.sql");
+test("pending agent expansion stays draft-only, no services or permissions activated",()=>{
+ const sql=read("docs/family-power/arm-draft-profiles-pending-quota.sql");
  const cockpit=read("components/family-power-arm-cockpit.tsx");
  for(const role of ["ventas","tecnico","seguimiento","supervision"])assert.ok(sql.includes("'"+role+"'"));
  assert.match(sql,/t.slug='family-power'/);

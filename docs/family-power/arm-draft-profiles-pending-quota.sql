@@ -1,3 +1,10 @@
+-- PENDIENTE, NO APLICAR en el plan actual.
+-- El proyecto Supabase del CRM tiene cuota de ai_agents = 1 para Family Power.
+-- El intento de migración del 2026-11-01 falló y se revirtió por la regla
+-- private.enforce_ai_agents_quota. No hay cuatro agentes adicionales.
+-- Antes de ejecutar, validar una autorización comercial de ampliación de cuota.
+-- No desactivar los límites de la plataforma ni activar modelos de pago.
+
 -- Family Power ARM: add safe draft-only identities inside the existing multi-tenant CRM.
 -- No other tenant is modified. This does not connect AI providers, tools, or WhatsApp.
 begin;
