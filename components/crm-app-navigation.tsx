@@ -62,7 +62,7 @@ function useAuthorizedSections() {
     }).catch(()=>{if(active)setAccess({tenantId,items:[]});});
     return()=>{active=false;};
   },[tenant?.tenant_id,tenant?.membership_role,tenant?.tenant_slug]);
-  return {tenant,items:access?.tenantId===tenant?.tenant_id?access.items:[],loading:Boolean(tenant)&&access?.tenantId!==tenant.tenant_id};
+  return {tenant,items:tenant&&access?.tenantId===tenant.tenant_id?(access.items??[]):[],loading:tenant!==null&&access?.tenantId!==tenant.tenant_id};
 }
 
 const current=(activeSection:string,path:string)=>(activeSection==="sales"?"revenue":activeSection)===path;
