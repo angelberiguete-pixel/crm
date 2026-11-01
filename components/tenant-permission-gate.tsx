@@ -12,7 +12,7 @@ import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import BrandLogo from "@/components/brand-logo";
-import TenantBrandProvider from "@/components/tenant-brand-provider";
+import TenantBrandProvider, { useTenantBrand } from "@/components/tenant-brand-provider";
 import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 import { TenantContextProvider, type ActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged, TENANT_CONTEXT_EVENT, TENANT_CONTEXT_REVISION } from "@/lib/tenant-context-events";
@@ -45,6 +45,15 @@ type TenantAccess = {
   membership_role: string;
   is_active: boolean;
 };
+
+function TenantMobileIdentity(){
+  const brand=useTenantBrand();
+  const name=brand?.name??"Mi empresa";
+  return <span className="tenant-mobile-brand" aria-label={"Empresa actual: "+name}>
+    <BrandLogo size="compact" />
+    <span className="tenant-mobile-name" title={name}>{name}</span>
+  </span>;
+}
 
 export default function TenantPermissionGate({ section, children }: { section: string; children: ReactNode }) {
   const router = useRouter();
@@ -193,7 +202,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
       <TenantSessionPresence tenantId={tenant.tenant_id}/>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><TenantSessionExit/><MobileTenantNavigation /></div>
+      <div className="workspace-header"><TenantMobileIdentity /><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><TenantSessionExit/><MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;

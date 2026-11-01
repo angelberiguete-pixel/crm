@@ -102,7 +102,7 @@ function GeneralCommercialDashboard(){
       </section>
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
         <section className="grid dashboard-kpis section-gap" aria-label="Indicadores de esta empresa">
-          <Metric label={canManage?"Oportunidades":"Mis oportunidades"} value={countText(counts.opportunities)} sub="Oportunidades visibles"/>
+          <Metric label="Oportunidades" value={countText(counts.opportunities)} sub="Oportunidades visibles"/>
           <Metric label="Conversaciones" value={countText(counts.conversations)} sub="Conversaciones del equipo"/>
           <Metric label="Seguimientos vencidos" value={String(due.length)} sub="Entre los próximos 8 registros"/>
           <Metric label="Cotizaciones" value={countText(counts.quotations)} sub="Documentos registrados"/>

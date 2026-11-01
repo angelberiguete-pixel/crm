@@ -375,3 +375,14 @@ textarea{min-height:96px;resize:vertical}
   .crm-unified-bottom-nav a span{max-width:90px;overflow:visible;text-overflow:clip;white-space:normal;font-size:11px}
   .crm-unified-bottom-nav .crm-nav-loading{color:#fff}
 }
+
+/* Keep a real client's commercial identity visible after a mobile brand update. */
+.tenant-mobile-name{display:none}
+@media(max-width:700px){
+  .workspace-header .tenant-mobile-brand{display:flex;flex:0 1 108px;min-width:67px;max-width:108px;width:auto;gap:5px;height:46px;overflow:hidden}
+  .workspace-header .tenant-mobile-brand .look-brand-logo{flex:0 0 31px;width:31px!important;height:31px!important;min-height:31px;padding:0}
+  .workspace-header .tenant-mobile-brand .look-brand-logo img{width:31px;height:31px;object-fit:contain}
+  .workspace-header .tenant-mobile-brand .tenant-customer-initials{min-height:31px;font-size:13px}
+  .tenant-mobile-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font-size:11px;font-weight:700;line-height:1.15;color:#fff;max-width:73px}
+}
+@media(max-width:390px){.workspace-header .tenant-mobile-brand{max-width:88px}.tenant-mobile-name{font-size:10px}}
