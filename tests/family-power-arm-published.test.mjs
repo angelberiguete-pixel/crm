@@ -9,7 +9,7 @@ test("ARM remains a Family Power-only route inside the published shared CRM",()=
  assert.match(page,/section === "arm"/);
  assert.match(page,/FamilyPowerArmCockpit/);
  assert.match(gate,/arm: "dashboard"/);
- assert.match(gate,/section==="arm"&&activeTenant.tenant_slug!=="family-power"/);
+ assert.match(gate,/familyOnlySections\.includes\(section\)&&activeTenant.tenant_slug!=="family-power"/);
  assert.match(cockpit,/tenant\?\.tenant_slug==="family-power"/);
  assert.match(cockpit,/Centro de operaciones inteligentes/);
  assert.doesNotMatch(cockpit,/rltnmstwqorxtoeqsbgh|service_role|META_WA_ACCESS_TOKEN|sendMessage\(/);
@@ -19,8 +19,8 @@ test("ARM links from Family Power dashboard and mobile menu, never other tenants
  const mobile=read("../components/mobile-tenant-navigation.tsx");
  const workspace=read("../components/crm-workspace.tsx");
  assert.match(dashboard,/href="\/crm\/arm"/);
- assert.match(mobile,/path==="arm"&&tenant.tenant_slug!=="family-power"/);
- assert.match(workspace,/!isFamilyPower&&key==="arm"/);
+ assert.match(mobile,/tenant.tenant_slug!=="family-power"&&\["arm","tasks","reports"\]\.includes\(path\)/);
+ assert.match(workspace,/!isFamilyPower&&\["arm","tasks","reports"\]\.includes\(key\)/);
  assert.match(workspace,/arm:"dashboard"/);
 });
 test("ARM reads only tenant-scoped production tables and displays honest agent state",()=>{

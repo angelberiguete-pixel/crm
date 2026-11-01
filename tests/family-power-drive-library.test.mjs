@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 const route=readFileSync("app/api/family-power/evidence/route.ts","utf8");
 const gallery=readFileSync("components/family-power-evidence-library.tsx","utf8");
 const workspace=readFileSync("components/crm-workspace.tsx","utf8");
+const catalog=readFileSync("components/family-power-product-catalog.tsx","utf8");
 const brand=readFileSync("components/tenant-brand-provider.tsx","utf8");
 const gate=readFileSync("components/tenant-permission-gate.tsx","utf8");
 test("Only verified Family Power owners and admins may receive Drive references",()=>{
@@ -15,10 +16,11 @@ test("Only verified Family Power owners and admins may receive Drive references"
  assert.doesNotMatch(route,/SERVICE_ROLE|service_role/);
 });
 test("Drive reference documents are clearly separated from sellable inventory",()=>{
- assert.match(gallery,/NO|no son productos/);
- assert.match(gallery,/Todavía no son productos/);
- assert.match(gallery,/No enviar como ficha técnica oficial/);
- assert.match(workspace,/<FamilyPowerEvidenceLibrary\/>/);
+ assert.match(gallery,/Referencias por verificar/);
+ assert.match(gallery,/Por verificar/);
+ assert.match(catalog,/metadata\?\.verification_status|meta\.verification_status/);
+ assert.match(catalog,/<FamilyPowerEvidenceLibrary\/>/);
+ assert.match(workspace,/<FamilyPowerProductCatalog tenantId=\{tenantId\}\/>/);
  assert.match(route,/isDrivePreview:true/);
  assert.equal((route.match(/filename:"1000080\d+\.jpg"/g)||[]).length,5);
 });
