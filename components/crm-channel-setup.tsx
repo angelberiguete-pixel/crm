@@ -51,7 +51,7 @@ export default function CrmChannelSetup(){
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
   const [success,setSuccess]=useState("");
-  const [testMessage,setTestMessage]=useState("Hola, esta es una prueba autorizada de WhatsApp desde Look Social Media CRM.");
+  const [testMessage,setTestMessage]=useState("Hola, este es un mensaje de prueba autorizado del WhatsApp de la empresa.");
   const [testSending,setTestSending]=useState(false);
   const [testResult,setTestResult]=useState("");
   const whatsappChannelVerified=rows.some(r=>r.provider==="whatsapp"&&r.record_status==="connected");

@@ -30,6 +30,17 @@ export function safeTenantAsset(input:unknown):string|null{
   return null;
 }
 export function resolveTenantBrand(identity:TenantIdentity,settings?:TenantBrandSettings|null):TenantBrand{
+  // Family Power's approved identity stays deterministic and private even when
+  // tenant_settings is stale or contains a legacy agency asset.
+  if(identity.tenant_slug==="family-power")return {
+    name:"Family Power",slug:identity.tenant_slug,
+    logoUrl:"/client-brands/family-power/logo-color-sin-fondo.svg",
+    logoOnLightUrl:"/client-brands/family-power/logo-color-sin-fondo.svg",
+    logoOnDarkUrl:"/client-brands/family-power/logo-negativo-sin-fondo.svg",
+    faviconUrl:"/client-brands/family-power/logo-compacto.svg",
+    primaryColor:"#C91425",secondaryColor:"#15171E",accentColor:"#A80E1E",
+    initials:"FP",officialLookBrand:false
+  };
   const officialLookBrand=identity.tenant_slug==="eurevector";
   const rawName=typeof settings?.brand_name==="string"?settings.brand_name.trim():"";
   const name=rawName.slice(0,100)||identity.tenant_name.trim().slice(0,100)||"Mi empresa";

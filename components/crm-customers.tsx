@@ -6,6 +6,7 @@ import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, S
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
+import BrandLogo from "@/components/brand-logo";
 import styles from "@/components/crm-commercial.module.css";
 import CustomerHistory from "@/components/customer-history";
 import { contactVCardFilename, exportContactToVCard } from "@/lib/contact-vcard";
@@ -133,12 +134,12 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
    finally{setSaving(false);}
  }
  return <div className="shell">
-   <aside className="sidebar"><div className="brand"><strong>{tenantBrand?.name??tenant?.tenant_name??"CRM empresarial"}</strong><span>{tenant?.tenant_name??"Clientes y contactos"}</span></div>
-     <nav className="nav" aria-label="Módulos del CRM">{nav.map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===kind?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
+   <aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>{tenantBrand?.name??tenant?.tenant_name??"Clientes y contactos"}</span></div>
+     <nav className="nav" aria-label="Módulos del CRM">{nav.filter(([key])=>tenant?.tenant_slug!=="family-power"||key!=="companies").map(([key,label,Icon])=><Link key={key} href={"/crm"+(key?"/"+key:"")} className={key===kind?"active":""}><Icon size={17}/>{label}</Link>)}</nav>
    </aside>
    <main className="content">
      <header className="topbar"><div><div className="eyebrow">Gestión comercial · {tenant?.tenant_name??"Empresa"}</div><h1>{isCompany?"Empresas":"Contactos"}</h1></div>
-       <div className="top-actions"><Link className="button" href={isCompany?"/crm/contacts":"/crm/companies"}>{isCompany?"Ver contactos":"Ver empresas"}</Link><Link className="button" href="/crm/revenue">Oportunidades</Link></div>
+       <div className="top-actions">{(tenant?.tenant_slug!=="family-power"||isCompany)&&<Link className="button" href={isCompany?"/crm/contacts":"/crm/companies"}>{isCompany?"Ver contactos":"Ver empresas"}</Link>}<Link className="button" href="/crm/revenue">Oportunidades</Link></div>
      </header>
      {error&&<div role="alert" className="notice">{error}</div>}
      <section className="card crm-list-card">

@@ -50,9 +50,9 @@ test("approved SVG logos are preserved with client-specific contrast, no white t
      logo_on_dark_url:"/client-brands/family-power/logo-negativo.svg"}},
  });
  assert.equal(brand.officialLookBrand,false);
- assert.equal(brand.logoOnLightUrl,"/client-brands/family-power/logo-color.svg");
- assert.equal(brand.logoOnDarkUrl,"/client-brands/family-power/logo-negativo.svg");
- assert.equal(brand.primaryColor,"#D20A14");
+ assert.equal(brand.logoOnLightUrl,"/client-brands/family-power/logo-color-sin-fondo.svg");
+ assert.equal(brand.logoOnDarkUrl,"/client-brands/family-power/logo-negativo-sin-fondo.svg");
+ assert.equal(brand.primaryColor,"#C91425");
  assert.match(logo,/surface==="dark"/);
  assert.match(provider,/accent_color,settings/);
  assert.match(css,/\.look-brand-logo\.tenant-customer-logo\{[\s\S]*?background:transparent/);

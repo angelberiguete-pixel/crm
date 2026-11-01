@@ -3,12 +3,14 @@ import Link from "next/link";
 import {Building2} from "lucide-react";
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
+import {useActiveTenant} from "@/components/tenant-context";
 
 /** Never show global client portfolio navigation to a client or vendor.
  * The destination validates platform permissions again on every request.
  */
 export default function PlatformCompaniesShortcut(){
  const [allowed,setAllowed]=useState(false);
+ const tenant=useActiveTenant();
  useEffect(()=>{
    let alive=true;
    void (async()=>{
@@ -19,5 +21,5 @@ export default function PlatformCompaniesShortcut(){
    })();
    return()=>{alive=false;};
  },[]);
- return allowed?<Link href="/mis-empresas" aria-label="Mis empresas cliente"><Building2 size={16}/> Mis empresas</Link>:null;
+ return allowed&&tenant?.tenant_slug!=="family-power"?<Link href="/mis-empresas" aria-label="Mis empresas cliente"><Building2 size={16}/> Mis empresas</Link>:null;
 }

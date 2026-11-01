@@ -27,6 +27,8 @@ import CrmOperations from "@/components/crm-operations";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerClientSettings from "@/components/family-power-client-settings";
+import FamilyPowerEvidenceLibrary from "@/components/family-power-evidence-library";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
@@ -164,6 +166,8 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
+    if(isFamilyPower&&key==="companies")return false;
+    if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
     if(!familyMenuPermissions)return false; // fail closed while waiting
@@ -201,13 +205,13 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "contacts" && <Contacts tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
-        {section === "products" && <Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "products" && <>{isFamilyPower&&<FamilyPowerEvidenceLibrary/>}<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} /></>}
         {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "automations" && <AutomationStudio tenantId={tenantId} notice={setNotice} />}
         {section === "files" && <TenantFiles />}
-        {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
+        {section === "settings" && (isFamilyPower ? <FamilyPowerClientSettings/> : <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />)}
       </main>
       <nav className="mobile-nav">
         {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}

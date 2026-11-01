@@ -49,6 +49,7 @@ export default function FamilyPowerLogin(){
  },[router]);
 
  useEffect(()=>{
+   try{window.sessionStorage.setItem("crm:login-intent","family-power");}catch{}
    let mounted=true;
    // Read URL only for a harmless fixed success notice, never for a redirect.
    if(new URLSearchParams(window.location.search).get("reset")==="done")
@@ -132,6 +133,6 @@ export default function FamilyPowerLogin(){
        <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
      </section>
    </div>
-   <footer className={styles.footer}>Family Power · Portal privado · Tecnología de Look Digital Staff</footer>
+   <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
  </main>;
 }

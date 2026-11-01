@@ -191,7 +191,7 @@ try {
   // React can briefly replace the list item after updating its summary count.
   // Assert the final settled visible state, not an intermediate render.
   await page.getByRole("button",{name:/Contacto actualizado/}).waitFor({state:"visible"});
-  assert.ok(await page.getByRole("button",{name:/Contacto actualizado/}).isVisible(),"manual refresh retains inbox list");
+  await page.getByRole("button",{name:/Contacto actualizado/}).waitFor({state:"visible",timeout:10000}); // Reload may re-render while the assertion is running.
   await page.goto(base+"/crm/companies");
   await page.getByRole("article").filter({hasText:"Empresa QA editada"}).getByRole("button",{name:"Ver historial y tareas"}).click();
   const companyHistory=page.getByRole("dialog",{name:"Empresa QA editada"});

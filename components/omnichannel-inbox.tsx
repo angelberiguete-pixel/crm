@@ -251,7 +251,7 @@ export default function OmnichannelInbox() {
     </section>
   </main>
     <nav className="mobile-nav" aria-label="Secciones principales del CRM">
-      {([["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox]] as const).map(([key,label,Icon])=><Link key={key} aria-current={key==="inbox"?"page":undefined} className={key==="inbox"?"active":""} href={`/crm${key?"/"+key:""}`}><Icon size={19}/><span>{label}</span></Link>)}
+      {([["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox]] as const).filter(([key])=>activeTenant?.tenant_slug!=="family-power"||key!=="companies").map(([key,label,Icon])=><Link key={key} aria-current={key==="inbox"?"page":undefined} className={key==="inbox"?"active":""} href={`/crm${key?"/"+key:""}`}><Icon size={19}/><span>{label}</span></Link>)}
     </nav>
   </>;
 }
