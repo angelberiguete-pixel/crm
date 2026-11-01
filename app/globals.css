@@ -434,3 +434,16 @@ textarea{min-height:96px;resize:vertical}
  background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
 .family-evidence-preview{border:1px solid var(--border);border-radius:15px;padding:16px;background:var(--panel)}
 .family-evidence-preview h3{overflow-wrap:anywhere;font-size:17px}
+
+/* Identity-safe loading: the default agency logo must never leak into a
+   Family Power workspace or another customer's authenticated screens. */
+.tenant-brand-scope[data-tenant-brand="family-power"] .loading::before{
+ background-image:url("/client-brands/family-power/logo-color-sin-fondo.svg");
+ box-shadow:none;
+}
+.tenant-brand-scope[data-tenant-brand]:not([data-tenant-brand="family-power"]):not([data-tenant-brand="eurevector"]) .loading::before{
+ display:none;
+}
+.tenant-access-loading.loading::before{display:none}
+.route-loading-neutral{display:block;width:100px;height:85px;border:2px solid #d9dce3;border-radius:18px;background:linear-gradient(145deg,#f6f7f9,#fff)}
+

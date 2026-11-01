@@ -1,8 +1,8 @@
 // Confirms the real pre-existing public domain received the ARM release,
 // rather than merely proving that CI can build the repository.
 const base=process.env.CRM_PRODUCTION_URL||"https://crm-revenue-os.vercel.app";
-const expected="Family Power ARM inside the shared CRM — release 20261101";
-const url=new URL("/family-power-arm-release-20261101.txt",base);
+const expected="Family Power ARM branded loading fix — release 20261101";
+const url=new URL("/family-power-loading-brand-20261101.txt",base);
 let confirmed=false;
 for(let attempt=1;attempt<=18;attempt++){
  try{

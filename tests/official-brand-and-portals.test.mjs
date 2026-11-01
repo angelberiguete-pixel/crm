@@ -31,7 +31,8 @@ test("branding is shown on sign-in, owner control center, member portals and loa
   assert.match(read("components/eurevector-console.tsx"),/<BrandLogo size="sidebar"/);
   assert.match(read("components/crm-commercial-dashboard.tsx"),/<BrandLogo size="sidebar"/);
   assert.match(read("components/crm-workspace.tsx"),/<BrandLogo size="sidebar"/);
-  assert.match(read("app/loading.tsx"),/<BrandLogo size="loading"/);
+  assert.match(read("app/loading.tsx"),/<RouteLoadingBrand size="loading"/);
+  assert.match(read("components/route-loading-brand.tsx"),/<BrandLogo size={size}/);
   assert.match(read("app/globals.css"),/\.loading::before/);
 });
 
