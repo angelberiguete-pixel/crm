@@ -29,8 +29,11 @@ test("actual uploaded logo rendition is bundled as a working first-party SVG res
 test("branding is shown on sign-in, owner control center, member portals and loading",()=>{
   assert.match(read("app/login/page.tsx"),/<BrandLogo size="login"/);
   assert.match(read("components/eurevector-console.tsx"),/<BrandLogo size="sidebar"/);
-  assert.match(read("components/crm-commercial-dashboard.tsx"),/<BrandLogo size="sidebar"/);
-  assert.match(read("components/crm-workspace.tsx"),/<BrandLogo size="sidebar"/);
+  // The logo now lives in the shared sidebar so every client module uses
+  // the same tenant-brand-aware identity without duplicating markup.
+  assert.match(read("components/crm-app-navigation.tsx"),/<BrandLogo size="sidebar"/);
+  assert.match(read("components/crm-commercial-dashboard.tsx"),/<CrmSidebar activeSection=""/);
+  assert.match(read("components/crm-workspace.tsx"),/<CrmSidebar activeSection=\{section\}/);
   assert.match(read("app/loading.tsx"),/<BrandLogo size="loading"/);
   assert.match(read("app/globals.css"),/\.loading::before/);
 });
@@ -48,4 +51,19 @@ test("unassigned users cannot create their own client account from the portal",(
   const source=read("components/crm-workspace.tsx");
   assert.match(source,/No tienes una empresa asignada/);
   assert.match(read("supabase/migrations/20261014183000_restrict_client_tenant_creation_to_platform_admin.sql"),/private\.crm_is_platform_admin\(\)/);
+});
+
+test("shared CRM navigation respects tenant roles, modules and client branding",()=>{
+  const source=read("components/crm-app-navigation.tsx");
+  assert.match(source,/tenant_current_permissions/);
+  assert.match(source,/tenant_effective_modules/);
+  assert.match(source,/if\(p.error\|\|m.error\)/);
+  assert.match(source,/tenant\.tenant_slug==="family-power"&&item\.path==="companies"/);
+  assert.match(source,/item\.adminOnly&&!admin/);
+  assert.match(source,/item\.path==="sessions"/);
+  for(const page of ["crm-commercial-dashboard","crm-customers","crm-sales-360","crm-workspace","omnichannel-inbox"]){
+    const code=read("components/"+page+".tsx");
+    assert.match(code,/<CrmSidebar activeSection=/);
+    assert.match(code,/<CrmBottomNav activeSection=/);
+  }
 });

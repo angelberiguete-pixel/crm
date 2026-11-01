@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, CircleAlert, Gauge, Inbox, RefreshCw, Search, Tar
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "@/components/crm-inbox-mobile.module.css";
+import { CrmSidebar, CrmBottomNav } from "@/components/crm-app-navigation";
 
 type Channel = { id: string; provider: string; name: string; status: string };
 type Assignee = { user_id: string; display_name: string; team_role: string };
@@ -189,13 +190,13 @@ export default function OmnichannelInbox() {
   }
 
   if (loading) return <div className="loading">Preparando conversaciones…</div>;
-  return <><main className="content crm-inbox-page" style={{ maxWidth: 1500, margin: "0 auto" }}>
+  return <div className="shell"><CrmSidebar activeSection="inbox"/><main className="content crm-inbox-page" style={{ maxWidth: 1500, margin: "0 auto" }}>
     <header className="topbar">
       <div><div className="eyebrow">Atención al cliente</div><h1>Conversaciones</h1><div className="muted">WhatsApp · Instagram · Correo · Chat web, separados por empresa</div></div>
       <div className={styles.statusRow}><button type="button" className="button" onClick={()=>setReload(n=>n+1)}><RefreshCw size={15}/> Actualizar</button><Link className="button" href="/crm"><ArrowLeft size={14}/> Volver al CRM</Link></div>
     </header>
     {error && <div className="notice" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
-    <section className="card crm-channel-connection-status"><strong>Estado de los canales de esta empresa</strong><div className="crm-channel-pills">{(["whatsapp","instagram","email"] as const).map(provider=>{const connections=channels.filter(c=>c.provider===provider);const isConnected=connections.some(c=>c.status==="connected");return <span className="pill" key={provider}>{channelLabel[provider]}: {isConnected?"Registrado como conectado (sin prueba de envío)":"Sin conexión activa"}</span>;})}</div><p className="muted">Para recibir y responder mensajes reales, un administrador debe autorizar el canal con su proveedor. Aquí no se simula ninguna conexión ni se envían mensajes hasta validarla.</p>{isSupervisor&&<Link className="button" href="/crm/channels">Preparar canales de esta empresa</Link>}</section>
+    <section className="card crm-channel-connection-status"><strong>Conexiones de atención</strong><div className="crm-channel-pills">{(["whatsapp","instagram","email"] as const).map(provider=>{const connections=channels.filter(c=>c.provider===provider);const isConnected=connections.some(c=>c.status==="connected");return <span className="pill" key={provider}>{channelLabel[provider]}: {isConnected?"Registrado como conectado (sin prueba de envío)":"Sin conexión activa"}</span>;})}</div><p className="muted">Los canales deben autorizarse antes de enviar o recibir mensajes reales. Consulta Integraciones para su configuración.</p>{isSupervisor&&<Link className="button" href="/crm/channels">Preparar canales de esta empresa</Link>}</section>
     <section className={`grid crm-inbox-grid ${styles.inboxGrid} ${mobileThreadOpen?styles.threadVisible:styles.listVisible}`}>
       <div className={`card ${styles.inboxList}`} style={{ padding: 12 }}>
         <div className="stack gap-8">
@@ -250,8 +251,6 @@ export default function OmnichannelInbox() {
       </aside>
     </section>
   </main>
-    <nav className="mobile-nav" aria-label="Secciones principales del CRM">
-      {([["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox]] as const).map(([key,label,Icon])=><Link key={key} aria-current={key==="inbox"?"page":undefined} className={key==="inbox"?"active":""} href={`/crm${key?"/"+key:""}`}><Icon size={19}/><span>{label}</span></Link>)}
-    </nav>
-  </>;
+    <CrmBottomNav activeSection="inbox" />
+  </div>;
 }

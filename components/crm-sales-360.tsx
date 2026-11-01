@@ -6,6 +6,7 @@ import { Building2, CalendarDays, FileText, Gauge, Inbox, Package, Plus, Refresh
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "@/components/crm-commercial.module.css";
+import { CrmSidebar, CrmBottomNav } from "@/components/crm-app-navigation";
 
 type Opportunity = {
   id: string; pipeline_id: string; stage_id: string; company_id: string | null; contact_id: string | null;
@@ -202,14 +203,7 @@ export default function CrmSales360() {
   }
 
   return <div className="shell">
-    <aside className="sidebar">
-      <div className="brand"><strong>Look Social Media CRM</strong><span>{tenant?.tenant_name ?? "Gestión comercial"}</span></div>
-      <nav className="nav" aria-label="Módulos del CRM">
-        {nav.map(([key, label, Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} className={key === "revenue" ? "active" : ""}>
-          <Icon size={17} />{label}
-        </Link>)}
-      </nav>
-    </aside>
+    <CrmSidebar activeSection="revenue" />
     <main className="content">
       <header className="topbar">
         <div><div className="eyebrow">Ventas · {tenant?.tenant_name ?? "Empresa"}</div><h1>Oportunidades</h1></div>
@@ -301,8 +295,6 @@ export default function CrmSales360() {
         </form>
       </div>}
     </main>
-    <nav className="mobile-nav" aria-label="Navegación principal">
-      {nav.slice(0,5).map(([key,label,Icon]) => <Link key={key} href={"/crm" + (key ? "/" + key : "")} aria-current={key === "revenue" ? "page" : undefined} className={key === "revenue" ? "active" : ""}><Icon size={19}/><span>{label}</span></Link>)}
-    </nav>
+    <CrmBottomNav activeSection="revenue" />
   </div>;
 }

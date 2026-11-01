@@ -31,6 +31,7 @@ import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut"
 import { TENANT_BRAND_UPDATED, useTenantBrand } from "@/components/tenant-brand-provider";
 import { safeTenantAsset, safeHex } from "@/lib/tenant-brand";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
+import { CrmSidebar, CrmBottomNav } from "@/components/crm-app-navigation";
 
 type Member = { tenant_id: string; role: string; tenant_name?: string; tenant_slug?: string };
 type Company = { id: string; name: string; sector: string | null; city: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; website: string | null; created_at: string };
@@ -93,28 +94,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
-  const [familyMenuPermissions,setFamilyMenuPermissions]=useState<Record<string,unknown>|null>(null);
-  const [familyEnabledModules,setFamilyEnabledModules]=useState<Record<string,boolean>>({});
-
   const refresh = useCallback(() => setReloadKey((v) => v + 1), []);
-  useEffect(()=>{
-    let alive=true;
-    setFamilyMenuPermissions(null);setFamilyEnabledModules({});
-    if(activeTenant?.tenant_slug!=="family-power")return()=>{alive=false;};
-    const tenantId=activeTenant.tenant_id;
-    void Promise.all([
-      supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
-      supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId}),
-    ]).then(([p,m])=>{
-      if(!alive||p.error||m.error)return;
-      setFamilyMenuPermissions((p.data??{}) as Record<string,unknown>);
-      const enabled:Record<string,boolean>={};
-      for(const mod of (m.data??[]) as Array<{module_key:string;enabled:boolean}>)
-        enabled[mod.module_key]=mod.enabled;
-      setFamilyEnabledModules(enabled);
-    }).catch(()=>{if(alive)setFamilyMenuPermissions(null);});
-    return()=>{alive=false;};
-  },[activeTenant?.tenant_id,activeTenant?.tenant_slug]);
 
 
   useEffect(() => {
@@ -163,30 +143,9 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
 
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
-  const permittedNav=nav.filter(([key])=>{
-    if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
-    if(!isFamilyPower)return true;
-    if(!familyMenuPermissions)return false; // fail closed while waiting
-    const permission=permissionForSection[key]??key;
-    return (familyMenuPermissions.all===true||familyMenuPermissions[permission]===true)
-      &&familyEnabledModules[permission]!==false;
-  });
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
-        <nav className="nav"><PlatformCompaniesShortcut/>
-          {permittedNav.map(([key, label, Icon]) => (
-            <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
-              <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
-            </Link>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
-          <button className="text-button" onClick={async () => { await signOutOfTenant(tenantId); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
-        </div>
-      </aside>
+      <CrmSidebar activeSection={section} />
       <main className="content">
         <header className="topbar">
           <div><div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div><h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
@@ -209,9 +168,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "files" && <TenantFiles />}
         {section === "settings" && <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
       </main>
-      <nav className="mobile-nav">
-        {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
-      </nav>
+      <CrmBottomNav activeSection={section} />
     </div>
   );
 }
