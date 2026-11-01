@@ -14,6 +14,13 @@ type Product={
 };
 const label=(value:unknown)=>typeof value==="string"?value.trim():"";
 const currency=new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0});
+function productPhoto(input:unknown):string|null{
+ const url=safeTenantAsset(input);
+ if(!url)return null;
+ const drive=url.match(/^https:\/\/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})\//)?.[1];
+ return drive?"https://drive.google.com/thumbnail?id="+drive+"&sz=w700":url;
+}
+
 
 export default function FamilyPowerProductCatalog({tenantId}:{tenantId:string}){
  const tenant=useActiveTenant();
@@ -25,6 +32,7 @@ export default function FamilyPowerProductCatalog({tenantId}:{tenantId:string}){
  const [newProduct,setNewProduct]=useState(false),[saving,setSaving]=useState(false);
  const [refresh,setRefresh]=useState(0);
  const [name,setName]=useState(""),[sku,setSku]=useState(""),[brand,setBrand]=useState("");
+ const [edit,setEdit]=useState({brand:"",model:"",category:"",price:"",imageUrl:"",sheetUrl:"",certified:false});
  const [model,setModel]=useState(""),[kind,setKind]=useState("");
  useEffect(()=>{
   let alive=true;setProducts([]);setSelected(null);setLoading(true);setError("");
@@ -44,6 +52,48 @@ export default function FamilyPowerProductCatalog({tenantId}:{tenantId:string}){
   const all=[p.name,p.sku,label(m.brand),label(m.model),label(m.category)].join(" ").toLowerCase();
   return (category==="all"||label(m.category)===category)&&all.includes(search.trim().toLowerCase());
  }),[products,category,search]);
+ useEffect(()=>{
+  const current=products.find(p=>p.id===selected);
+  if(!current)return;
+  const m=current.metadata??{};
+  setEdit({
+   brand:label(m.brand),model:label(m.model),category:label(m.category),
+   price:current.sale_price>0?String(current.sale_price):"",
+   imageUrl:label(m.image_url??m.photo_url),sheetUrl:label(m.technical_sheet_url??m.spec_sheet_url),
+   certified:current.status==="active"&&m.verification_status==="approved"
+  });
+ },[selected,products]);
+ async function saveProduct(e:FormEvent){
+  e.preventDefault();
+  if(!admin||saving||!selected)return;
+  const current=products.find(p=>p.id===selected);
+  if(!current)return;
+  const price=Number(edit.price);
+  const image=edit.imageUrl.trim()?safeTenantAsset(edit.imageUrl):null;
+  const sheet=edit.sheetUrl.trim()?safeTenantAsset(edit.sheetUrl):null;
+  if(edit.imageUrl.trim()&&!image){setError("URL de foto no válida.");return;}
+  if(edit.sheetUrl.trim()&&!sheet){setError("URL de ficha no válida.");return;}
+  if(edit.certified&&(!edit.model.trim()||!sheet||!image||!Number.isFinite(price)||price<=0)){
+   setError("Para verificar: modelo, foto, ficha técnica y precio aprobado.");return;
+  }
+  setSaving(true);setError("");
+  try{
+   const currentUser=await supabase.auth.getUser();
+   if(currentUser.error||!currentUser.data.user)throw Error("auth");
+   const meta={...(current.metadata??{}),brand:edit.brand.trim(),model:edit.model.trim(),
+    category:edit.category.trim(),image_url:image,technical_sheet_url:sheet,
+    verification_status:edit.certified?"approved":"pending",
+    verified_by:edit.certified?currentUser.data.user.id:null,
+    verified_at:edit.certified?new Date().toISOString():null};
+   const result=await supabase.from("products").update({
+    metadata:meta, sale_price:Number.isFinite(price)&&price>=0?price:0,
+    status:edit.certified?"active":"inactive"
+   }).eq("tenant_id",tenantId).eq("id",current.id);
+   if(result.error)throw result.error;
+   setSelected(null);setRefresh(v=>v+1);
+  }catch{setError("No se pudo guardar la validación.");}
+  finally{setSaving(false);}
+ }
  async function add(e:FormEvent){
   e.preventDefault();
   if(!admin||saving||!name.trim()||!sku.trim())return;
@@ -96,7 +146,7 @@ export default function FamilyPowerProductCatalog({tenantId}:{tenantId:string}){
     <div className="family-product-grid">
     {visible.map(p=>{
      const meta=p.metadata??{};
-     const image=safeTenantAsset(meta.image_url??meta.photo_url);
+     const image=productPhoto(meta.image_url??meta.photo_url);
      const pdf=safeTenantAsset(meta.technical_sheet_url??meta.spec_sheet_url);
      const approved=p.status==="active"&&meta.verification_status==="approved"&&Number(p.sale_price)>0;
      return <article key={p.id} className="family-product-card">
@@ -126,6 +176,21 @@ export default function FamilyPowerProductCatalog({tenantId}:{tenantId:string}){
    <p><ShieldCheck size={16}/> {chosen.status==="active"&&chosen.metadata?.verification_status==="approved"?"Verificado":"Pendiente de validación"}</p>
    {chosen.status==="active"&&chosen.metadata?.verification_status==="approved"&&Number(chosen.sale_price)>0&&<strong>{currency.format(chosen.sale_price)}</strong>}
    {safeTenantAsset(chosen.metadata?.technical_sheet_url??chosen.metadata?.spec_sheet_url)&&<a className="button" href={safeTenantAsset(chosen.metadata?.technical_sheet_url??chosen.metadata?.spec_sheet_url)??"#"} target="_blank" rel="noopener noreferrer">Ver ficha técnica</a>}
+   {admin&&<form className="stack gap-12" onSubmit={saveProduct}>
+    <h3>Ficha y validación</h3>
+    <div className="form-grid">
+     <label>Marca<input value={edit.brand} maxLength={100} onChange={e=>setEdit(p=>({...p,brand:e.target.value}))}/></label>
+     <label>Modelo<input value={edit.model} maxLength={100} onChange={e=>setEdit(p=>({...p,model:e.target.value}))}/></label>
+     <label>Categoría<input value={edit.category} maxLength={100} onChange={e=>setEdit(p=>({...p,category:e.target.value}))}/></label>
+     <label>Precio aprobado (RD$)<input type="number" min="0" step="0.01" value={edit.price} onChange={e=>setEdit(p=>({...p,price:e.target.value}))}/></label>
+     <label>Foto (URL HTTPS)<input type="url" value={edit.imageUrl} onChange={e=>setEdit(p=>({...p,imageUrl:e.target.value}))}/></label>
+     <label>Ficha técnica (URL HTTPS)<input type="url" value={edit.sheetUrl} onChange={e=>setEdit(p=>({...p,sheetUrl:e.target.value}))}/></label>
+    </div>
+    <label style={{display:"flex",alignItems:"center",gap:8}}><input type="checkbox" checked={edit.certified}
+     onChange={e=>setEdit(p=>({...p,certified:e.target.checked}))} style={{width:18}}/>
+     Confirmo modelo, foto, ficha y precio verificados</label>
+    <button className="button primary" disabled={saving} type="submit">{saving?"Guardando…":"Guardar ficha"}</button>
+   </form>}
   </section>}
   {admin&&<FamilyPowerEvidenceLibrary/>}
  </div>;
