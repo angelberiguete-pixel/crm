@@ -64,6 +64,11 @@ export default function DigitalEmployeeStudio(){
   },[tenantId,permitted,reload]);
   function selectAgent(agent:AgentRow){
     const settings=agent.settings??{},kind=settings.role;
+    if(["tecnico","seguimiento","supervision"].includes(String(settings.arm_role??""))){
+      setSelectedId(null);
+      setError("Este perfil ARM permanece en preparación.");
+      return;
+    }
     setSelectedId(agent.id);
     setRole(kind==="vendedor"||kind==="secretaria"||kind==="cobros"?kind:"recepcionista");
     setName(agent.name);
@@ -135,13 +140,14 @@ export default function DigitalEmployeeStudio(){
   if(!permitted)return <main className="content"><div className="notice" role="alert">La administración de agentes digitales requiere acceso propietario o administrador de la empresa.</div></main>;
   return <main className="content" style={{maxWidth:1300,margin:"0 auto"}}>
     <header className="topbar">
-      <div><div className="eyebrow">Look Social Media · Digital Staff</div><h1>Empleados digitales con IA</h1><p className="muted">{tenant.tenant_name} · Configuración separada y segura por empresa</p></div>
+      <div><div className="eyebrow">{tenant.tenant_slug==="family-power"?"Family Power · ARM":"Look Social Media · Digital Staff"}</div>
+<h1>Agentes digitales</h1>{tenant.tenant_slug!=="family-power"&&<p className="muted">{tenant.tenant_name} · Configuración por empresa</p>}</div>
       <div className="top-actions">
         <Link className="button" href="/crm">Volver al CRM</Link>
         <button type="button" className="button" onClick={()=>setReload(v=>v+1)}><RefreshCw size={15}/> Actualizar</button>
       </div>
     </header>
-    <div className="notice" style={{marginBottom:16}}><ShieldCheck size={17}/> Etapa piloto: los agentes preparan borradores para revisión humana. No hay envíos automáticos, llamadas, reservas confirmadas ni acceso autónomo a herramientas. Para generar respuestas con IA se requiere configurar de forma segura el proveedor del servidor.</div>
+    <div className="notice" style={{marginBottom:16}}><ShieldCheck size={17}/> {tenant.tenant_slug==="family-power"?"Borradores con revisión humana. Sin envíos automáticos.":"Etapa piloto: los agentes preparan borradores para revisión humana. No hay envíos automáticos, llamadas, reservas confirmadas ni acceso autónomo a herramientas. Para generar respuestas con IA se requiere configurar de forma segura el proveedor del servidor."}</div>
     {error&&<div className="notice" role="alert" style={{marginBottom:16}}>{error}</div>}
     {notice&&<div className="notice" role="status" style={{marginBottom:16}}>{notice}</div>}
     <div className="grid two-col">
