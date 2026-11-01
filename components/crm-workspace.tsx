@@ -41,7 +41,7 @@ type Company = { id: string; name: string; sector: string | null; city: string |
 type Contact = { id: string; company_id: string | null; display_name: string; job_title: string | null; email: string | null; phone: string | null; whatsapp_phone: string | null; status: string; source: string | null; created_at: string };
 type Conversation = { id: string; contact_id: string | null; subject: string | null; status: string; priority: string; unread_count: number; last_message_at: string | null; created_at: string };
 type Message = { id: string; conversation_id: string; direction: string; sender_type: string; body: string | null; status: string; sent_at: string | null; created_at: string };
-type Product = { id: string; sku: string; name: string; description: string | null; status: string; source_system: string; sale_price: number; currency: string; stock_snapshot: number | null; stock_synced_at: string | null; created_at: string };
+type Product = { id: string; sku: string; name: string; description: string | null; status: string; source_system: string; sale_price: number; currency: string; stock_snapshot: number | null; stock_synced_at: string | null; created_at: string; metadata?:Record<string,unknown>|null };
 type Quotation = { id: string; quote_number: string; company_id: string | null; contact_id: string | null; status: string; currency: string; valid_until: string | null; total: number; created_at: string };
 type CalendarEvent = { id: string; title: string; description: string | null; event_type: string; status: string; starts_at: string; ends_at: string; location: string | null; created_at: string };
 type AutomationRule = { id: string; name: string; description: string | null; status: string; trigger_type: string; trigger_event: string | null; created_at: string };
@@ -424,8 +424,12 @@ function Products({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
   </div>;
 }
 function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
+  const activeTenant=useActiveTenant(),brand=useTenantBrand();
+  const family=activeTenant?.tenant_slug==="family-power";
   const [rows, setRows] = useState<Quotation[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [contacts,setContacts]=useState<Array<{id:string;display_name:string}>>([]);
+  const [contactId,setContactId]=useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<Array<{ id:string; quotation_id:string; product_id:string|null; description:string; quantity:number; unit_price:number; line_subtotal:number|null }>>([]);
   const [companyId, setCompanyId] = useState("");
@@ -436,13 +440,15 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
   const [quantity, setQuantity] = useState("1");
 
   useEffect(() => { (async () => {
-    const [q, c, p, i] = await Promise.all([
+    const [q, c, p, i, people] = await Promise.all([
       supabase.from("quotations").select("id,quote_number,company_id,contact_id,status,currency,valid_until,total,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(500),
       supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id", tenantId).order("name"),
-      supabase.from("products").select("id,sku,name,description,status,source_system,sale_price,currency,stock_snapshot,stock_synced_at,created_at").eq("tenant_id", tenantId).eq("status","active").order("name"),
-      supabase.from("quotation_items").select("id,quotation_id,product_id,description,quantity,unit_price,line_subtotal").eq("tenant_id",tenantId).order("position")
+      supabase.from("products").select("id,sku,name,description,status,source_system,sale_price,currency,stock_snapshot,stock_synced_at,created_at,metadata").eq("tenant_id", tenantId).eq("status","active").order("name"),
+      supabase.from("quotation_items").select("id,quotation_id,product_id,description,quantity,unit_price,line_subtotal").eq("tenant_id",tenantId).order("position"),
+      supabase.from("contacts").select("id,display_name").eq("tenant_id",tenantId).order("display_name")
     ]);
-    const err = q.error ?? c.error ?? p.error ?? i.error; if (err) notice(err.message);
+    const err = q.error ?? c.error ?? p.error ?? i.error ?? people.error; if (err) notice(err.message);
+    setContacts((people.data??[]) as Array<{id:string;display_name:string}>);
     setRows((q.data ?? []).map((x) => ({ ...x, total: Number(x.total) })) as Quotation[]);
     setCompanies((c.data ?? []) as Company[]);
     setProducts((p.data ?? []).map(x=>({...x,sale_price:Number(x.sale_price),stock_snapshot:x.stock_snapshot===null?null:Number(x.stock_snapshot)})) as Product[]);
@@ -454,22 +460,24 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
   })(); }, [tenantId, reloadKey, notice]);
 
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
+  const contactMap = useMemo(() => new Map(contacts.map(c=>[c.id,c.display_name])),[contacts]);
+  const approvedProducts=family?products.filter(p=>p.metadata?.verification_status==="approved"&&p.sale_price>0):products;
   const selected = rows.find(r=>r.id===selectedQuote) ?? null;
   const selectedItems = items.filter(i=>i.quotation_id===selectedQuote);
 
   async function add(e: FormEvent) {
     e.preventDefault();
     const quoteNumber = `COT-${Date.now().toString().slice(-8)}`;
-    const r = await supabase.from("quotations").insert({ tenant_id: tenantId, quote_number: quoteNumber, company_id: companyId || null, status: "draft", currency: "DOP", valid_until: validUntil || null, notes: notes || null, subtotal: 0, discount_total: 0, tax_total: 0, total: 0 }).select("id").single();
+    const r = await supabase.from("quotations").insert({ tenant_id: tenantId, quote_number: quoteNumber, company_id: family?null:(companyId || null), contact_id: family?(contactId||null):null, status: "draft", currency: "DOP", valid_until: validUntil || null, notes: notes || null, subtotal: 0, discount_total: 0, tax_total: 0, total: 0 }).select("id").single();
     if (r.error) return notice(r.error.message);
-    setCompanyId(""); setValidUntil(""); setNotes(""); setSelectedQuote(r.data.id); refresh();
+    setCompanyId(""); setContactId(""); setValidUntil(""); setNotes(""); setSelectedQuote(r.data.id); refresh();
   }
 
   async function addItem(e: FormEvent) {
     e.preventDefault();
     if(!selectedQuote) return notice("Selecciona una cotización.");
     const product=products.find(p=>p.id===productId);
-    if(!product) return notice("Selecciona un producto activo con precio aprobado.");
+    if(!product||(family&&(product.metadata?.verification_status!=="approved"||product.sale_price<=0))) return notice("Selecciona un producto verificado con precio aprobado.");
     const qty=Number(quantity);
     if(!Number.isFinite(qty)||qty<=0) return notice("Cantidad inválida.");
     const subtotal=qty*product.sale_price;
@@ -498,34 +506,40 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
   }
 
   function printQuote(q:Quotation) {
+    const safe=(value:unknown)=>String(value??"").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[ch]??ch));
     const quoteItems=items.filter(i=>i.quotation_id===q.id);
-    const company=q.company_id?companyMap.get(q.company_id)??"Cliente":"Cliente";
-    const lines=quoteItems.map(i=>`<tr><td>${i.description}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${money.format(i.unit_price)}</td><td style="text-align:right">${money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</td></tr>`).join("");
-    const html=`<!doctype html><html><head><meta charset="utf-8"><title>${q.quote_number}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#111}h1{margin-bottom:4px}.muted{color:#666}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:20px;font-weight:700;margin-top:24px}@media print{button{display:none}}</style></head><body><h1>Sublimaciones Lazala</h1><div class="muted">Cotización ${q.quote_number}</div><p><strong>Cliente:</strong> ${company}</p><p><strong>Estado:</strong> ${q.status}</p><table><thead><tr><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${lines||'<tr><td colspan="4">Sin artículos</td></tr>'}</tbody></table><div class="total">Total: ${money.format(q.total)}</div><p class="muted">Vista previa interna del CRM. El documento comercial/PDF definitivo debe generarse desde Odoo cuando exista una conexión activa.</p><button onclick="window.print()">Imprimir / Guardar PDF</button></body></html>`;
-    const w=window.open("","_blank"); if(!w) return notice("El navegador bloqueó la ventana de impresión.");
-    w.document.write(html); w.document.close();
+    const customer=q.contact_id?contactMap.get(q.contact_id)??"Cliente":
+      q.company_id?companyMap.get(q.company_id)??"Cliente":"Cliente";
+    const lines=quoteItems.map(i=>`<tr><td>${safe(i.description)}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${money.format(i.unit_price)}</td><td style="text-align:right">${money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</td></tr>`).join("");
+    const html=`<!doctype html><html><head><meta charset="utf-8"><title>${safe(q.quote_number)}</title><style>body{font-family:Arial,sans-serif;padding:34px;color:#15171e}h1{margin-bottom:4px;color:#c91425}.muted{color:#666}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:20px;font-weight:700;margin-top:24px}@media print{button{display:none}}</style></head><body><h1>${safe(brand?.name??activeTenant?.tenant_name??"Empresa")}</h1><div class="muted">Cotización ${safe(q.quote_number)}</div><p><strong>Cliente:</strong> ${safe(customer)}</p><p><strong>Estado:</strong> ${safe(q.status)}</p><table><thead><tr><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${lines||'<tr><td colspan="4">Sin artículos</td></tr>'}</tbody></table><div class="total">Total: ${money.format(q.total)}</div><p class="muted">Borrador interno · sujeto a revisión</p><button onclick="window.print()">Imprimir / Guardar PDF</button></body></html>`;
+    const w=window.open("","_blank");if(!w)return notice("El navegador bloqueó la vista previa.");
+    w.document.write(html);w.document.close();
   }
 
   return <div className="stack gap-16">
-    <form className="card" onSubmit={add}><h2>Nueva cotización</h2><div className="form-grid"><label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Válida hasta<input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></label></div><label style={{ marginTop: 12 }}>Notas<textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></label><div className="section-gap"><button className="button primary">Crear borrador</button></div></form>
+    <form className="card" onSubmit={add}><h2>Nueva cotización</h2><div className="form-grid">{family?<label>Cliente<select value={contactId} onChange={e=>setContactId(e.target.value)}>
+<option value="">Sin asignar</option>{contacts.map(c=><option key={c.id} value={c.id}>{c.display_name}</option>)}
+</select></label>:<label>Empresa<select value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}<label>Válida hasta<input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></label></div><label style={{ marginTop: 12 }}>Notas<textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></label><div className="section-gap"><button className="button primary">Crear borrador</button></div></form>
 
     <section className="grid two-col">
-      <div className="card"><h2>Cotizaciones</h2>{rows.map(q=><button type="button" key={q.id} className="priority-item" style={{width:"100%",textAlign:"left",marginBottom:8}} onClick={()=>setSelectedQuote(q.id)}><div><strong>{q.quote_number}</strong><div className="muted">{q.company_id?companyMap.get(q.company_id)??"—":"—"} · {money.format(q.total)}</div></div><span className="pill">{q.status}</span></button>)}{rows.length===0&&<Empty title="Sin cotizaciones" text="Crea el primer borrador comercial." />}</div>
+      <div className="card"><h2>Cotizaciones</h2>{rows.map(q=><button type="button" key={q.id} className="priority-item" style={{width:"100%",textAlign:"left",marginBottom:8}} onClick={()=>setSelectedQuote(q.id)}><div><strong>{q.quote_number}</strong><div className="muted">{q.contact_id?contactMap.get(q.contact_id)??"—":q.company_id?companyMap.get(q.company_id)??"—":"—"} · {money.format(q.total)}</div></div><span className="pill">{q.status}</span></button>)}{rows.length===0&&<Empty title="Sin cotizaciones" text="Crea el primer borrador comercial." />}</div>
       <div className="card">
         <h2>Detalle</h2>
-        {!selected&&<Empty title="Selecciona una cotización" text="Añade artículos, cambia su estado y sincronízala con Odoo para el documento comercial definitivo." />}
+        {!selected&&<Empty title="Selecciona una cotización" text="Añade artículos y gestiona su estado." />}
         {selected&&<div className="stack gap-12">
           <div className="priority-item"><strong>{selected.quote_number}</strong><span>{money.format(selected.total)}</span></div>
           {selectedItems.map(i=><div key={i.id} className="priority-item"><div><strong>{i.description}</strong><div className="muted">{i.quantity} × {money.format(i.unit_price)}</div></div><span>{money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</span></div>)}
-          {selected.status==="draft"&&<form onSubmit={addItem} className="stack gap-12"><label>Producto<select value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">Seleccionar producto activo</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} · {money.format(p.sale_price)}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} required /></label><button className="button primary">Añadir artículo</button></form>}
+          {selected.status==="draft"&&<form onSubmit={addItem} className="stack gap-12"><label>Producto<select value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">Seleccionar producto activo</option>{approvedProducts.map(p=><option key={p.id} value={p.id}>{p.name} · {money.format(p.sale_price)}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} required /></label><button className="button primary">Añadir artículo</button></form>}
           <div className="top-actions" style={{flexWrap:"wrap"}}>
             {selected.status==="draft"&&<button className="button" onClick={()=>setQuoteStatus(selected,"sent")}>Marcar enviada</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button primary" onClick={()=>setQuoteStatus(selected,"accepted")}>Aceptar</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button danger" onClick={()=>setQuoteStatus(selected,"rejected")}>Rechazar</button>}
-            <button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>
+            {!family&&<button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>}
             <button className="button" onClick={()=>printQuote(selected)}>Vista previa interna</button>
           </div>
-          {products.length===0&&<div className="notice">No hay productos activos con precio aprobado. Completa costos/precio antes de cotizar.</div>}
+          {approvedProducts.length===0&&<div className="notice">Sin productos con precio verificado.</div>}
         </div>}
       </div>
     </section>

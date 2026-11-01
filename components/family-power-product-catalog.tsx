@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect,useMemo,useState,type FormEvent} from "react";
-import {FileText,ImageIcon,Package,Plus,Search,ShieldCheck} from "lucide-react";
+import {FileText,ImageIcon,Plus,Search,ShieldCheck} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {safeTenantAsset} from "@/lib/tenant-brand";

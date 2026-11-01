@@ -1,7 +1,6 @@
 "use client";
-import Link from "next/link";
 import {useEffect,useState} from "react";
-import {FileText,Images,ImageIcon} from "lucide-react";
+import {FileText,ImageIcon} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 type Doc={filename:string;url:string;status?:string};
