@@ -12,7 +12,7 @@ test("Family Power sidebar, topbar and mobile menus exclude agency sales center 
  assert.match(ws,/const familyKeys=\["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"\]/);
  assert.match(ws,/!isFamilyPower&&<Link className="button" href="\/revenue-command-center"/);
  assert.match(gate,/restrictedFamilySections=\["companies","sales"/);
- assert.match(mobile,/const familyKeys=\["products","quotations","arm","tasks","reports","settings"\]/);
+ assert.match(mobile,/const familyKeys=\["inbox","products","quotations","arm","tasks","reports","settings"\]/);
  assert.match(sales,/tenant\?\.tenant_slug!=="family-power"\|\|key!=="companies"/);
  assert.match(contacts,/tenant\?\.tenant_slug!=="family-power"\|\|key!=="companies"/);
 });
