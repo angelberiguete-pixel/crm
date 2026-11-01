@@ -20,7 +20,7 @@ test("Drive reference documents are clearly separated from sellable inventory",(
  assert.match(gallery,/Por verificar/);
  assert.match(catalog,/metadata\?\.verification_status|meta\.verification_status/);
  assert.match(catalog,/<FamilyPowerEvidenceLibrary\/>/);
- assert.match(workspace,/<FamilyPowerProductCatalog tenantId=\{tenantId\}\/>/);
+ assert.match(workspace,/<FamilyPowerProductCatalog tenantId=\{tenantId\}\s*\/>/);
  assert.match(route,/isDrivePreview:true/);
  assert.equal((route.match(/filename:"1000080\d+\.jpg"/g)||[]).length,5);
 });

@@ -39,8 +39,8 @@ test("Tasks and reports persist or count tenant data and do not invent demo metr
  assert.match(tasks,/\.update\(\{status:"done",completed_at:/);
  assert.match(tasks,/\.eq\("tenant_id",tenantId\)/);
  assert.match(reports,/\.select\("id",\{head:true,count:"exact"\}\)\.eq\("tenant_id",tenantId\)/);
- assert.match(ws,/<FamilyPowerTasks tenantId=\{tenantId\}\/>/);
- assert.match(ws,/<FamilyPowerReports tenantId=\{tenantId\}\/>/);
+ assert.match(ws,/<FamilyPowerTasks tenantId=\{tenantId\}\s*\/>/);
+ assert.match(ws,/<FamilyPowerReports tenantId=\{tenantId\}\s*\/>/);
 });
 test("Family Power quotation uses contact, verified products and correct printable brand",()=>{
  const ws=read("components/crm-workspace.tsx");
