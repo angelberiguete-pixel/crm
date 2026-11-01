@@ -22,8 +22,8 @@ export async function GET(request:NextRequest){
  const header=request.headers.get("authorization")??"";
  if(!/^Bearer [A-Za-z0-9._~+/=-]+$/.test(header)||header.length>4096)return fail(401);
  const token=header.slice(7);
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
- if(!url||!anon)return fail(503);
+ // Same canonical *publishable* public credentials as the browser CRM. Never a service key.
+ const url="https://ygipjqgyreeahslzorik.supabase.co",anon="sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
  try{
   const supabase=createClient(url,anon,{
     global:{headers:{Authorization:"Bearer "+token}},
