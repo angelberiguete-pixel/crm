@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {useEffect,useState} from "react";
+import {type FormEvent,useEffect,useState} from "react";
 import {AlertCircle,CalendarClock,CheckCircle2,ClipboardList,RefreshCw,Target} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 
@@ -35,7 +35,12 @@ const dateLabel=(v:string|null)=>{
 };
 const overdue=(v:string|null)=>!!v&&new Date(v).getTime()<Date.now();
 
-export default function ArmOperationalBoard({tenantId,tenantSlug}:{tenantId:string;tenantSlug:string}){
+export default function ArmOperationalBoard({tenantId,tenantSlug,memberRole}:{tenantId:string;tenantSlug:string;memberRole:string}){
+ const canManageTasks=["owner","admin","manager"].includes(memberRole);
+ const [draftTitle,setDraftTitle]=useState("");
+ const [draftDue,setDraftDue]=useState("");
+ const [writeError,setWriteError]=useState("");
+ const [busyTask,setBusyTask]=useState<string|null>(null);
  const [state,setState]=useState<QueueState>(empty);
  const [loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
@@ -123,6 +128,40 @@ export default function ArmOperationalBoard({tenantId,tenantSlug}:{tenantId:stri
   return()=>{alive=false;};
  },[tenantId,tenantSlug,revision]);
 
+ async function createTask(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  if(!state.operationsAllowed||!canManageTasks||busyTask)return;
+  const title=draftTitle.trim();
+  if(title.length<3||title.length>180){setWriteError("El título debe contener entre 3 y 180 caracteres.");return;}
+  let dueAt:string|null=null;
+  if(draftDue){
+   const parsed=new Date(draftDue);
+   if(Number.isNaN(parsed.getTime())){setWriteError("Fecha de tarea inválida.");return;}
+   dueAt=parsed.toISOString();
+  }
+  setBusyTask("new");setWriteError("");
+  const result=await supabase.from("tasks").insert({
+   tenant_id:tenantId,title,status:"todo",priority:"normal",source:"manual",due_at:dueAt
+  }).select("id").single();
+  setBusyTask(null);
+  if(result.error){setWriteError("No se pudo guardar la tarea: "+result.error.message);return;}
+  if(!result.data?.id){setWriteError("El servidor no confirmó la creación.");return;}
+  setDraftTitle("");setDraftDue("");setRevision(v=>v+1);
+ }
+
+ async function completeTask(taskId:string){
+  if(!state.operationsAllowed||!canManageTasks||busyTask)return;
+  setBusyTask(taskId);setWriteError("");
+  const result=await supabase.from("tasks").update({
+   status:"done",completed_at:new Date().toISOString()
+  }).eq("tenant_id",tenantId).eq("id",taskId)
+   .in("status",["todo","in_progress"]).select("id");
+  setBusyTask(null);
+  if(result.error){setWriteError("No se pudo completar la tarea: "+result.error.message);return;}
+  if(result.data?.length!==1){setWriteError("La tarea no estaba disponible para actualizar.");return;}
+  setRevision(v=>v+1);
+ }
+
  return <section className="section-gap" aria-label="Agenda operativa del ARM">
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
    <div><div className="eyebrow">Gestión de trabajo real</div><h2>Mi agenda y seguimiento</h2></div>
@@ -131,6 +170,7 @@ export default function ArmOperationalBoard({tenantId,tenantSlug}:{tenantId:stri
    </button>
   </div>
   {state.errors.map(e=><div role="alert" className="notice" key={e}><AlertCircle size={15}/>{e}</div>)}
+  {writeError&&<div role="alert" className="notice">{writeError}</div>}
   <div className="grid two-col" style={{marginTop:14}}>
    <article className="card">
     <div className="eyebrow"><ClipboardList size={16}/> Tareas operativas</div>
@@ -142,10 +182,22 @@ export default function ArmOperationalBoard({tenantId,tenantSlug}:{tenantId:stri
      {state.tasks.map(t=><div key={t.id} className="priority-item">
       <strong>{t.title}</strong>
       <small>{dateLabel(t.due_at)} {overdue(t.due_at)?"· Vencida":""} · {t.status==="todo"?"Pendiente":"En curso"}</small>
+      {canManageTasks&&<button type="button" className="button small" disabled={!!busyTask||loading}
+       onClick={()=>void completeTask(t.id)}>{busyTask===t.id?"Guardando…":"Completar tarea"}</button>}
      </div>)}
     </div>
+    {state.operationsAllowed&&canManageTasks&&<form className="stack gap-12 section-gap" onSubmit={event=>void createTask(event)}>
+     <h4>Nueva tarea manual</h4>
+     <label>Título<input type="text" required minLength={3} maxLength={180}
+      value={draftTitle} onChange={event=>setDraftTitle(event.target.value)} placeholder="Ej. Preparar propuesta comercial"/></label>
+     <label>Fecha de vencimiento (opcional)<input type="datetime-local"
+      value={draftDue} onChange={event=>setDraftDue(event.target.value)}/></label>
+     <button className="button primary" type="submit" disabled={!!busyTask||loading||draftTitle.trim().length<3}>
+      {busyTask==="new"?"Guardando…":"Crear tarea"}
+     </button>
+    </form>}
     {state.operationsAllowed&&<div className="section-gap"><Link className="button" href="/crm/operations">
-     <CheckCircle2 size={16}/> Gestionar operaciones
+     <CheckCircle2 size={16}/> Pedidos, entregas y cobros
     </Link></div>}
    </article>
    <article className="card">
