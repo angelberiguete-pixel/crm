@@ -121,9 +121,15 @@ Deno.serve(async request=>{
     const update:Record<string,unknown>={status:mapStatus[eventType]};
     if(eventType==="message.phone.delivered")update.delivered_at=new Date().toISOString();
     if(eventType==="message.phone.sent")update.sent_at=new Date().toISOString();
+    const previousStates=eventType==="message.phone.sent"
+      ?["created","queued","sent"]
+      :eventType==="message.phone.delivered"
+      ?["created","queued","sent","delivered"]
+      :["created","queued","sent"];
     const {error:messageError}=await db.from("messages").update(update)
       .eq("tenant_id",route.tenant_id).eq("external_message_id",sms.message_id)
-      .eq("direction","outbound");
+      .eq("direction","outbound").contains("metadata",{provider:"httpsms"})
+      .in("status",previousStates);
     if(messageError)return json({error:"status_update_failed"},503);
   }
   const {error:markError}=await db.from("sms_gateway_webhook_receipts")
