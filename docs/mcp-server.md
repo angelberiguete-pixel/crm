@@ -146,3 +146,27 @@ prueba real de aislamiento.
 CI: cliente probado con escenarios sintéticos. Vista previa: despliegue
 READY. Datos: compartidos con el CRM general, no staging independiente.
 Producción: sin cambios. Lecturas con dos cuentas reales: pendientes.
+
+
+## Verificación desde móvil sin copiar JWT (vista previa protegida)
+
+Se añadió la ruta /mcp-pilot exclusivamente en despliegues Vercel Preview con
+MCP_INTERNAL_ENABLED=true. No aparece en producción, aunque el flag se configure
+por error, porque exige también VERCEL_ENV=preview.
+
+El propietario puede abrir desde su navegador autorizado la vista previa y
+usar **dos cuentas de prueba previamente aprobadas**:
+una que tenga Family Power como única empresa activa y otra que tenga
+Sublimaciones Lazala. Deben ser dos usuarios diferentes con rol de lectura
+de contactos. La pantalla no guarda ni muestra contraseñas, tokens o contactos;
+mantiene sesiones temporales independientes en memoria y se desconecta al terminar.
+
+Se ejecutan los mismos controles que en scripts/mcp-family-power-pilot.mjs:
+inicialización MCP, catálogo de herramientas, empresa activa, lectura de contactos
+propios y rechazo de lecturas cruzadas en ambas direcciones. Un solo fallo
+deja el resultado como NO aprobado.
+
+La pantalla sirve para una verificación con datos reales, pero NO crea
+usuarios, NO elimina las reglas RLS existentes y NO convierte esta vista previa
+en una base de datos aislada. Nunca ingresar credenciales del propietario
+global ni cuentas de clientes sin su consentimiento.
