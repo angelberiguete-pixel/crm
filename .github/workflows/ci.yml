@@ -48,6 +48,8 @@ jobs:
         run: node --test tests/family-power-loading-logo.test.mjs
       - name: Five safe ARM identities remain draft-only and isolated
         run: node --test tests/family-power-arm-seed.test.mjs
+      - name: Family Power compact agent management and integrations safety
+        run: node --test tests/family-power-compact-panels.test.mjs
       - name: Family Power clean menus, products, tasks and reports
         run: node --test tests/family-power-operational-ux.test.mjs
       - name: Family Power unified tenant and approved brand variants
