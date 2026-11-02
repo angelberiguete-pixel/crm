@@ -43,6 +43,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
  const [loading,setLoading]=useState(false);
  const [linkLoading,setLinkLoading]=useState(false);
  const [linkError,setLinkError]=useState(false);
+ const [linkFor,setLinkFor]=useState("");
  const [opportunities,setOpportunities]=useState<Opportunity[]>([]);
  const [notice,setNotice]=useState("");
  const [error,setError]=useState("");
@@ -57,7 +58,8 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
  const [meetingLocation,setMeetingLocation]=useState("");
 
  const selected=rows.find(p=>p.id===selectedId)??null;
- const linked=opportunities.length===1?opportunities[0]:null;
+ const linkResolved=!!selectedId&&linkFor===selectedId&&!linkLoading;
+ const linked=linkResolved&&!linkError&&opportunities.length===1?opportunities[0]:null;
 
  useEffect(()=>{
   let alive=true;
@@ -89,7 +91,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
 
  useEffect(()=>{
   let alive=true;
-  setOpportunities([]);setLinkError(false);setLinkLoading(!!selectedId);
+  setOpportunities([]);setLinkFor("");setLinkError(false);setLinkLoading(!!selectedId);
   if(!selectedId||tenantSlug!=="eurevector"){setLinkLoading(false);return()=>{alive=false;};}
   void (async()=>{
    const result=await supabase.from("opportunities")
@@ -100,6 +102,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
    if(!alive)return;
    if(result.error)setLinkError(true);
    else setOpportunities((result.data??[]) as Opportunity[]);
+   setLinkFor(selectedId);
    setLinkLoading(false);
   })().catch(()=>{if(alive){setLinkError(true);setLinkLoading(false);}});
   return()=>{alive=false;};
@@ -107,7 +110,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
 
  async function save(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
-  if(saving||!selected||tenantSlug!=="eurevector")return;
+  if(saving||!selected||tenantSlug!=="eurevector"||!linkResolved)return;
   if(summary.trim().length<3||summary.trim().length>1200){
    setError("Describe lo ocurrido con entre 3 y 1,200 caracteres.");return;
   }
@@ -149,7 +152,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
    // The agency RPC commits prospect+activity atomically. The opportunity is a
    // separate RLS-controlled write; report partial success instead of hiding it.
    let detail="Actividad registrada y prospecto actualizado. ";
-   if(linkLoading||linkError||opportunities.length!==1){
+   if(!linkResolved||linkError||opportunities.length!==1){
     detail+="La oportunidad no se sincronizó: no existe un único vínculo verificado.";
    }else if(linked?.status!=="open"){
     detail+="La oportunidad vinculada está cerrada y no se modificó.";
@@ -238,7 +241,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
     <strong>{selected.name}</strong>
     <span>{selected.city??"Ciudad no registrada"} · {selected.decision_maker??"Responsable no registrado"}</span>
     {selected.phone&&<a href={"tel:"+selected.phone.replace(/[^\d+]/g,"")}><PhoneCall size={15}/> Llamar (no registra actividad automáticamente)</a>}
-    {linkLoading?<small>Comprobando vínculo con oportunidad…</small>:
+    {!linkResolved?<small>Comprobando vínculo con oportunidad…</small>:
      linkError?<small>No se pudo comprobar la oportunidad vinculada.</small>:
      linked?<div><small><Target size={13}/> Oportunidad existente: {linked.title} · {linked.status==="open"?"Abierta":"Cerrada"}</small>
        {linked.contact_id&&<Link href={"/crm/revenue?contactId="+encodeURIComponent(linked.contact_id)}>Abrir oportunidad vinculada</Link>}
@@ -284,7 +287,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
     </>}
     {notice&&<div role="status" className="notice">{notice}</div>}
     {error&&<div role="alert" className="notice">{error}</div>}
-    <button type="submit" disabled={saving||linkLoading||summary.trim().length<3} className="button primary">
+    <button type="submit" disabled={saving||!linkResolved||summary.trim().length<3} className="button primary">
      {saving?"Guardando registro…":"Registrar actividad y actualizar seguimiento"}
     </button>
    </form>
