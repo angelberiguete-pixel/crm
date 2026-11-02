@@ -15,7 +15,7 @@ export function buildFamilyQuotePdf(q:QuotePdfData):Uint8Array{
  if(q.lines.some(l=>!l.description.trim()||!Number.isFinite(l.quantity)||l.quantity<=0||!Number.isFinite(l.unit_price)||l.unit_price<0))throw Error("Articulo invalido");
  const sum=Math.round(q.lines.reduce((n,l)=>n+l.quantity*l.unit_price,0)*100)/100;
  if(!Number.isFinite(q.total)||Math.abs(sum-q.total)>0.02)throw Error("Total inconsistente");
- const pages:Page[]=[];let page:Page;
+ const pages:Page[]=[];let page!:Page;
  function tx(value:unknown,x:number,y:number,size=10,bold=false,color="0.08 0.1 0.14"){
    page.ops.push(color+" rg BT /"+(bold?"F2":"F1")+" "+size+" Tf 1 0 0 1 "+x+" "+y+" Tm ("+esc(value)+") Tj ET");
  }
