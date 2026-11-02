@@ -68,6 +68,6 @@ test("meeting appointments remain internal CRM records scoped to tenant and veri
  assert.match(sales,/agency_activity_id:activityId/);
  assert.match(sales,/const end=new Date\(date\.getTime\(\)\+45\*60\*1000\)/);
  assert.match(sales,/status:"scheduled"/);
- assert.match(sales,/no se le envía una invitación/);
+ assert.match(sales,/ni se le envía una invitación/);
  assert.doesNotMatch(sales,/calendar\.events\.insert|Google_Calendar|mcp__Make__|sendMail|sendWhatsapp/i);
 });
