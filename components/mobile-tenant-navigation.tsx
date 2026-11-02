@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { signOutOfTenant } from "@/lib/tenant-session";
+import { tenantLogoutDestination } from "@/lib/tenant-login-return";
 import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
@@ -53,7 +54,7 @@ export default function MobileTenantNavigation() {
     const result=await signOutOfTenant(tenantId);
     setBusy(false);
     if(result.error) {setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
-    router.replace("/login");
+    router.replace(tenantLogoutDestination(tenant.tenant_slug));
   }
   return <details className="mobile-tenant-navigation"><summary aria-label="Abrir todos los módulos">Módulos <span aria-hidden="true">☰</span></summary>
     <div className="mobile-module-panel"><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><nav aria-label={`Otros módulos de ${tenant.tenant_name}`}>{links.filter(([path])=>allowed?.includes(path)).map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
