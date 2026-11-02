@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {Bot,FileText,Inbox,RefreshCw,ShieldCheck,Target,Users,Workflow} from "lucide-react";
+import {Bot,CalendarDays,FileText,Inbox,Package,PlugZap,RefreshCw,Settings,ShieldCheck,Target,Users,Workflow} from "lucide-react";
 import {useActiveTenant} from "@/components/tenant-context";
 import {supabase} from "@/lib/supabase";
 import BrandLogo from "@/components/brand-logo";
@@ -106,6 +106,17 @@ export default function ArmWorkspace(){
     {canConfigure&&<Link className="button" href="/crm/employees"><Bot size={16}/> Configurar agentes IA</Link>}
    </div>
   </section>
+  {canConfigure&&<section className="section-gap card" aria-label="Autogestión del CRM sin programación">
+   <h2>Autogestión de tu empresa</h2>
+   <p className="muted">Cambia los ajustes comerciales cotidianos directamente en el CRM, sin pedir modificaciones del código. Cada acción está sujeta al rol y a los permisos de tu empresa.</p>
+   <div className="grid two-col" style={{marginTop:14}}>
+    <Link href="/crm/settings" className="button"><Settings size={16}/> Marca, datos y preferencias</Link>
+    <Link href="/crm/products" className="button"><Package size={16}/> Productos y servicios</Link>
+    <Link href="/crm/calendar" className="button"><CalendarDays size={16}/> Citas y calendario</Link>
+    <Link href="/crm/integrations" className="button"><PlugZap size={16}/> Estado de integraciones</Link>
+   </div>
+   <p className="muted">El catálogo y los formularios no sustituyen la validación de pagos, integraciones ni las aprobaciones humanas.</p>
+  </section>}
   {canConfigure&&<section className="section-gap card">
    <h2>Control de agentes digitales</h2>
    <p className="muted">«Borrador» no significa que un agente esté conectado a WhatsApp ni autorizado a enviar respuestas.</p>
