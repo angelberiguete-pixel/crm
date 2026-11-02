@@ -40,3 +40,13 @@ test("no telephony or CRM writes enabled by this scaffold",()=>{
  assert.match(src,/signature/);
  assert.doesNotMatch(src,/service_role|createClient|fetch\(|https:\/\/api\.retellai\.com/);
 });
+
+test("Family Power integrations page labels telephony as inactive while operator is unknown",()=>{
+ const ui=readFileSync(new URL("../components/crm-integration-center.tsx",import.meta.url),"utf8");
+ assert.match(ui,/Llamadas con IA/);
+ assert.match(ui,/PhoneCall/);
+ assert.match(ui,/Pendiente de pruebas/);
+ assert.match(ui,/Usaremos el número actual de Family Power/);
+ assert.match(ui,/Sin conectar/);
+ assert.doesNotMatch(ui,/retell\.createCall\(|forwardCall\(/);
+});
