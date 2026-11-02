@@ -31,11 +31,11 @@ test("Long quote paginates and errors on inconsistent totals",()=>{
 test("Family Power uses dedicated quote interface only inside its tenant",()=>{
  assert.match(workspace,/isFamilyPower \? <FamilyPowerQuotations tenantId=\{tenantId\}\/> : <Quotations/);
  assert.match(source,/customer_name_snapshot/);
- assert.match(source,/\\.eq\("tenant_id",tenantId\)/);
- assert.match(source,/\\bsource:"manual"/);
+ assert.match(source,/\.eq\("tenant_id",tenantId\)/);
+ assert.match(source,/source:"manual"/);
  assert.match(source,/type="number" min="1"/);
  assert.match(source,/aria-label="Cerrar PDF"/);
  assert.match(source,/className=\{styles\.pdf\}/);
  assert.match(source,/navigator\.canShare/);
- assert.match(source,/\\.status==="active"/);
+ assert.match(source,/status==="active"/);
 });
