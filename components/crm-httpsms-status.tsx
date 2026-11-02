@@ -41,7 +41,7 @@ export default function CrmHttpsmsStatus({tenantId,className}:{
   useEffect(()=>{
     let current=true;
     setStatus(null);setError("");setLoading(true);
-    supabase.rpc("tenant_sms_gateway_status",{p_tenant_id:tenantId})
+    Promise.resolve(supabase.rpc("tenant_sms_gateway_status",{p_tenant_id:tenantId}))
       .then(({data,error:requestError})=>{
         if(!current)return;
         if(requestError){setError("El módulo SMS todavía requiere su configuración en el servidor.");return;}
