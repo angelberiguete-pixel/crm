@@ -17,7 +17,7 @@ type Deal = { id:string; title:string; status:string; next_action:string|null; n
 type Revenue = { current_mrr:number|null; open_pipeline_mrr:number|null; weighted_pipeline_mrr:number|null };
 const blank:Counts={companies:null,contacts:null,opportunities:null,conversations:null,quotations:null,events:null};
 const countText=(n:number|null)=>n===null?"—":String(n);
-const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays],["marketing","Marketing",BarChart3]] as const;
+const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["arm","Centro ARM",Bot],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays],["marketing","Marketing",BarChart3]] as const;
 const money=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format(value||0);
 function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>;
@@ -134,6 +134,7 @@ function GeneralCommercialDashboard(){
               {canManage&&<Link className="button" href="/crm/employees"><Bot size={16}/> Empleados digitales IA</Link>}
               {canManage&&<Link className="button" href="/crm/integrations">Integraciones de la empresa</Link>}
               {canManage&&<Link className="button" href="/crm/marketing"><BarChart3 size={16}/> Marketing y conversiones</Link>}
+              <Link className="button" href="/crm/arm"><Bot size={16}/> Centro ARM de esta empresa</Link>
               <Link className="button" href="/crm/quotations">Abrir cotizaciones</Link>
               <Link className="button" href="/crm/calendar">Abrir calendario</Link>
             </div>
