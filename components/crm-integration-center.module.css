@@ -64,3 +64,6 @@
 .familyCompact .compactCard .secondary{align-self:flex-start;margin-top:auto}
 .familyCompact .wizard{margin-top:14px}
 @media(max-width:660px){.familyCompact .compactGrid{grid-template-columns:1fr}.familyCompact .compactCard{padding:15px;gap:11px}.familyCompact .header{flex-direction:row;align-items:center}.familyCompact .refresh{width:auto}}
+
+.familyCompact .callHistory{display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--border,#dce1e9);padding-top:12px}
+.familyCompact .callHistory>strong{font-size:12px;color:var(--text)}
