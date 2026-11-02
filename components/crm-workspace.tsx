@@ -65,7 +65,7 @@ const nav = [
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
-  ["arm", "Agentes", Bot],
+  ["arm", "Centro ARM", Bot],
   ["tasks", "Tareas", CalendarDays],
   ["reports", "Reportes", BarChart3],
   ["files", "Archivos", FileText],
@@ -173,7 +173,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const permittedNav=nav.filter(([key])=>{
     const familyKeys=["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
-    if(!isFamilyPower&&["arm","tasks","reports"].includes(key))return false;
+    if(!isFamilyPower&&["tasks","reports"].includes(key))return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
