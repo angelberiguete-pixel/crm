@@ -5,6 +5,9 @@ import { createClient, type Session } from "@supabase/supabase-js";
 // the production login at a different Supabase project.
 const url = "https://ygipjqgyreeahslzorik.supabase.co";
 const key = "sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
+// Shared canonical public connection parameters for user-JWT server integrations.
+export const CRM_SUPABASE_URL = url;
+export const CRM_SUPABASE_PUBLISHABLE_KEY = key;
 
 // Bump this marker whenever production data routing changes so Git/Vercel emits
 // a fresh production build instead of leaving an older frontend bundle live.
