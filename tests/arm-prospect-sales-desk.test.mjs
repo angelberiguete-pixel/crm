@@ -44,7 +44,7 @@ test("call and meeting semantics require explicit operator action and accurate s
  assert.match(sales,/if\(planned&&!nextAction\.trim\(\)\)/);
  assert.match(sales,/if\(action&&!nextDate\)/);
  assert.match(sales,/if\(planned&&new Date\(nextDate\)\.getTime\(\)<=Date\.now\(\)\)/);
- assert.match(sales,/result.*prospect_id/); // server-confirmed prospect
+ assert.match(sales,/\(r\.data as \{prospect_id\?:string\}\|null\)\?\.prospect_id!==selected\.id/); // server-confirmed prospect
  assert.match(sales,/no se marca la reunión como realizada/i);
 });
 
