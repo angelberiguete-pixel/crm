@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test:browser:tenant": "node tests/tenant-context-browser.test.mjs && node tests/commercial-mobile-browser.test.mjs",
     "test:browser:commercial": "node tests/commercial-mobile-browser.test.mjs",
-    "test:browser:owner": "node tests/owner-login-browser.test.mjs"
+    "test:browser:owner": "node tests/owner-login-browser.test.mjs",
+    "test:tenant-exit": "node tests/tenant-logout-navigation.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
