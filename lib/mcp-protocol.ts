@@ -73,7 +73,7 @@ const titles: Record<string, [string, string]> = {
   "crm.list_agents": ["Consultar agentes de IA", "Lista perfiles y estados, sin exponer prompts ni credenciales."]
 };
 
-export const MCP_TOOLS: readonly McpTool[] = MCP_DATASETS.map((dataset) => {
+export const MCP_DATA_TOOLS: readonly McpTool[] = MCP_DATASETS.map((dataset) => {
   const [title, description] = titles[dataset.name];
   return {
     name: dataset.name, title, description,
@@ -94,6 +94,31 @@ export const MCP_TOOLS: readonly McpTool[] = MCP_DATASETS.map((dataset) => {
     }
   };
 });
+
+// A first-party agent can discover its selected company without copying UUIDs.
+export const MCP_WORKSPACE_TOOL: McpTool = {
+  name: "crm.get_workspace_context",
+  title: "Consultar empresa activa",
+  description: "Muestra solamente la empresa seleccionada y los módulos consultables por el usuario.",
+  inputSchema: {
+    type: "object",
+    properties: {},
+    required: [],
+    additionalProperties: false
+  },
+  annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+};
+
+export const MCP_TOOLS: readonly McpTool[] = [MCP_WORKSPACE_TOOL, ...MCP_DATA_TOOLS];
+
+export function validWorkspaceToolArgs(params: unknown): boolean {
+  if (!params || typeof params !== "object" || Array.isArray(params)) return false;
+  const data = params as Record<string, unknown>;
+  if (data.name !== MCP_WORKSPACE_TOOL.name) return false;
+  const args = data.arguments;
+  return args === undefined || Boolean(args && typeof args === "object" &&
+    !Array.isArray(args) && Object.keys(args as Record<string, unknown>).length === 0);
+}
 
 export function parseMcpRequest(body: unknown): McpRequest | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
