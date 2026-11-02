@@ -45,8 +45,11 @@ test("Family Power integrations page labels telephony as inactive while operator
  const ui=readFileSync(new URL("../components/crm-integration-center.tsx",import.meta.url),"utf8");
  assert.match(ui,/Llamadas con IA/);
  assert.match(ui,/PhoneCall/);
- assert.match(ui,/Pendiente de pruebas/);
- assert.match(ui,/Usaremos el número actual de Family Power/);
+ assert.match(ui,/Línea fija/);
+ assert.match(ui,/Línea celular/);
+ assert.match(ui,/operador por confirmar/);
+ assert.match(ui,/Family Power conserva sus dos números/);
+ assert.match(ui,/WhatsApp/);
  assert.match(ui,/Sin conectar/);
  assert.doesNotMatch(ui,/retell\.createCall\(|forwardCall\(/);
 });
