@@ -42,6 +42,7 @@ export default function LoginPage() {
         const access = await supabase.rpc("platform_current_access");
         if (!active) return;
         if (access.error) {
+          setHasOpenSession(true);
           setMessage("No pudimos comprobar tus permisos. Cierra la sesión actual e inicia nuevamente.");
         } else if ((access.data as { is_platform_admin?: boolean } | null)?.is_platform_admin) {
           // Platform owners enter their portfolio, not whichever client was last active.
