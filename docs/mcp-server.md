@@ -97,3 +97,52 @@ Una vez validada la conexión, estudiar herramientas de escritura con permisos e
 e intervención humana, idempotencia y registros de auditoría. Odoo o el ERP no son parte de
 esta PR. Las integraciones YCloud/httpSMS requieren autorización del propietario del canal
 y cumplimiento de políticas antes de permitir envíos.
+
+
+## Prueba real de dos identidades — guía operativa
+
+La vista previa en Vercel separa el código, pero sigue apuntando al Supabase
+general del CRM. No es una base de datos independiente de staging. Usar solamente
+cuentas autorizadas, con permiso mínimo y de dos empresas diferentes.
+
+scripts/mcp-family-power-pilot.mjs es un cliente HTTP MCP que realiza dos
+inicializaciones, consulta herramientas y empresa activa, hace lecturas propias y
+comprueba la denegación cruzada en las dos direcciones. Nunca muestra nombres,
+teléfonos, correos, JWTs ni registros comerciales. Exige que las dos sesiones
+sean distintas; no utilizar una cuenta de superadministrador global.
+
+Las variables deben configurarse SOLO en una terminal segura, sin enviarlas
+por chat ni guardarlas en repositorios:
+
+    MCP_PILOT_URL=https://PREVIEW.vercel.app/api/mcp
+    MCP_PILOT_FAMILY_TOKEN=<JWT_DE_PRUEBA_FAMILY_POWER>
+    MCP_PILOT_OTHER_TOKEN=<JWT_DE_PRUEBA_OTRA_EMPRESA>
+    MCP_PILOT_FAMILY_TENANT_ID=<UUID_FAMILY_POWER>
+    MCP_PILOT_OTHER_TENANT_ID=<UUID_OTRA_EMPRESA>
+    MCP_PILOT_OTHER_SLUG=sublimaciones-lazala
+    MCP_PILOT_VERCEL_BYPASS=<OPCIONAL_SI_PROTEGIDO>
+
+Ejecutar:
+
+    node scripts/mcp-family-power-pilot.mjs
+
+Solo se considera verificado cuando devuelve result=PASS e
+isolation=both_directions con dos sesiones de usuario reales. Las pruebas
+de CI con respuestas sintéticas son útiles, pero no validan el aislamiento
+de datos de producción.
+
+## Adaptador opcional con modelo de IA
+
+scripts/mcp-family-power-agent.mjs implementa funciones del modelo con MCP.
+Consulta exclusivamente catálogo, con una llamada MCP y hasta tres productos.
+Nunca proporciona JWT al modelo. Requiere consentimiento específico para
+enviar los datos del catálogo al proveedor, una clave API propia y activar
+MCP_AGENT_RUN=YES y MCP_AGENT_SEND_CATALOG=YES. Sin esos valores permanece
+apagado y no incurre en consumo de IA. Ejecutarlo solamente después de la
+prueba real de aislamiento.
+
+## Estado
+
+CI: cliente probado con escenarios sintéticos. Vista previa: despliegue
+READY. Datos: compartidos con el CRM general, no staging independiente.
+Producción: sin cambios. Lecturas con dos cuentas reales: pendientes.
