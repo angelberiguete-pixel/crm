@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {Bot,CalendarDays,FileText,Inbox,Package,PlugZap,RefreshCw,Settings,ShieldCheck,Target,Users,Workflow} from "lucide-react";
+import {Bot,CalendarDays,FileText,Inbox,Package,RefreshCw,Settings,ShieldCheck,Target,Users,Workflow} from "lucide-react";
 import {useActiveTenant} from "@/components/tenant-context";
 import {supabase} from "@/lib/supabase";
 import BrandLogo from "@/components/brand-logo";
@@ -113,7 +113,7 @@ export default function ArmWorkspace(){
     <Link href="/crm/settings" className="button"><Settings size={16}/> Marca, datos y preferencias</Link>
     <Link href="/crm/products" className="button"><Package size={16}/> Productos y servicios</Link>
     <Link href="/crm/calendar" className="button"><CalendarDays size={16}/> Citas y calendario</Link>
-    <Link href="/crm/integrations" className="button"><PlugZap size={16}/> Estado de integraciones</Link>
+    <Link href="/crm/automations" className="button"><Workflow size={16}/> Flujos y automatizaciones</Link>
    </div>
    <p className="muted">El catálogo y los formularios no sustituyen la validación de pagos, integraciones ni las aprobaciones humanas.</p>
   </section>}
