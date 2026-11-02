@@ -29,6 +29,7 @@ import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
 import FamilyPowerClientSettings from "@/components/family-power-client-settings";
 import FamilyPowerProductCatalog from "@/components/family-power-product-catalog";
+import FamilyPowerQuotations from "@/components/family-power-quotations";
 import FamilyPowerTasks from "@/components/family-power-tasks";
 import FamilyPowerReports from "@/components/family-power-reports";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
@@ -213,7 +214,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
-        {section === "quotations" && <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
+        {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "tasks" && isFamilyPower && <FamilyPowerTasks tenantId={tenantId} />}
