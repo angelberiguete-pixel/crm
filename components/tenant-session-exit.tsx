@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import {LogOut} from "lucide-react";
 import {useActiveTenant} from "@/components/tenant-context";
 import {signOutOfTenant} from "@/lib/tenant-session";
+import {tenantLogoutDestination} from "@/lib/tenant-login-return";
 
 // A client must be able to exit a locked company view without discovering
 // or exposing the platform-admin UI. Mobile users can also sign out via Modules.
@@ -20,7 +21,7 @@ export default function TenantSessionExit() {
     try{
       const result=await signOutOfTenant(tenant.tenant_id);
       if(result.error){setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
-      router.replace(tenant.tenant_slug==="family-power"?"/family-power/login":"/login");
+      router.replace(tenantLogoutDestination(tenant.tenant_slug));
     }catch{
       setError("No se pudo cerrar la sesión. Intenta nuevamente.");
     }finally{
