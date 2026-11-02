@@ -71,3 +71,13 @@ test("meeting appointments remain internal CRM records scoped to tenant and veri
  assert.match(sales,/ni se le envía una invitación/);
  assert.doesNotMatch(sales,/calendar\.events\.insert|Google_Calendar|mcp__Make__|sendMail|sendWhatsapp/i);
 });
+
+test("changing prospect cannot expose or modify a stale linked opportunity",()=>{
+ const sales=read("components/arm-agency-sales-desk.tsx");
+ assert.match(sales,/const \[linkFor,setLinkFor\]=useState\(""\)/);
+ assert.match(sales,/const linkResolved=!!selectedId&&linkFor===selectedId&&!linkLoading/);
+ assert.match(sales,/const linked=linkResolved&&!linkError&&opportunities\.length===1/);
+ assert.match(sales,/setLinkFor\(selectedId\)/);
+ assert.match(sales,/if\(saving\|\|!selected\|\|tenantSlug!=="eurevector"\|\|!linkResolved\)return/);
+ assert.match(sales,/disabled=\{saving\|\|!linkResolved\|\|summary\.trim\(\)\.length<3\}/);
+});
