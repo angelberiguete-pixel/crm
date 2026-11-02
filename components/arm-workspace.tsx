@@ -11,7 +11,7 @@ import ArmOperationalBoard from "@/components/arm-operational-board";
 
 type MetricKey="contacts"|"opportunities"|"quotations"|"conversations"|"tasks"|"automation_rules"|"ai_agents"|"ai_agent_runs";
 type Agent={id:string;name:string;status:string;approval_mode:string};
-type Dashboard={counts:Record<MetricKey,number|null>;agents:Agent[]};
+type Dashboard={tenantId:string|null;counts:Record<MetricKey,number|null>;agents:Agent[]};
 const metricDetails:{key:MetricKey;label:string;description:string}[]=[
  {key:"contacts",label:"Contactos",description:"Registros visibles para tu usuario"},
  {key:"opportunities",label:"Oportunidades",description:"No equivalen a ventas realizadas"},
@@ -36,13 +36,13 @@ export default function ArmWorkspace(){
  const tenantId=tenant?.tenant_id??null;
  const isFamily=tenant?.tenant_slug==="family-power";
  const canConfigure=["owner","admin"].includes(tenant?.membership_role??"");
- const [dashboard,setDashboard]=useState<Dashboard>({counts:emptyCounts(),agents:[]});
+ const [dashboard,setDashboard]=useState<Dashboard>({tenantId:null,counts:emptyCounts(),agents:[]});
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [revision,setRevision]=useState(0);
  useEffect(()=>{
   let alive=true;
-  setDashboard({counts:emptyCounts(),agents:[]});
+  setDashboard({tenantId:null,counts:emptyCounts(),agents:[]});
   setError("");
   setLoading(true);
   if(!tenantId||isFamily){setLoading(false);return()=>{alive=false;};}
@@ -65,7 +65,7 @@ export default function ArmWorkspace(){
    requests.forEach((result,index)=>{
     counts[metricDetails[index].key]=result.error?null:result.count??0;
    });
-   setDashboard({counts,agents:agents&&!agents.error?(agents.data??[]) as Agent[]:[]});
+   setDashboard({tenantId,counts,agents:agents&&!agents.error?(agents.data??[]) as Agent[]:[]});
    if(requests.some(result=>result.error)||(agents&&agents.error))
     setError("Algunos datos no pudieron consultarse. Los indicadores no disponibles se muestran como «—»; comprueba los permisos de este usuario.");
    setLoading(false);
@@ -92,12 +92,12 @@ export default function ArmWorkspace(){
    <div className="grid dashboard-kpis" style={{marginTop:14}}>
     {metricDetails.map(m=><article className="card" key={m.key}>
      <div className="eyebrow">{m.label}</div>
-     <strong style={{fontSize:28}}>{loading?"…":dashboard.counts[m.key]??"—"}</strong>
+     <strong style={{fontSize:28}}>{loading||dashboard.tenantId!==tenantId?"…":dashboard.counts[m.key]??"—"}</strong>
      <p className="muted">{m.description}</p>
     </article>)}
    </div>
   </section>
-  <ArmOperationalBoard tenantId={tenantId} tenantSlug={tenant?.tenant_slug??""} memberRole={tenant?.membership_role??""}/>
+  <ArmOperationalBoard key={tenantId} tenantId={tenantId} tenantSlug={tenant?.tenant_slug??""} memberRole={tenant?.membership_role??""}/>
   <section className="section-gap card">
    <h2>Gestión empresarial</h2>
    <p className="muted">Cada módulo verifica tus permisos antes de permitir el acceso. Los datos se mantienen separados por empresa.</p>
@@ -109,8 +109,8 @@ export default function ArmWorkspace(){
   {canConfigure&&<section className="section-gap card">
    <h2>Control de agentes digitales</h2>
    <p className="muted">«Borrador» no significa que un agente esté conectado a WhatsApp ni autorizado a enviar respuestas.</p>
-   {dashboard.agents.length===0?<p className="muted">No hay perfiles de agentes visibles o configurados para esta empresa.</p>:
-    <div className="stack gap-12">{dashboard.agents.map(agent=><div className="priority-item" key={agent.id}>
+   {(dashboard.tenantId!==tenantId||dashboard.agents.length===0)?<p className="muted">No hay perfiles de agentes visibles o configurados para esta empresa.</p>:
+    <div className="stack gap-12">{(dashboard.tenantId===tenantId?dashboard.agents:[]).map(agent=><div className="priority-item" key={agent.id}>
      <strong>{agent.name}</strong><span>Estado: {agent.status==="draft"?"Borrador":agent.status} · Aprobación: {agent.approval_mode}</span>
     </div>)}</div>}
   </section>}
