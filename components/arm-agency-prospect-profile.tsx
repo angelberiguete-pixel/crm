@@ -94,7 +94,7 @@ export default function ArmAgencyProspectProfile({tenantId,tenantSlug,prospectId
    ||(patch.website?.length??0)>300||(patch.notes?.length??0)>5000){
    setError("Uno de los campos supera la longitud permitida.");return;
   }
-  if(patch.priority!==null&&(!Number.isInteger(patch.priority)||patch.priority<1||patch.priority>100)){
+  if(patch.priority != null && (!Number.isInteger(patch.priority) || patch.priority < 1 || patch.priority > 100)){
    setError("La prioridad debe ser un número entre 1 y 100.");return;
   }
   if(patch.website&&(!/^https?:\/\/\S+$/i.test(patch.website))){
