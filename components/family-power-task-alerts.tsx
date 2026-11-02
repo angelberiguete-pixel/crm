@@ -67,10 +67,12 @@ export default function FamilyPowerTaskAlerts(){
     const refresh=()=>{if(document.visibilityState!=="hidden")void load();};
     const timer=window.setInterval(refresh,45000);
     window.addEventListener("focus",refresh);
+    window.addEventListener("family-power:tasks-updated",refresh);
     document.addEventListener("visibilitychange",refresh);
     return()=>{
       window.clearInterval(timer);
       window.removeEventListener("focus",refresh);
+      window.removeEventListener("family-power:tasks-updated",refresh);
       document.removeEventListener("visibilitychange",refresh);
     };
   },[tenantId,allowed,load]);
