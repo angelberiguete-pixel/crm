@@ -20,7 +20,7 @@ test("Task alerts are available in the shared authorized header and are tenant s
 });
 test("Completing Family Power tasks requires a human verification note and session",()=>{
  const tasks=read("components/family-power-tasks.tsx");
- const sql=read("docs/family-power/task-alerts-migration-reviewed.sql");
+ const sql=read("supabase/migrations/20261102061040_family_power_task_alerts_ai_followup_guard.sql");
  assert.match(tasks,/verification.trim\(\)\.length<12/);
  assert.match(tasks,/supabase.auth.getUser\(\)/);
  assert.match(tasks,/completion_evidence:evidence/);
@@ -31,7 +31,7 @@ test("Completing Family Power tasks requires a human verification note and sessi
  assert.match(sql,/jsonb_build_object\([\s\S]*'verified_by',v_user::text/);
 });
 test("AI draft recommendations create only internal, deduplicated human tasks",()=>{
- const sql=read("docs/family-power/task-alerts-migration-reviewed.sql");
+ const sql=read("supabase/migrations/20261102061040_family_power_task_alerts_ai_followup_guard.sql");
  const draft=read("supabase/functions/ai-employee-draft/index.ts");
  assert.match(sql,/new.status <> 'awaiting_approval'/);
  assert.match(sql,/new.output->'requires_human' is distinct from 'true'::jsonb/);
