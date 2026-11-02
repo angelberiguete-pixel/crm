@@ -1,21 +1,30 @@
 import { createClient } from "@supabase/supabase-js";
 import { CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase";
 import {
-  MCP_PROTOCOL_VERSION, MCP_TOOLS, parseMcpRequest, rpcError, rpcResult,
-  validateMcpToolCall, validMcpOrigin, mcpToolText, type ValidToolCall
+  MCP_PROTOCOL_VERSION, MCP_TOOLS, MCP_WORKSPACE_TOOL,
+  parseMcpRequest, rpcError, rpcResult, validateMcpToolCall,
+  validMcpOrigin, validWorkspaceToolArgs, mcpToolText, type ValidToolCall
 } from "@/lib/mcp-protocol";
+import {
+  selectedMcpWorkspace, allowedMcpDatasets, validateMcpWorkspaceAccess
+} from "@/lib/mcp-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Stateless MCP 2025-11-25 Streamable HTTP / JSON mode.
-// Authenticated requests use the end user's JWT; database RLS stays in force.
-// This endpoint is read-only. OAuth for third-party MCP hosts is a separate rollout.
+// This is an internal, read-only MCP pilot using an end-user Supabase JWT.
+// It is not a public OAuth resource server; do not share CRM session JWTs
+// with third-party MCP hosts. An explicit server-side enable flag is required.
+const enabled = () => process.env.MCP_INTERNAL_ENABLED === "true";
 const NO_CACHE = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const JSON_HEADERS = { ...NO_CACHE, "Content-Type": "application/json; charset=utf-8" };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+function json(body: unknown, status = 200, headers: Record<string,string> = {}) {
+  return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...headers } });
+}
+
+function unavailable() {
+  return json(rpcError(null, -32000, "MCP no está habilitado en este entorno."), 503);
 }
 
 function deniedTool(message: string) {
@@ -28,58 +37,44 @@ function bearer(request: Request): string | null {
   return match && match[1].length <= 8192 ? match[1] : null;
 }
 
-function sanitizedSearch(value: string): string {
-  // Quote LIKE wildcards; do not build PostgREST "or" expressions from user input.
-  return value.replace(/[\%_]/g, "\\$&");
-}
-
-async function callReadTool(request: Request, call: ValidToolCall) {
-  const accessToken = bearer(request);
-  if (!accessToken) return deniedTool("Se requiere una sesión válida.");
-  const db = createClient(CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY, {
+function userDb(accessToken: string) {
+  return createClient(CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { headers: { Authorization: "Bearer " + accessToken } }
   });
+}
+type UserDb = ReturnType<typeof userDb>;
 
-  const { data: userResult, error: userError } = await db.auth.getUser(accessToken);
-  if (userError || !userResult.user) return deniedTool("Sesión no válida.");
+function sanitizedSearch(value: string): string {
+  // Escape wildcards; never build PostgREST filter expressions from user input.
+  return value.replace(/[\%_]/g, "\\$&");
+}
 
-  // Reuse the very same tenant selection RPC used by the CRM UI.
-  // A membership in another company never grants access to this company.
-  const { data: memberships, error: membershipError } = await db.rpc("list_my_tenants");
-  const selected = Array.isArray(memberships) &&
-    memberships.some((membership) =>
-      membership.tenant_id === call.tenantId && membership.is_active === true);
-  if (membershipError || !selected) return deniedTool("Selecciona primero esta empresa en el CRM.");
-
-  const [permissionsResult, modulesResult] = await Promise.all([
-    db.rpc("tenant_current_permissions", { p_tenant_id: call.tenantId }),
-    db.rpc("tenant_effective_modules", { p_tenant_id: call.tenantId })
+async function accessContext(db: UserDb) {
+  const membershipsResult = await db.rpc("list_my_tenants");
+  if (membershipsResult.error) return null;
+  const workspace = selectedMcpWorkspace(membershipsResult.data);
+  if (!workspace) return null; // Fail closed when no company or an ambiguous selection.
+  const [permissionResult, moduleResult] = await Promise.all([
+    db.rpc("tenant_current_permissions", { p_tenant_id: workspace.tenant_id }),
+    db.rpc("tenant_effective_modules", { p_tenant_id: workspace.tenant_id })
   ]);
-  if (permissionsResult.error || modulesResult.error) {
-    return deniedTool("No se pudieron verificar los permisos.");
-  }
+  if (permissionResult.error || moduleResult.error) return null;
+  const allowed = allowedMcpDatasets(permissionResult.data, moduleResult.data);
+  return { workspace, allowed };
+}
 
-  const permissions = permissionsResult.data;
-  const modules = modulesResult.data;
-  if (!permissions || typeof permissions !== "object" || Array.isArray(permissions) ||
-      !Array.isArray(modules)) return deniedTool("Permisos de empresa no disponibles.");
-  const grants = permissions as Record<string, unknown>;
-  const allowed = grants.all === true || grants[call.dataset.permission] === true;
-  const module = modules.find((row) => row.module_key === call.dataset.module);
-  // Do not expose modules that are disabled or missing from the effective list.
-  if (!allowed || !module || module.enabled !== true) {
-    return deniedTool("La función no está habilitada para tu rol o empresa.");
+async function readTool(db: UserDb, call: ValidToolCall, context: NonNullable<Awaited<ReturnType<typeof accessContext>>>) {
+  if (!validateMcpWorkspaceAccess(context.workspace, call.tenantId, context.allowed, call.dataset.name)) {
+    return deniedTool("Función no habilitada o empresa distinta de la seleccionada.");
   }
-
-  let query = db.from(call.dataset.table)
-    .select(call.dataset.columns)
-    .eq("tenant_id", call.tenantId);
+  // RLS is evaluated using this end-user JWT. No service key or privileged RPC.
+  let query = db.from(call.dataset.table).select(call.dataset.columns).eq("tenant_id", call.tenantId);
   if (call.query && call.dataset.searchField) {
     query = query.ilike(call.dataset.searchField, "%" + sanitizedSearch(call.query) + "%");
   }
   const result = await query.order("updated_at", { ascending: false }).limit(call.limit);
-  if (result.error) return deniedTool("No se pudo completar la consulta autorizada.");
+  if (result.error) return deniedTool("No fue posible completar la consulta autorizada.");
 
   return mcpToolText({
     tenant_id: call.tenantId,
@@ -90,6 +85,7 @@ async function callReadTool(request: Request, call: ValidToolCall) {
 }
 
 export async function POST(request: Request) {
+  if (!enabled()) return unavailable();
   if (!validMcpOrigin(request.headers.get("origin"), request.url)) {
     return json(rpcError(null, -32000, "Origin no permitido."), 403);
   }
@@ -97,13 +93,8 @@ export async function POST(request: Request) {
   const contentType = (request.headers.get("content-type") ?? "").split(";")[0].trim();
   const accept = request.headers.get("accept") ?? "";
   if (contentType !== "application/json" ||
-      (!accept.includes("application/json") && !accept.includes("*/*"))) {
-    return json(rpcError(null, -32600, "Se requiere JSON y Accept: application/json."), 400);
-  }
-
-  const version = request.headers.get("mcp-protocol-version");
-  if (version && version !== MCP_PROTOCOL_VERSION && version !== "2025-03-26") {
-    return json(rpcError(null, -32600, "Versión MCP no soportada."), 400);
+      !accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    return json(rpcError(null, -32600, "Se requiere JSON y Accept: application/json, text/event-stream."), 400);
   }
 
   let raw: string;
@@ -118,29 +109,31 @@ export async function POST(request: Request) {
   }
 
   let body: unknown;
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    return json(rpcError(null, -32700, "JSON no válido."), 400);
-  }
+  try { body = JSON.parse(raw); }
+  catch { return json(rpcError(null, -32700, "JSON no válido."), 400); }
   const message = parseMcpRequest(body);
   if (!message) return json(rpcError(null, -32600, "Solicitud JSON-RPC no válida."), 400);
 
-  // No data or tool catalogue is exposed without a valid CRM login.
-  const accessToken = bearer(request);
-  if (!accessToken) return json(rpcError(message.id ?? null, -32001, "Autenticación requerida."), 401);
+  const version = request.headers.get("mcp-protocol-version");
+  if ((version && version !== MCP_PROTOCOL_VERSION) ||
+      (message.method !== "initialize" && version !== MCP_PROTOCOL_VERSION)) {
+    return json(rpcError(message.id ?? null, -32600, "Versión MCP no soportada o ausente."), 400);
+  }
 
-  const db = createClient(CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: { headers: { Authorization: "Bearer " + accessToken } }
-  });
+  const accessToken = bearer(request);
+  if (!accessToken) {
+    return json(rpcError(message.id ?? null, -32001, "Autenticación requerida."), 401,
+      { "WWW-Authenticate": 'Bearer realm="crm-mcp"' });
+  }
+  const db = userDb(accessToken);
   const verified = await db.auth.getUser(accessToken);
   if (verified.error || !verified.data.user) {
-    return json(rpcError(message.id ?? null, -32001, "Sesión no válida."), 401);
+    return json(rpcError(message.id ?? null, -32001, "Sesión no válida."), 401,
+      { "WWW-Authenticate": 'Bearer realm="crm-mcp", error="invalid_token"' });
   }
 
   if (message.id === undefined) {
-    // MCP notifications do not receive a JSON-RPC response.
+    // Notifications have no JSON-RPC response.
     return new Response(null, { status: 202, headers: NO_CACHE });
   }
 
@@ -149,28 +142,60 @@ export async function POST(request: Request) {
     return json(rpcResult(id, {
       protocolVersion: MCP_PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "angel-beriguete-business-platform", version: "0.1.0" },
-      instructions: "Herramientas únicamente de lectura. Debes indicar la empresa activa; se respetan los permisos del usuario y los módulos de cada cliente."
+      serverInfo: { name: "angel-beriguete-business-platform", version: "0.2.0" },
+      instructions: "Solo lectura. Selecciona primero una empresa en el CRM. Consulta crm.get_workspace_context para obtener el ID y las herramientas autorizadas."
     }));
   }
   if (message.method === "ping") return json(rpcResult(id, {}));
-  if (message.method === "tools/list") return json(rpcResult(id, { tools: MCP_TOOLS }));
-  if (message.method === "tools/call") {
-    const call = validateMcpToolCall(message.params);
-    if (!call) return json(rpcError(id, -32602, "Herramienta o argumentos no válidos."));
-    try {
-      return json(rpcResult(id, await callReadTool(request, call)));
-    } catch {
-      return json(rpcResult(id, deniedTool("Fallo temporal al consultar la empresa.")));
-    }
+
+  if (message.method !== "tools/list" && message.method !== "tools/call") {
+    return json(rpcError(id, -32601, "Método MCP no soportado."));
   }
-  return json(rpcError(id, -32601, "Método MCP no soportado."));
+
+  try {
+    const context = await accessContext(db);
+    if (message.method === "tools/list") {
+      return json(rpcResult(id, { tools: context
+        ? [MCP_WORKSPACE_TOOL, ...MCP_TOOLS.filter((tool) =>
+          context.allowed.some((entry) => entry.name === tool.name))]
+        : [] }));
+    }
+    const params = message.params;
+    if (validWorkspaceToolArgs(params)) {
+      return json(rpcResult(id, context ? mcpToolText({
+        company: context.workspace,
+        read_only_tools: context.allowed.map((entry) => entry.name)
+      }) : deniedTool("No existe una empresa activa autorizada.")));
+    }
+    const call = validateMcpToolCall(params);
+    if (!call) return json(rpcError(id, -32602, "Herramienta o argumentos no válidos."));
+    if (!context) return json(rpcResult(id, deniedTool("No existe una empresa activa autorizada.")));
+    const result = await readTool(db, call, context);
+    // Only metadata goes to logs; never log JWTs, contact data, prompts or tool responses.
+    console.info("crm_mcp_tool_call", {
+      tool: call.dataset.name,
+      tenant_id: call.tenantId,
+      user_id: verified.data.user.id,
+      status: "isError" in result ? "denied" : "ok"
+    });
+    return json(rpcResult(id, result));
+  } catch {
+    return json(rpcResult(id, deniedTool("Fallo temporal al consultar la empresa.")));
+  }
 }
 
-export function GET() {
+export function GET(request: Request) {
+  if (!enabled()) return unavailable();
+  if (!validMcpOrigin(request.headers.get("origin"), request.url)) {
+    return json(rpcError(null, -32000, "Origin no permitido."), 403);
+  }
   return new Response(null, { status: 405, headers: { ...NO_CACHE, Allow: "POST" } });
 }
 
-export function DELETE() {
+export function DELETE(request: Request) {
+  if (!enabled()) return unavailable();
+  if (!validMcpOrigin(request.headers.get("origin"), request.url)) {
+    return json(rpcError(null, -32000, "Origin no permitido."), 403);
+  }
   return new Response(null, { status: 405, headers: { ...NO_CACHE, Allow: "POST" } });
 }
