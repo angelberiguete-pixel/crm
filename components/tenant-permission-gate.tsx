@@ -134,7 +134,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const moduleEnabled = module ? module.enabled : true;
 
       const restrictedFamilySections=["companies","sales","marketing","channels","automations","sessions"];
-      const familyOnlySections=["arm","tasks","reports"];
+      const familyOnlySections=["tasks","reports"];
       const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
