@@ -26,8 +26,8 @@ const labels:Record<string,string>={
 const fieldNames=["decision_maker","service_interest","priority","notes","website"] as const;
 type Editable=Pick<Profile,(typeof fieldNames)[number]>;
 
-export default function ArmAgencyProspectProfile({tenantId,tenantSlug,prospectId,onSaved}:{
- tenantId:string;tenantSlug:string;prospectId:string;
+export default function ArmAgencyProspectProfile({tenantId,tenantSlug,prospectId,contactId,onSaved}:{
+ tenantId:string;tenantSlug:string;prospectId:string;contactId?:string|null;
  onSaved?:(id:string,fields:Partial<Editable>)=>void
 }){
  const [profile,setProfile]=useState<Profile|null>(null);
@@ -155,7 +155,7 @@ export default function ArmAgencyProspectProfile({tenantId,tenantSlug,prospectId
     {profile.phone&&<a href={"tel:"+profile.phone.replace(/[^\d+]/g,"")}><PhoneCall size={15}/> {profile.phone}</a>}
     {profile.email&&<a href={"mailto:"+profile.email}><Mail size={15}/> {profile.email}</a>}
     <p className="muted">El teléfono y correo se administran desde el contacto compartido en el CRM, para evitar dos versiones distintas.</p>
-    <Link href="/crm/contacts">Abrir contactos del CRM</Link>
+    <Link href={contactId?"/crm/contacts?contactId="+encodeURIComponent(contactId):"/crm/contacts"}>{contactId?"Editar contacto vinculado en CRM":"Abrir contactos del CRM"}</Link>
    </div>
    <form className="stack gap-12" onSubmit={e=>void save(e)}>
     <div className="form-grid">
