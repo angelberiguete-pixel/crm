@@ -64,9 +64,9 @@ create table if not exists public.voice_calls (
   constraint voice_calls_tenant_route_fk foreign key (tenant_id,route_id)
     references public.voice_line_routes(tenant_id,id) on delete cascade,
   constraint voice_calls_tenant_contact_fk foreign key (tenant_id,contact_id)
-    references public.contacts(tenant_id,id) on delete set null,
+    references public.contacts(tenant_id,id) on delete set null (contact_id),
   constraint voice_calls_tenant_task_fk foreign key (tenant_id,review_task_id)
-    references public.tasks(tenant_id,id) on delete set null
+    references public.tasks(tenant_id,id) on delete set null (review_task_id)
 );
 create index if not exists voice_calls_tenant_recent on public.voice_calls(tenant_id,created_at desc);
 create index if not exists voice_calls_contact_recent on public.voice_calls(tenant_id,contact_id,created_at desc);
