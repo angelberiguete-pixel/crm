@@ -39,8 +39,8 @@ test("Tasks and reports persist or count tenant data and do not invent demo metr
  const reports=read("components/family-power-reports.tsx");
  const ws=read("components/crm-workspace.tsx");
  assert.match(tasks,/from\("tasks"\)/);
- assert.match(tasks,/\.insert\(\{tenant_id:tenantId/);
- assert.match(tasks,/\.update\(\{status:"done",completed_at:/);
+ assert.match(tasks,/\.insert\(\{\s*tenant_id:tenantId/);
+ assert.match(tasks,/status:"done",completed_at:evidence\.verified_at/);
  assert.match(tasks,/\.eq\("tenant_id",tenantId\)/);
  assert.match(reports,/\.select\("id",\{head:true,count:"exact"\}\)\.eq\("tenant_id",tenantId\)/);
  assert.match(ws,/<FamilyPowerTasks tenantId=\{tenantId\}\s*\/>/);
