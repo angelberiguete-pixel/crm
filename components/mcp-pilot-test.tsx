@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 type Props = {url:string; publishableKey:string};
-type Account = { userId:string; tenantId:string; slug:string; token:string; client:ReturnType<typeof createClient> };
+type Account = { userId:string; tenantId:string; slug:string; token:string; logout:()=>Promise<void> };
 type Result = { label:string; passed:boolean; detail:string };
 
 function sessionClient(url:string,key:string) {
@@ -38,7 +38,7 @@ async function login(url:string,key:string,email:string,password:string,expected
   if(membership.error)throw Error("No se pudo comprobar la empresa activa de "+expectedSlug);
   const active=(membership.data??[]).filter((item:{is_active:boolean})=>item.is_active===true);
   if(active.length!==1||active[0].tenant_slug!==expectedSlug)throw Error("La cuenta de "+expectedSlug+" debe tener esa empresa seleccionada como única activa.");
-  return {client, userId:data.user.id,tenantId:active[0].tenant_id,slug:active[0].tenant_slug,token:data.session.access_token};
+  return {logout:async()=>{await client.auth.signOut({scope:"local"});}, userId:data.user.id,tenantId:active[0].tenant_id,slug:active[0].tenant_slug,token:data.session.access_token};
 }
 
 async function toolCall(token:string,name:string,tenantId?:string) {
@@ -119,7 +119,7 @@ export default function McpPilotTest({url,publishableKey}:Props) {
     } finally {
       setResults(checks);
       // Destroy in-memory sessions without signing out other browser sessions.
-      await Promise.allSettled(sessions.map(a=>a.client.auth.signOut({scope:"local"})));
+      await Promise.allSettled(sessions.map(a=>a.logout()));
       setFamilyPassword("");setOtherPassword("");setRunning(false);
     }
   }
