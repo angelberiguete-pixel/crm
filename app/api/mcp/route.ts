@@ -74,14 +74,11 @@ async function callReadTool(request: Request, call: ValidToolCall) {
 
   let query = db.from(call.dataset.table)
     .select(call.dataset.columns)
-    .eq("tenant_id", call.tenantId)
-    .order("updated_at", { ascending: false })
-    .limit(call.limit);
-
+    .eq("tenant_id", call.tenantId);
   if (call.query && call.dataset.searchField) {
     query = query.ilike(call.dataset.searchField, "%" + sanitizedSearch(call.query) + "%");
   }
-  const result = await query;
+  const result = await query.order("updated_at", { ascending: false }).limit(call.limit);
   if (result.error) return deniedTool("No se pudo completar la consulta autorizada.");
 
   return mcpToolText({
