@@ -4,6 +4,7 @@ import Link from "next/link";
 import {type FormEvent,useEffect,useState} from "react";
 import {AlertCircle,CalendarClock,CheckCircle2,ClipboardList,RefreshCw,Target} from "lucide-react";
 import {supabase} from "@/lib/supabase";
+import ArmAgencySalesDesk from "@/components/arm-agency-sales-desk";
 
 type WorkTask={id:string;title:string;status:string;priority:string;due_at:string|null};
 type FollowUp={id:string;title:string;next_action:string|null;next_action_at:string};
@@ -217,6 +218,7 @@ export default function ArmOperationalBoard({tenantId,tenantSlug,memberRole}:{te
     </Link></div>}
    </article>
   </div>
+  {state.showAgency&&<ArmAgencySalesDesk tenantId={tenantId} tenantSlug={tenantSlug}/>}
   {state.showAgency&&<article className="card section-gap">
    <div className="eyebrow">Solo administración de Look Social Media</div>
    <h2>Prospección y captación comercial</h2>
