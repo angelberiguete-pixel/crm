@@ -11,6 +11,7 @@ import TenantSessionPresence from "@/components/tenant-session-presence";
 import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
+import FamilyPowerTaskAlerts from "@/components/family-power-task-alerts";
 import BrandLogo from "@/components/brand-logo";
 import RouteLoadingBrand from "@/components/route-loading-brand";
 import TenantBrandProvider from "@/components/tenant-brand-provider";
@@ -206,7 +207,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
       <TenantSessionPresence tenantId={tenant.tenant_id}/>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><TenantSessionExit/><MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><FamilyPowerTaskAlerts/><TenantSessionExit/><MobileTenantNavigation /></div>
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;
