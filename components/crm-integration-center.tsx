@@ -163,7 +163,7 @@ export default function CrmIntegrationCenter(){
            <small>{line?.enabled?"Ruta habilitada · falta prueba real":"Sin conectar"} · {line?.operator_name&&line.operator_name!=="unknown"?line.operator_name:"operador por confirmar"}</small>
          </div>;
        })}
-       {voiceCalls.length>0&&<div className={styles.stack} aria-label="Últimas llamadas registradas">
+       {voiceCalls.length>0&&<div className={styles.callHistory} aria-label="Últimas llamadas registradas">
          <strong>Últimas llamadas · revisión humana</strong>
          {voiceCalls.map(call=><div className={styles.record} key={call.id}>
            <span>{new Date(call.created_at).toLocaleDateString("es-DO")} · {call.from_number_e164.slice(0,4)}••••{call.from_number_e164.slice(-4)}</span>
