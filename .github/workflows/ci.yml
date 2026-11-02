@@ -41,7 +41,7 @@ jobs:
       - name: CRM per-tenant integrations, safe backend health and no-secret contracts
         run: node --experimental-strip-types --test tests/crm-integration-center.test.mjs
       - name: Family Power voice adapter normalization and non-activation safety
-        run: node --experimental-strip-types --test tests/voice-call-contract.test.mjs
+        run: node --experimental-strip-types --test tests/voice-call-contract.test.mjs tests/family-power-voice-webhook.test.mjs
       - name: Automation worker typecheck
         run: npx tsc --noEmit --target ES2022 --module preserve --moduleResolution bundler --skipLibCheck supabase/functions/automation-engine/worker.ts
       - name: Branding and tenant portal regression tests
