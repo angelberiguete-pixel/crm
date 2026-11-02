@@ -14,6 +14,8 @@ create table if not exists public.voice_line_routes (
   provider_agent_id text
     check (provider_agent_id is null or provider_agent_id ~ '^agent_[a-zA-Z0-9_-]{6,128}$'),
   verified_at timestamptz,
+  privacy_approved_at timestamptz,
+  billing_approved_at timestamptz,
   verified_reference text
     check (verified_reference is null or length(verified_reference) between 8 and 200),
   enabled boolean not null default false,
@@ -25,6 +27,7 @@ create table if not exists public.voice_line_routes (
     not enabled or (
       business_phone_e164 is not null and provider_destination_e164 is not null
       and provider_agent_id is not null and verified_at is not null
+      and privacy_approved_at is not null and billing_approved_at is not null
       and verified_reference is not null and operator_name <> 'unknown'
     )
   )
