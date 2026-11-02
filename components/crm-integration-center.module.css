@@ -52,3 +52,15 @@
 .disclaimer{display:flex;gap:9px;align-items:center;font-size:12px;color:var(--muted,#a8b5c9);line-height:1.6;padding:24px 0}
 @media(max-width:780px){.grid,.footerGrid{grid-template-columns:1fr}.header{flex-direction:column}.form{grid-template-columns:1fr}.form button{grid-column:span 1}}
 @media(max-width:490px){.page{padding:18px 12px 40px}.card,.panel,.wizard{padding:17px}.cardHead{align-items:flex-start}.status{max-width:180px}.rule{padding:14px}.card{min-height:0}.footerActions>*{width:100%}.refresh{width:100%}}
+
+.familyCompact .header{align-items:center;margin-bottom:14px}
+.familyCompact .header h1{font-size:clamp(23px,4vw,29px);margin:0}
+.familyCompact .compactGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.familyCompact .compactCard{border:1px solid var(--border,#dce1e9);border-radius:15px;background:var(--panel,#fff);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.familyCompact .compactCard h2{font-size:clamp(17px,2.3vw,20px);margin:0}
+.familyCompact .compactHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.familyCompact .compactIcon{display:grid;place-items:center;width:37px;height:37px;background:#c9142514;color:#c91425;border-radius:10px}
+.familyCompact .compactCard .record{font-size:12px}
+.familyCompact .compactCard .secondary{align-self:flex-start;margin-top:auto}
+.familyCompact .wizard{margin-top:14px}
+@media(max-width:660px){.familyCompact .compactGrid{grid-template-columns:1fr}.familyCompact .compactCard{padding:15px;gap:11px}.familyCompact .header{flex-direction:row;align-items:center}.familyCompact .refresh{width:auto}}
