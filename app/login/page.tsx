@@ -118,15 +118,15 @@ export default function LoginPage() {
         <button type="button" className="button" disabled={busy || checkingSession} onClick={() => router.replace("/crm")}>Continuar en la empresa actual</button>
         <button type="button" className="button primary" disabled={busy || checkingSession} onClick={() => void closeCurrentSession()}>{busy ? "Cerrando sesión…" : "Cerrar sesión de empresa para entrar como propietario"}</button>
       </div>}
-      <form onSubmit={submit} className="stack gap-16">
+      {!hasOpenSession && <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
         <button className="button primary" disabled={busy || checkingSession}>{busy || checkingSession ? "Comprobando sesión…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
-      </form>
-      {mode === "login" && <button type="button" className="text-button" disabled={resetBusy} onClick={() => void requestPasswordReset()}>{resetBusy ? "Enviando…" : "Olvidé mi contraseña"}</button>}
-      <button type="button" className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
+      </form>}
+      {!hasOpenSession && mode === "login" && <button type="button" className="text-button" disabled={resetBusy} onClick={() => void requestPasswordReset()}>{resetBusy ? "Enviando…" : "Olvidé mi contraseña"}</button>}
+      {!hasOpenSession && <button type="button" className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
         {mode === "login" ? "¿Primera vez? Crear cuenta" : "Ya tengo cuenta"}
-      </button>
+      </button>}
     </section>
   </main>;
 }
