@@ -138,15 +138,16 @@ export default function OmnichannelInbox() {
   const assignedName=(id:string|null)=>id ? (assignees.find(a=>a.user_id===id)?.display_name??"Asignado") : "Sin asignar";
   function openConversation(id:string) {setSelectedId(id);setMobileThreadOpen(true);setError("");setReplyDraft("");setReplyFeedback("");}
 
-  const canReply=channel?.provider==="whatsapp"&&channel.status==="connected"&&
+  const canReply=(channel?.provider==="whatsapp"||channel?.provider==="sms")&&channel.status==="connected"&&
     (isSupervisor||(activeTenant?.membership_role==="agent"&&!!currentUserId&&selected?.assigned_to===currentUserId));
 
   async function sendYCloudReply() {
     if(!canReply||!tenantId||!selected||replySending||!replyDraft.trim())return;
     setReplySending(true);setReplyFeedback("");setError("");
     const currentConversation=selected.id;
+    const sms=channel?.provider==="sms";
     try {
-      const {data,error:sendError}=await supabase.functions.invoke("ycloud-whatsapp-send",{
+      const {data,error:sendError}=await supabase.functions.invoke(sms?"httpsms-send":"ycloud-whatsapp-send",{
         body:{tenantId,conversationId:currentConversation,
           clientRequestId:crypto.randomUUID(),text:replyDraft.trim()}
       });
@@ -154,7 +155,7 @@ export default function OmnichannelInbox() {
         setReplyFeedback("No se confirmó el envío. No pulses otra vez hasta comprobar el historial y la configuración del canal.");
         return;
       }
-      setReplyDraft("");setReplyFeedback("YCloud aceptó el mensaje en cola; su entrega todavía debe confirmarse.");
+      setReplyDraft("");setReplyFeedback(sms?"httpSMS aceptó el SMS en cola; falta confirmar la entrega.":"YCloud aceptó el mensaje en cola; su entrega todavía debe confirmarse.");
       setReload(v=>v+1);
     }catch{
       setReplyFeedback("No se confirmó el envío. Revisa el estado antes de volver a intentarlo.");
@@ -191,18 +192,18 @@ export default function OmnichannelInbox() {
   if (loading) return <div className="loading">Preparando conversaciones…</div>;
   return <><main className="content crm-inbox-page" style={{ maxWidth: 1500, margin: "0 auto" }}>
     <header className="topbar">
-      <div><div className="eyebrow">Atención al cliente</div><h1>Conversaciones</h1><div className="muted">WhatsApp · Instagram · Correo · Chat web, separados por empresa</div></div>
+      <div><div className="eyebrow">Atención al cliente</div><h1>Conversaciones</h1><div className="muted">WhatsApp · SMS · Instagram · Correo · Chat web, separados por empresa</div></div>
       <div className={styles.statusRow}><button type="button" className="button" onClick={()=>setReload(n=>n+1)}><RefreshCw size={15}/> Actualizar</button><Link className="button" href="/crm"><ArrowLeft size={14}/> Volver al CRM</Link></div>
     </header>
     {error && <div className="notice" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
-    <section className="card crm-channel-connection-status"><strong>Estado de los canales de esta empresa</strong><div className="crm-channel-pills">{(["whatsapp","instagram","email"] as const).map(provider=>{const connections=channels.filter(c=>c.provider===provider);const isConnected=connections.some(c=>c.status==="connected");return <span className="pill" key={provider}>{channelLabel[provider]}: {isConnected?"Registrado como conectado (sin prueba de envío)":"Sin conexión activa"}</span>;})}</div><p className="muted">Para recibir y responder mensajes reales, un administrador debe autorizar el canal con su proveedor. Aquí no se simula ninguna conexión ni se envían mensajes hasta validarla.</p>{isSupervisor&&<Link className="button" href={activeTenant?.tenant_slug==="family-power"?"/crm/integrations":"/crm/channels"}>Preparar canales de esta empresa</Link>}</section>
+    <section className="card crm-channel-connection-status"><strong>Estado de los canales de esta empresa</strong><div className="crm-channel-pills">{(["whatsapp","sms","instagram","email"] as const).map(provider=>{const connections=channels.filter(c=>c.provider===provider);const isConnected=connections.some(c=>c.status==="connected");return <span className="pill" key={provider}>{channelLabel[provider]}: {isConnected?"Registrado como conectado (sin prueba de envío)":"Sin conexión activa"}</span>;})}</div><p className="muted">Para recibir y responder mensajes reales, un administrador debe autorizar el canal con su proveedor. Aquí no se simula ninguna conexión ni se envían mensajes hasta validarla.</p>{isSupervisor&&<Link className="button" href={activeTenant?.tenant_slug==="family-power"?"/crm/integrations":"/crm/channels"}>Preparar canales de esta empresa</Link>}</section>
     <section className={`grid crm-inbox-grid ${styles.inboxGrid} ${mobileThreadOpen?styles.threadVisible:styles.listVisible}`}>
       <div className={`card ${styles.inboxList}`} style={{ padding: 12 }}>
         <div className="stack gap-8">
           <label style={{ position: "relative" }}><Search size={15} style={{ position: "absolute", left: 10, top: 11 }}/><input aria-label="Buscar conversaciones" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar persona, oportunidad o correo…" style={{ paddingLeft: 32 }}/></label>
           <div className={styles.filters}><select aria-label="Filtrar por estado" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Todos los estados</option><option value="open">Abiertas</option><option value="pending">Pendientes</option><option value="snoozed">Pospuestas</option><option value="closed">Cerradas</option></select><button type="button" aria-pressed={onlyUnread} className={`button ${styles.filterUnread} ${onlyUnread?"primary":""}`} onClick={()=>setOnlyUnread(v=>!v)}>No leídos</button></div>
         </div>
-        <label className="crm-assignment-filter">Canal<select aria-label="Filtrar conversaciones por canal" value={channelFilter} onChange={e=>setChannelFilter(e.target.value)}><option value="all">Todos los canales</option><option value="whatsapp">WhatsApp</option><option value="instagram">Instagram</option><option value="email">Correo</option><option value="messenger">Messenger</option><option value="webchat">Chat web</option></select></label>
+        <label className="crm-assignment-filter">Canal<select aria-label="Filtrar conversaciones por canal" value={channelFilter} onChange={e=>setChannelFilter(e.target.value)}><option value="all">Todos los canales</option><option value="whatsapp">WhatsApp</option><option value="sms">SMS</option><option value="instagram">Instagram</option><option value="email">Correo</option><option value="messenger">Messenger</option><option value="webchat">Chat web</option></select></label>
         <label className="crm-assignment-filter">Responsable<select aria-label="Filtrar conversaciones por responsable" value={assignmentFilter} onChange={e=>setAssignmentFilter(e.target.value)}><option value="all">Todas las conversaciones</option><option value="mine">Mis conversaciones</option><option value="unassigned">Sin asignar</option></select></label>
         <div className="stack gap-8" style={{ marginTop: 12 }}>
           <p role="status" className={styles.listSummary}>{filtered.length} {filtered.length===1?"conversación":"conversaciones"} con los filtros actuales</p>{filtered.length === 0 && <div className="empty"><strong>Sin conversaciones</strong><div>No hay conversaciones que coincidan con estos filtros.</div></div>}
@@ -227,19 +228,19 @@ export default function OmnichannelInbox() {
               <small className={`muted ${styles.messageMeta}`}>{when.format(new Date(msg.sent_at??msg.created_at))} · {messageStatusLabel[msg.status]??msg.status}{msg.read_at?" · leído":msg.delivered_at?" · entregado":""}</small>
             </div>)}
           </div>
-          {channel?.provider==="whatsapp"&&<div className="stack gap-8" style={{marginTop:16}}>
-            <label htmlFor="ycloud-reply-text"><strong>Responder desde el CRM · YCloud</strong></label>
-            <textarea id="ycloud-reply-text" aria-label="Respuesta de WhatsApp"
+          {(channel?.provider==="whatsapp"||channel?.provider==="sms")&&<div className="stack gap-8" style={{marginTop:16}}>
+            <label htmlFor="provider-reply-text"><strong>Responder desde el CRM · {channel?.provider==="sms"?"httpSMS":"YCloud"}</strong></label>
+            <textarea id="provider-reply-text" aria-label={channel?.provider==="sms"?"Respuesta SMS":"Respuesta de WhatsApp"}
               value={replyDraft} onChange={e=>setReplyDraft(e.target.value)}
-              placeholder={canReply?"Escribe una respuesta para enviar por la API…":"Disponible tras verificar el canal YCloud y asignar un responsable"}
-              maxLength={1600} rows={3} disabled={!canReply||replySending}/>
+              placeholder={canReply?"Escribe una respuesta para enviar por la API…":"Disponible tras verificar el canal y asignar un responsable"}
+              maxLength={channel?.provider==="sms"?480:1600} rows={3} disabled={!canReply||replySending}/>
             <div className="top-actions"><button type="button" className="button primary"
               disabled={!canReply||replySending||!replyDraft.trim()}
-              onClick={()=>void sendYCloudReply()}>{replySending?"Procesando…":"Enviar por YCloud"}</button>
-              <small className="muted">Solo respuesta manual; dentro de las 24 horas del último mensaje recibido. Sin IA automática.</small></div>
+              onClick={()=>void sendYCloudReply()}>{replySending?"Procesando…":channel?.provider==="sms"?"Enviar SMS":"Enviar por YCloud"}</button>
+              <small className="muted">{channel?.provider==="sms"?"Solo respuesta manual a un SMS recibido recientemente, con límite diario, sin campañas ni IA automática.":"Solo respuesta manual; dentro de las 24 horas del último mensaje recibido. Sin IA automática."}</small></div>
             {replyFeedback&&<div className="notice" role="status">{replyFeedback}</div>}
           </div>}
-          <div className="notice" style={{ marginTop: 16 }}>El envío depende de que YCloud esté verificado, autorizado y habilitado en el servidor. Ninguna clave API se configura desde esta pantalla.</div>
+          <div className="notice" style={{ marginTop: 16 }}>El envío depende de que el proveedor del canal esté verificado y habilitado en el servidor. Ninguna clave API se configura desde esta pantalla.</div>
         </>}
       </div>
       <aside className={`stack gap-12 ${styles.inboxAside}`}>
