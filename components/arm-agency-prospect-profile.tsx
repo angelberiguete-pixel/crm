@@ -127,10 +127,13 @@ export default function ArmAgencyProspectProfile({tenantId,tenantSlug,prospectId
     setNotice("Los cambios se guardaron, pero el historial no confirmó el registro de auditoría.");
    }else{
     setNotice("Ficha actualizada y cambio registrado en el historial.");
+    setEvents(previous=>[{
+     id:audit.data.id,prospect_id:prospectId,activity_type:"note",
+     summary:"Edición manual de ficha: "+differences.map(key=>labels[key]).join(", "),
+     outcome:null,occurred_at:new Date().toISOString(),next_action:null,next_action_at:null
+    },...previous].slice(0,30));
    }
-   // Keep the confirmation visible after refreshing the profile.
    setProfile({...profile,...patch,updated_at:updated.data.updated_at});
-   setRevision(n=>n+1);
   }catch(err){
    setError("No se guardó la ficha: "+(err instanceof Error?err.message:"Error desconocido"));
   }finally{setSaving(false);}
