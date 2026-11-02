@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {type FormEvent,useCallback,useEffect,useRef,useState} from "react";
-import {AtSign,Bot,CheckCircle2,ClipboardCopy,ExternalLink,Inbox,Mail,MessageCircle,RefreshCw,ShieldCheck,Unplug,Workflow} from "lucide-react";
+import {AtSign,Bot,CheckCircle2,ClipboardCopy,ExternalLink,Inbox,Mail,MessageCircle,PhoneCall,RefreshCw,ShieldCheck,Unplug,Workflow} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
@@ -141,6 +141,13 @@ export default function CrmIntegrationCenter(){
          <button className={styles.secondary} type="button" disabled={loading} onClick={()=>choose(kind)}>{status.color==="off"?"Solicitar conexión":"Ver solicitud"}</button>
        </section>;
      })}
+     <section className={styles.compactCard} aria-label="Llamadas con agentes de voz">
+       <div className={styles.compactHead}><span className={styles.compactIcon}><PhoneCall size={21}/></span>
+         <span className={styles.status+" "+styles.off}>Sin conectar</span></div>
+       <h2>Llamadas con IA</h2>
+       <p className={styles.summary}>Usaremos el número actual de Family Power. Falta validar operador, tipo de línea y desvío o SIP antes de conectar el agente de voz.</p>
+       <div className={styles.record}><span>Atención telefónica automática</span><small>Pendiente de pruebas</small></div>
+     </section>
      <section className={styles.compactCard}>
        <div className={styles.compactHead}><span className={styles.compactIcon}><Bot size={21}/></span>
          <span className={styles.status+" "+styles.off}>{health?.ai_spending_blocked===false?"Estado por verificar":"Sin activar"}</span></div>
