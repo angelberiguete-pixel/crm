@@ -80,9 +80,14 @@ export default function CrmContactEditor({tenantId,contactId,onSaved,onClose}:{
   }
   setSaving(true);setError("");setNotice("");
   try{
-   const permissions=await supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId});
+   const [permissions,modules]=await Promise.all([
+    supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
+    supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId})
+   ]);
    const p=(permissions.data??{}) as Record<string,unknown>;
-   if(permissions.error||!(p.all===true||p.contacts===true)){
+   const m=(modules.data??[]) as Array<{module_key:string;enabled:boolean}>;
+   if(permissions.error||modules.error||!(p.all===true||p.contacts===true)
+     ||m.find(x=>x.module_key==="contacts")?.enabled===false){
     throw new Error("Tu sesión ya no tiene permisos para modificar contactos.");
    }
    const update=await supabase.from("contacts").update({
@@ -102,8 +107,8 @@ export default function CrmContactEditor({tenantId,contactId,onSaved,onClose}:{
     if(!access.error&&(access.data as {is_platform_admin?:boolean}|null)?.is_platform_admin===true){
      const opportunities=await supabase.from("opportunities")
       .select("metadata").eq("tenant_id",tenantId).eq("contact_id",contactId).limit(25);
-     if(opportunities.error){
-      note+=" No se pudo verificar el vínculo con la ficha de prospección.";
+     if(opportunities.error||((opportunities.data??[]).length===25)){
+      note+=" No se pudo verificar un vínculo único con la ficha de prospección.";
      }else{
       const refs=[...new Set((opportunities.data??[])
        .map(o=>(o.metadata as {agency_prospect_id?:unknown}|null)?.agency_prospect_id)
