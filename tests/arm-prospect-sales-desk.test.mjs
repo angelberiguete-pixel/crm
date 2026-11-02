@@ -55,3 +55,19 @@ test("stale cross-tenant metrics and operational queues are hidden on company sw
  assert.match(arm,/ArmOperationalBoard key=\{tenantId\}/);
  assert.match(arm,/dashboard\.tenantId===tenantId\?dashboard\.agents:\[\]/);
 });
+
+test("meeting appointments remain internal CRM records scoped to tenant and verified activity",()=>{
+ const sales=read("components/arm-agency-sales-desk.tsx");
+ assert.match(sales,/supabase\.rpc\("tenant_current_permissions"/);
+ assert.match(sales,/supabase\.rpc\("tenant_effective_modules"/);
+ assert.match(sales,/modules\.find\(m=>m\.module_key==="calendar"\)/);
+ assert.match(sales,/\.from\("calendar_events"\)\.insert\(/);
+ assert.match(sales,/tenant_id:tenantId,title:"Reunión · "\+selected\.name/);
+ assert.match(sales,/contact_id:linked\?\.contact_id\?\?null/);
+ assert.match(sales,/opportunity_id:linked\?\.id\?\?null/);
+ assert.match(sales,/agency_activity_id:activityId/);
+ assert.match(sales,/const end=new Date\(date\.getTime\(\)\+45\*60\*1000\)/);
+ assert.match(sales,/status:"scheduled"/);
+ assert.match(sales,/no se le envía una invitación/);
+ assert.doesNotMatch(sales,/calendar\.events\.insert|Google_Calendar|mcp__Make__|sendMail|sendWhatsapp/i);
+});
