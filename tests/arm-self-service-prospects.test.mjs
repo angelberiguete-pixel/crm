@@ -54,3 +54,14 @@ test("read/write controls are protected against stale company and selection data
  assert.match(profile,/onSaved\?\.\(prospectId,patch\)/);
  assert.match(desk,/fields\.decision_maker===undefined\?p\.decision_maker:fields\.decision_maker/);
 });
+
+test("owners have direct management shortcuts instead of needing code edits",()=>{
+ const arm=read("components/arm-workspace.tsx");
+ assert.match(arm,/aria-label="Autogestión del CRM sin programación"/);
+ assert.match(arm,/href="\/crm\/settings"/);
+ assert.match(arm,/href="\/crm\/products"/);
+ assert.match(arm,/href="\/crm\/calendar"/);
+ assert.match(arm,/href="\/crm\/integrations"/);
+ assert.match(arm,/canConfigure&&<section/);
+ assert.match(arm,/sujeta al rol y a los permisos de tu empresa/);
+});
