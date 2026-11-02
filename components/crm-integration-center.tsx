@@ -12,6 +12,8 @@ type Provider="whatsapp"|"instagram"|"email";
 type Channel={id:string;provider:Provider;name:string;record_status:string;verified:boolean};
 type Health={tenant_id:string;whatsapp_verified_route:boolean;ai_spending_blocked:boolean;staff_profiles:number;channels:Channel[]};
 type RequestRow={channel_id:string;provider:Provider;display_name:string;request_identifier:string|null;record_status:string;request_stage:string;requested_at:string};
+type VoiceLine={line_kind:"fixed"|"mobile";operator_name:string;enabled:boolean;verified_at:string|null};
+type VoiceCall={id:string;from_number_e164:string;summary:string|null;status:string;created_at:string};
 type YCloudStatus={tenant_id:string;provider_ready:boolean;outbound_send_tested:boolean;meta_events_export_enabled:boolean;routes:Array<{channel_name:string;phone:string;waba_id:string;is_enabled:boolean;channel_status:string;verified_at:string;inbound_message_count:number;last_inbound_at:string|null}>};
 const formLabel:{[K in Provider]:{title:string;label:string;placeholder:string;description:string;external:string;externalLabel:string}}={
  whatsapp:{
@@ -53,6 +55,8 @@ export default function CrmIntegrationCenter(){
  const activeId=useRef(id);activeId.current=id;
  const [health,setHealth]=useState<Health|null>(null);
  const [ycloud,setYcloud]=useState<YCloudStatus|null>(null);
+ const [voiceLines,setVoiceLines]=useState<VoiceLine[]>([]);
+ const [voiceCalls,setVoiceCalls]=useState<VoiceCall[]>([]);
  const [requests,setRequests]=useState<RequestRow[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -67,14 +71,18 @@ export default function CrmIntegrationCenter(){
  useEffect(()=>{setProvider(null);setIdentifier("");setNotice("");setError("");},[id]);
  useEffect(()=>{
   let alive=true;
-  setHealth(null);setYcloud(null);setRequests([]);
+  setHealth(null);setYcloud(null);setRequests([]);setVoiceLines([]);setVoiceCalls([]);
   setLoading(true);setError("");
   if(!id||!admin){setLoading(false);return;}
   (async()=>{
-   const [h,r,y]=await Promise.all([
+   const [h,r,y,vl,vc]=await Promise.all([
      supabase.rpc("tenant_integration_health",{p_tenant_id:id}),
      supabase.rpc("tenant_channel_requests_overview",{p_tenant_id:id}),
-     supabase.rpc("tenant_ycloud_connection_status",{p_tenant_id:id})
+     supabase.rpc("tenant_ycloud_connection_status",{p_tenant_id:id}),
+     supabase.from("voice_line_routes").select("line_kind,operator_name,enabled,verified_at")
+       .eq("tenant_id",id),
+     supabase.from("voice_calls").select("id,from_number_e164,summary,status,created_at")
+       .eq("tenant_id",id).order("created_at",{ascending:false}).limit(3)
    ]);
    if(!alive||activeId.current!==id)return;
    if(h.error||r.error)throw h.error??r.error;
@@ -84,6 +92,8 @@ export default function CrmIntegrationCenter(){
    setRequests((r.data??[]) as RequestRow[]);
    if(!y.error && (y.data as YCloudStatus|null)?.tenant_id===id) setYcloud(y.data as YCloudStatus);
    else setYcloud(null);
+   if(!vl.error)setVoiceLines((vl.data??[]) as VoiceLine[]);
+   if(!vc.error)setVoiceCalls((vc.data??[]) as VoiceCall[]);
   })().catch(e=>{if(alive&&activeId.current===id)setError("No se pudo verificar el estado: "+(e instanceof Error?e.message:"Intenta actualizar."));})
   .finally(()=>{if(alive&&activeId.current===id)setLoading(false);});
   return()=>{alive=false;};
@@ -146,8 +156,20 @@ export default function CrmIntegrationCenter(){
          <span className={styles.status+" "+styles.off}>Sin conectar</span></div>
        <h2>Llamadas con IA</h2>
        <p className={styles.summary}>Family Power conserva sus dos números, uno fijo y uno celular, de Claro y Altice. Primero verificaremos cuál corresponde a cada operador y cómo desviar las llamadas sin afectar WhatsApp.</p>
-       <div className={styles.record}><span>Línea fija</span><small>Sin conectar · operador por confirmar</small></div>
-       <div className={styles.record}><span>Línea celular</span><small>Sin conectar · operador por confirmar</small></div>
+       {(["fixed","mobile"] as const).map(kind=>{
+         const line=voiceLines.find(v=>v.line_kind===kind);
+         return <div className={styles.record} key={kind}>
+           <span>{kind==="fixed"?"Línea fija":"Línea celular"}</span>
+           <small>{line?.enabled?"Ruta habilitada · falta prueba real":"Sin conectar"} · {line?.operator_name&&line.operator_name!=="unknown"?line.operator_name:"operador por confirmar"}</small>
+         </div>;
+       })}
+       {voiceCalls.length>0&&<div className={styles.stack} aria-label="Últimas llamadas registradas">
+         <strong>Últimas llamadas · revisión humana</strong>
+         {voiceCalls.map(call=><div className={styles.record} key={call.id}>
+           <span>{new Date(call.created_at).toLocaleDateString("es-DO")} · {call.from_number_e164.slice(0,4)}••••{call.from_number_e164.slice(-4)}</span>
+           <small>{call.status==="reviewed"?"Revisada":"Pendiente"}</small>
+         </div>)}
+       </div>}
        <p className={styles.summary}>Piloto sugerido: evaluar primero la línea fija y mantener la celular para atención humana; la elección definitiva depende de cuál recibe las llamadas comerciales.</p>
      </section>
      <section className={styles.compactCard}>
