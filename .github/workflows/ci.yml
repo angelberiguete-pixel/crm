@@ -62,6 +62,8 @@ jobs:
         run: node --test tests/arm-operational-board.test.mjs
       - name: ARM commercial activity, meeting scheduling and linked opportunity safety
         run: node --test tests/arm-prospect-sales-desk.test.mjs
+      - name: ARM owner self-service prospect profiles, paging and audit safeguards
+        run: node --test tests/arm-self-service-prospects.test.mjs
       - name: Tenant white-label identity and input safety tests
         run: node --experimental-strip-types --test tests/tenant-white-label.test.mjs
       - name: WhatsApp marketing events, tenant KPI safety and quote buttons
