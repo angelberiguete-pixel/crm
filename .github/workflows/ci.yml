@@ -70,6 +70,8 @@ jobs:
         run: node --test tests/family-power-drive-library.test.mjs
       - name: Family Power quotation PDF and client workflow regressions
         run: node --experimental-strip-types --test tests/family-power-quotation-pdf.test.mjs
+      - name: Family Power verified inbound contact names safety
+        run: node --test tests/family-power-verified-name-capture.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
