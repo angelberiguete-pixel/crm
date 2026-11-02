@@ -138,6 +138,65 @@ export default function DigitalEmployeeStudio(){
 
   if(!tenant)return <main className="content"><p>Selecciona una empresa antes de configurar empleados digitales.</p></main>;
   if(!permitted)return <main className="content"><div className="notice" role="alert">La administración de agentes digitales requiere acceso propietario o administrador de la empresa.</div></main>;
+
+  if(tenant.tenant_slug==="family-power"){
+    const armRoles=[
+      {key:"recepcion",name:"Recepción digital",legacy:"recepcionista"},
+      {key:"ventas",name:"Ventas",legacy:"vendedor"},
+      {key:"tecnico",name:"Asesor técnico",legacy:"tecnico"},
+      {key:"seguimiento",name:"Seguimiento",legacy:"seguimiento"},
+      {key:"supervision",name:"Supervisor",legacy:"supervisor"}
+    ];
+    const getArmAgent=(item:typeof armRoles[number])=>agents.find(agent=>{
+      const settings=agent.settings??{};
+      return settings.arm_role===item.key||settings.role===item.legacy||agent.name===item.name;
+    });
+    return <main className="content" style={{maxWidth:1020,margin:"0 auto"}}>
+      <header className="topbar"><h1>Agentes</h1>
+        <div className="top-actions"><Link className="button" href="/crm/arm">Volver</Link>
+          <button className="button" type="button" onClick={()=>setReload(v=>v+1)}><RefreshCw size={16}/> Actualizar</button>
+        </div>
+      </header>
+      {error&&<div className="notice" role="alert">{error}</div>}
+      {notice&&<div className="notice" role="status">{notice}</div>}
+      <section className="card">
+        <div className="topbar"><h2>Equipo digital</h2><span className="pill">{loading?"…":agents.length+" registrados"}</span></div>
+        <div className="stack gap-12">
+          {armRoles.map(item=>{
+            const agent=getArmAgent(item);
+            const editable=agent&&!["tecnico","seguimiento","supervision"].includes(String(agent.settings?.arm_role??""));
+            return <div className="priority-item" key={item.key} style={{display:"flex",alignItems:"center",gap:12,justifyContent:"space-between",flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <Bot size={19}/><div><strong>{item.name}</strong><small className="muted" style={{display:"block"}}>
+                  {agent?(agent.status==="draft"?"Borrador":agent.status):"Pendiente"}</small></div>
+              </div>
+              {editable&&<button type="button" className="button small" onClick={()=>selectAgent(agent)}>Configurar</button>}
+            </div>;
+          })}
+        </div>
+      </section>
+      {selectedId&&active&&<section className="card section-gap" style={{marginTop:16}}>
+        <div className="topbar"><h2>{active.name}</h2><button className="button" type="button" onClick={()=>setSelectedId(null)}>Cerrar</button></div>
+        <form onSubmit={save} className="stack gap-12">
+          <label>Nombre interno<input value={name} maxLength={90} minLength={3} required onChange={e=>setName(e.target.value)}/></label>
+          {fields.filter(f=>["business_name","services"].includes(f.key)).map(f=><label key={f.key}>{f.label}
+            {f.rows?<textarea value={knowledge[f.key]} rows={3} placeholder={f.hint} onChange={e=>updateKnowledge(f.key,e.target.value)}/>:
+             <input value={knowledge[f.key]} placeholder={f.hint} onChange={e=>updateKnowledge(f.key,e.target.value)}/>}
+          </label>)}
+          <details><summary style={{cursor:"pointer",fontWeight:650}}>Otros datos del negocio</summary>
+            <div className="stack gap-12" style={{paddingTop:12}}>
+              {fields.filter(f=>!["business_name","services"].includes(f.key)).map(f=><label key={f.key}>{f.label}
+                {f.rows?<textarea value={knowledge[f.key]} rows={2} placeholder={f.hint} onChange={e=>updateKnowledge(f.key,e.target.value)}/>:
+                 <input value={knowledge[f.key]} placeholder={f.hint} onChange={e=>updateKnowledge(f.key,e.target.value)}/>}
+              </label>)}
+            </div>
+          </details>
+          <button type="submit" className="button primary" disabled={busy}><Save size={16}/> {busy?"Guardando…":"Guardar borrador"}</button>
+        </form>
+      </section>}
+      {tenantId&&<DigitalEmployeeReviewQueue tenantId={tenantId} compact/>}
+    </main>;
+  }
   return <main className="content" style={{maxWidth:1300,margin:"0 auto"}}>
     <header className="topbar">
       <div><div className="eyebrow">{tenant.tenant_slug==="family-power"?"Family Power · ARM":"Look Social Media · Digital Staff"}</div>
