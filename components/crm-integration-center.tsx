@@ -145,8 +145,10 @@ export default function CrmIntegrationCenter(){
        <div className={styles.compactHead}><span className={styles.compactIcon}><PhoneCall size={21}/></span>
          <span className={styles.status+" "+styles.off}>Sin conectar</span></div>
        <h2>Llamadas con IA</h2>
-       <p className={styles.summary}>Usaremos el número actual de Family Power. Falta validar operador, tipo de línea y desvío o SIP antes de conectar el agente de voz.</p>
-       <div className={styles.record}><span>Atención telefónica automática</span><small>Pendiente de pruebas</small></div>
+       <p className={styles.summary}>Family Power conserva sus dos números, uno fijo y uno celular, de Claro y Altice. Primero verificaremos cuál corresponde a cada operador y cómo desviar las llamadas sin afectar WhatsApp.</p>
+       <div className={styles.record}><span>Línea fija</span><small>Sin conectar · operador por confirmar</small></div>
+       <div className={styles.record}><span>Línea celular</span><small>Sin conectar · operador por confirmar</small></div>
+       <p className={styles.summary}>Piloto sugerido: evaluar primero la línea fija y mantener la celular para atención humana; la elección definitiva depende de cuál recibe las llamadas comerciales.</p>
      </section>
      <section className={styles.compactCard}>
        <div className={styles.compactHead}><span className={styles.compactIcon}><Bot size={21}/></span>
