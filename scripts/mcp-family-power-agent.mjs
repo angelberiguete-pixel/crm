@@ -24,7 +24,7 @@ function safeCatalogRow(value) {
     currency: value.currency, sale_price: value.sale_price, stock_snapshot: value.stock_snapshot };
 }
 
-async function modelResponse(env, input, tools) {
+async function modelResponse(env, input, tools, toolChoice) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -37,6 +37,7 @@ async function modelResponse(env, input, tools) {
       store: false, parallel_tool_calls: false,
       max_output_tokens: 450,
       tools,
+      tool_choice: toolChoice,
       input
     }),
     signal: AbortSignal.timeout(60000)
@@ -83,7 +84,7 @@ export async function runReadOnlyAgent(env) {
     { role: "system", content: "Eres un asistente interno de Family Power, de solo lectura. Nunca ejecutes acciones comerciales ni inventes cifras. Usa solamente consultar_productos_family_power." },
     { role: "user", content: prompt }
   ];
-  const first = await modelResponse(env, input, tools);
+  const first = await modelResponse(env, input, tools, { type: "function", name: "consultar_productos_family_power" });
   const calls = first.output.filter((x) => x.type === "function_call");
   if (calls.length !== 1 || calls[0].name !== "consultar_productos_family_power") {
     throw Error("El modelo no generó la única consulta permitida.");
@@ -111,7 +112,7 @@ export async function runReadOnlyAgent(env) {
     ...input, ...first.output,
     { type: "function_call_output", call_id: calls[0].call_id,
       output: JSON.stringify({ source: "Family Power", count: sanitized.length, products: sanitized }) }
-  ], tools);
+  ], tools, "none");
   if (next.output.some((x) => x.type === "function_call")) {
     throw Error("El agente alcanzó su límite de una llamada MCP.");
   }
