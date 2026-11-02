@@ -84,7 +84,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   setNextAction(p?.next_action??"");
   setNextDate(dateLocal(p?.next_action_at??null));
   setSummary("");setOutcome("");setKind("call");setNotice("");
- },[selectedId,rows]);
+ },[selectedId]);
 
  useEffect(()=>{
   let alive=true;
