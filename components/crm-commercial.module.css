@@ -28,8 +28,9 @@
 .customerCard p {margin:0;color:var(--muted);font-size:13px;overflow-wrap:anywhere;}
 .customerCard .button {width:100%;}
 .customerBadge { display:inline-flex;align-self:flex-start;padding:4px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:12px;border:1px solid var(--border); }
-.detailLinks {display:flex;gap:10px;flex-wrap:wrap;}
-.detailLinks a {font-size:13px; color:var(--accent); overflow-wrap:anywhere;}
+.detailLinks {display:flex;gap:8px;flex-wrap:wrap;}
+.detailLinks a {display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 95px;min-height:44px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;color:var(--accent);overflow-wrap:anywhere;}
+.detailLinks a:hover,.detailLinks a:focus-visible {background:var(--panel2);}
 .companyList {display:grid;gap:12px;}
 .sectionIntro {margin:0;color:var(--muted);font-size:14px;}
 @media (max-width:760px) {

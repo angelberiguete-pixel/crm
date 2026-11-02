@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, Search, Target, Users, Download } from "lucide-react";
+import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, MessageCircle, Search, Target, Users, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
@@ -19,6 +19,7 @@ type CompanyDraft = {name:string;sector:string;city:string;phone:string;whatsapp
 type ContactDraft = {display_name:string;company_id:string;job_title:string;phone:string;whatsapp_phone:string;email:string};
 const blankCompany:CompanyDraft={name:"",sector:"",city:"",phone:"",whatsapp_phone:"",email:""};
 const blankContact:ContactDraft={display_name:"",company_id:"",job_title:"",phone:"",whatsapp_phone:"",email:""};
+const NEW_COMPANY_OPTION="__create_company__";
 const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays]] as const;
 const statuses:Record<string,string>={lead:"Prospecto",active:"Activo",customer:"Cliente",qualified:"Calificado",inactive:"Inactivo"};
 const cleanPhone=(value:string)=>value.replace(/[^\d+]/g,"");
@@ -40,12 +41,13 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  const [editingId,setEditingId]=useState<string|null>(null);
  const [companyDraft,setCompanyDraft]=useState<CompanyDraft>({...blankCompany});
  const [contactDraft,setContactDraft]=useState<ContactDraft>({...blankContact});
+ const [newCompanyName,setNewCompanyName]=useState("");
  const [saving,setSaving]=useState(false);
  useEffect(()=>{
    const params=new URLSearchParams(window.location.search);
    setCompanies([]);setContacts([]);setOpportunities([]);setActiveRecord(null);setSearch("");setError("");setFeedback("");
    setShowForm(params.get("new")==="1");
-   setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});
+   setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setNewCompanyName("");
  },[tenantId,kind]);
  useEffect(()=>{
    if(!tenantId){setLoading(false);return;}
@@ -90,9 +92,9 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  },[opportunities]);
  const companyRows=useMemo(()=>companies.filter(c=>[c.name,c.sector,c.city,c.email,c.phone,c.whatsapp_phone].join(" ").toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))),[companies,search]);
  const contactRows=useMemo(()=>contacts.filter(c=>[c.display_name,c.job_title,c.email,c.phone,c.whatsapp_phone,c.company_id?companyMap.get(c.company_id):""].join(" ").toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))),[contacts,search,companyMap]);
- function startNew(){setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setFeedback("");setShowForm(true);}
+ function startNew(){setEditingId(null);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setNewCompanyName("");setFeedback("");setShowForm(true);}
  function startCompanyEdit(c:Company){setEditingId(c.id);setFeedback("");setCompanyDraft({name:c.name,sector:c.sector??"",city:c.city??"",phone:c.phone??"",whatsapp_phone:c.whatsapp_phone??"",email:c.email??""});setShowForm(true);}
- function startContactEdit(c:Contact){setEditingId(c.id);setFeedback("");setContactDraft({display_name:c.display_name,company_id:c.company_id??"",job_title:c.job_title??"",phone:c.phone??"",whatsapp_phone:c.whatsapp_phone??"",email:c.email??""});setShowForm(true);}
+ function startContactEdit(c:Contact){setEditingId(c.id);setFeedback("");setNewCompanyName("");setContactDraft({display_name:c.display_name,company_id:c.company_id??"",job_title:c.job_title??"",phone:c.phone??"",whatsapp_phone:c.whatsapp_phone??"",email:c.email??""});setShowForm(true);}
  function downloadContact(c:Contact){
    try{
      const vcard=exportContactToVCard({display_name:c.display_name,job_title:c.job_title,email:c.email,phone:c.phone,whatsapp_phone:c.whatsapp_phone,company_name:c.company_id?companyMap.get(c.company_id):null});
@@ -121,8 +123,23 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
      }else{
        const display_name=contactDraft.display_name.trim();
        if(!display_name)throw new Error("Escribe el nombre del contacto.");
-       if(contactDraft.company_id&&!companies.some(company=>company.id===contactDraft.company_id))throw new Error("Selecciona una empresa válida de esta cuenta.");
-       const data={display_name,company_id:contactDraft.company_id||null,job_title:contactDraft.job_title.trim()||null,phone:contactDraft.phone.trim()||null,whatsapp_phone:contactDraft.whatsapp_phone.trim()||null,email:contactDraft.email.trim()||null};
+       let companyId:string|null=contactDraft.company_id||null;
+       if(companyId===NEW_COMPANY_OPTION){
+         const companyName=newCompanyName.trim();
+         if(!companyName)throw new Error("Escribe el nombre de la nueva empresa o selecciona Sin empresa.");
+         // Reuse an existing company of this tenant instead of creating a duplicate.
+         const existing=companies.find(company=>company.name.trim().localeCompare(companyName,"es",{sensitivity:"base"})===0);
+         if(existing)companyId=existing.id;
+         else{
+           const created=await supabase.from("companies").insert({tenant_id:tenantId,name:companyName}).select("id").single();
+           if(created.error)throw new Error("No se pudo registrar la empresa: "+created.error.message);
+           if(!created.data?.id)throw new Error("No se confirmó el registro de la nueva empresa.");
+           companyId=created.data.id;
+         }
+       }else if(companyId&&!companies.some(company=>company.id===companyId)){
+         throw new Error("Selecciona una empresa válida de esta cuenta.");
+       }
+       const data={display_name,company_id:companyId,job_title:contactDraft.job_title.trim()||null,phone:contactDraft.phone.trim()||null,whatsapp_phone:contactDraft.whatsapp_phone.trim()||null,email:contactDraft.email.trim()||null};
        const result=editingId
          ? await supabase.from("contacts").update(data).eq("tenant_id",tenantId).eq("id",editingId).select("id").maybeSingle()
          : await supabase.from("contacts").insert({...data,tenant_id:tenantId,status:"lead",source:"manual"});
@@ -130,7 +147,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
        if(editingId&&!result.data)throw new Error("No se confirmó la actualización del registro.");
      }
      setFeedback(editingId?"Cambios guardados correctamente.":isCompany?"Empresa registrada correctamente.":"Contacto registrado correctamente.");
-     setEditingId(null);setShowForm(false);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setReload(n=>n+1);
+     setEditingId(null);setShowForm(false);setCompanyDraft({...blankCompany});setContactDraft({...blankContact});setNewCompanyName("");setReload(n=>n+1);
    }catch(err){setFeedback("No se pudo guardar: "+(err instanceof Error?err.message:"Intenta nuevamente."));}
    finally{setSaving(false);}
  }
@@ -161,7 +178,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
            <h3>{c.name}</h3><p>{[c.sector,c.city].filter(Boolean).join(" · ")||"Sin sector ni ciudad"}</p>
            <span className={styles.customerBadge}>Creada: {dateLabel(c.created_at)}</span>
            <p className={styles.recordCounts}>{contactTotals.get(c.id)??0} contactos · {opportunityTotals.byCompany.get(c.id)??0} oportunidades</p>
-           <ContactLinks email={c.email} phone={c.whatsapp_phone??c.phone}/>
+           <ContactLinks name={c.name} email={c.email} phone={c.phone??c.whatsapp_phone} whatsappPhone={c.whatsapp_phone}/>
            <div className={styles.recordActions}>
              <Link className="button" href={"/crm/contacts?new=1&companyId="+encodeURIComponent(c.id)} aria-label={"Añadir contacto a "+c.name}>+ Añadir contacto</Link>
              <Link className="button" href={"/crm/revenue?new=1&companyId="+encodeURIComponent(c.id)} aria-label={"Crear oportunidad para "+c.name}>+ Oportunidad</Link>
@@ -173,7 +190,7 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
            <h3>{c.display_name}</h3><p>{c.company_id?companyMap.get(c.company_id)??"Empresa no disponible":"Sin empresa"}{c.job_title?" · "+c.job_title:""}</p>
            <span className={styles.customerBadge}>{statuses[c.status]??c.status}</span>
            <p className={styles.recordCounts}>{opportunityTotals.byContact.get(c.id)??0} oportunidades vinculadas</p>
-           <ContactLinks email={c.email} phone={c.whatsapp_phone??c.phone}/>
+           <ContactLinks name={c.display_name} email={c.email} phone={c.phone??c.whatsapp_phone} whatsappPhone={c.whatsapp_phone}/>
            <div className={styles.recordActions}>
              <Link className="button" href={"/crm/revenue?new=1&contactId="+encodeURIComponent(c.id)+(c.company_id?"&companyId="+encodeURIComponent(c.company_id):"")} aria-label={"Crear oportunidad para "+c.display_name}>+ Oportunidad</Link>
              <Link className="button" href={"/crm/revenue?contactId="+encodeURIComponent(c.id)} aria-label={"Ver oportunidades de "+c.display_name}>Ver oportunidades</Link>
@@ -196,8 +213,9 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
            <label>Email<input type="email" value={companyDraft.email} onChange={e=>setCompanyDraft(v=>({...v,email:e.target.value}))}/></label>
          </div>:<div className="form-grid">
            <label>Nombre<input required maxLength={180} value={contactDraft.display_name} onChange={e=>setContactDraft(v=>({...v,display_name:e.target.value}))}/></label>
-           <label>Empresa<select aria-label="Empresa" value={contactDraft.company_id} onChange={e=>setContactDraft(v=>({...v,company_id:e.target.value}))}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-           <label>Cargo<input maxLength={120} value={contactDraft.job_title} onChange={e=>setContactDraft(v=>({...v,job_title:e.target.value}))}/></label>
+           <label>Empresa <span className="muted">(opcional)</span><select aria-label="Empresa" value={contactDraft.company_id} onChange={e=>setContactDraft(v=>({...v,company_id:e.target.value}))}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}<option value={NEW_COMPANY_OPTION}>+ Escribir nueva empresa</option></select></label>
+           {contactDraft.company_id===NEW_COMPANY_OPTION&&<label>Nombre de la nueva empresa<input required maxLength={180} autoComplete="organization" value={newCompanyName} onChange={e=>setNewCompanyName(e.target.value)} placeholder="Escribe el nombre de la empresa"/></label>}
+           <label>Cargo <span className="muted">(opcional)</span><input aria-label="Cargo" maxLength={120} value={contactDraft.job_title} onChange={e=>setContactDraft(v=>({...v,job_title:e.target.value}))}/></label>
            <label>Teléfono<input type="tel" value={contactDraft.phone} onChange={e=>setContactDraft(v=>({...v,phone:e.target.value}))}/></label>
            <label>WhatsApp<input type="tel" value={contactDraft.whatsapp_phone} onChange={e=>setContactDraft(v=>({...v,whatsapp_phone:e.target.value}))}/></label>
            <label>Email<input type="email" value={contactDraft.email} onChange={e=>setContactDraft(v=>({...v,email:e.target.value}))}/></label>
@@ -214,11 +232,17 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
  </div>;
 }
 
-function ContactLinks({phone,email}:{phone:string|null;email:string|null}) {
+function ContactLinks({name,phone,whatsappPhone,email}:{name:string;phone:string|null;whatsappPhone:string|null;email:string|null}) {
  const safePhone=phone?cleanPhone(phone):"";
- return <div className={styles.detailLinks}>
-   {safePhone&&<a href={"tel:"+safePhone} aria-label={"Llamar a "+phone}><Phone size={14}/> {phone}</a>}
-   {email&&<a href={"mailto:"+encodeURIComponent(email)} aria-label={"Escribir a "+email}><Mail size={14}/> {email}</a>}
-   {!safePhone&&!email&&<span className="muted">Sin datos de contacto</span>}
+ const rawWhatsApp=(whatsappPhone??"").replace(/\D/g,"");
+ // Dominican local mobile numbers require the +1 country code for wa.me.
+ const whatsAppNumber=rawWhatsApp.length===10&&/^(809|829|849)/.test(rawWhatsApp)?"1"+rawWhatsApp:rawWhatsApp.startsWith("00")?rawWhatsApp.slice(2):rawWhatsApp;
+ const whatsAppUrl=whatsAppNumber.length>=8&&whatsAppNumber.length<=15?"https://wa.me/"+whatsAppNumber:null;
+ const safeEmail=email?.trim()??"";
+ return <div className={styles.detailLinks} aria-label={"Contactar a "+name}>
+   {safePhone&&<a href={"tel:"+safePhone} aria-label={"Llamar a "+name}><Phone size={17}/> Llamar</a>}
+   {whatsAppUrl&&<a href={whatsAppUrl} target="_blank" rel="noopener noreferrer" aria-label={"Abrir WhatsApp de "+name}><MessageCircle size={17}/> WhatsApp</a>}
+   {safeEmail&&<a href={"mailto:"+encodeURIComponent(safeEmail)} aria-label={"Enviar correo a "+name}><Mail size={17}/> Correo</a>}
+   {!safePhone&&!whatsAppUrl&&!safeEmail&&<span className="muted">Sin datos de contacto. Puedes añadirlos al editar.</span>}
  </div>;
 }

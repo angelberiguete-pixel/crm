@@ -53,7 +53,7 @@ try {
     else if(path==="tenant_effective_modules") data=["dashboard","companies","contacts","pipeline","inbox","products","quotations","calendar","operations"].map(module_key=>({module_key,enabled:true}));
     else if(path==="user") data=user;
     else if(path==="companies"){
-      if(req.method()==="POST"){const body=json(); assert.equal(body.tenant_id,A);writes.push(["company-insert",body]);companies.push({...body,id:"co-2",created_at:new Date().toISOString(),website:null});data={};}
+      if(req.method()==="POST"){const body=json(); assert.equal(body.tenant_id,A);writes.push(["company-insert",body]);const id="co-"+(companies.length+1);companies.push({...body,id,created_at:new Date().toISOString(),website:null});data=url.searchParams.has("select")?{id}:{};}
       else if(req.method()==="PATCH"){const body=json();assert.equal(url.searchParams.get("tenant_id"),"eq."+A);Object.assign(companies.find(c=>c.id===url.searchParams.get("id")?.slice(3)),body);writes.push(["company-update",body]);data={id:"co-1"};}
       else data=companies;
     }
@@ -61,7 +61,7 @@ try {
       if(req.method()==="POST"){
         const body=json();assert.equal(body.tenant_id,A);
         writes.push(["contact-insert",body]);
-        contacts.push({...body,id:"ct-2",created_at:new Date().toISOString()});
+        contacts.push({...body,id:"ct-"+(contacts.length+1),created_at:new Date().toISOString()});
         data={};
       }
       else if(req.method()==="PATCH"){const body=json(); assert.equal(url.searchParams.get("tenant_id"),"eq."+A);Object.assign(contacts[0],body);writes.push(["contact-update",body]);data={id:"ct-1"};}
@@ -131,6 +131,29 @@ try {
   await page.getByText("Contacto registrado correctamente.").waitFor();
   assert.ok(writes.some(([type,body])=>type==="contact-insert"&&body.company_id==="co-1"),"new contact linked to the correct company");
   await page.goto(base+"/crm/contacts");
+  // Company and role are independent optional fields; channels use the actual saved values.
+  await page.getByRole("button",{name:"+ Nuevo contacto"}).click();
+  await page.getByLabel("Nombre",{exact:true}).fill("Contacto independiente QA");
+  await page.getByLabel("Cargo",{exact:true}).fill("Técnico independiente");
+  await page.getByLabel("Teléfono",{exact:true}).fill("809-555-3030");
+  await page.getByLabel("WhatsApp",{exact:true}).fill("829-555-4040");
+  await page.getByLabel("Email",{exact:true}).fill("independiente@example.invalid");
+  await page.getByRole("button",{name:"Guardar contacto"}).click();
+  await page.getByText("Contacto registrado correctamente.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="contact-insert"&&body.display_name==="Contacto independiente QA"&&body.company_id===null&&body.job_title==="Técnico independiente"));
+  const independentCard=page.getByRole("article").filter({hasText:"Contacto independiente QA"});
+  assert.equal(await independentCard.getByRole("link",{name:"Llamar a Contacto independiente QA"}).getAttribute("href"),"tel:8095553030");
+  assert.equal(await independentCard.getByRole("link",{name:"Abrir WhatsApp de Contacto independiente QA"}).getAttribute("href"),"https://wa.me/18295554040");
+  assert.equal(await independentCard.getByRole("link",{name:"Enviar correo a Contacto independiente QA"}).getAttribute("href"),"mailto:independiente%40example.invalid");
+  // A new company name is entered directly from the contact form and linked at save time.
+  await page.getByRole("button",{name:"+ Nuevo contacto"}).click();
+  await page.getByLabel("Nombre",{exact:true}).fill("Persona nueva empresa QA");
+  await page.getByLabel("Empresa",{exact:true}).selectOption("__create_company__");
+  await page.getByLabel("Nombre de la nueva empresa").fill("Compañía de Prueba QA");
+  await page.getByRole("button",{name:"Guardar contacto"}).click();
+  await page.getByText("Contacto registrado correctamente.").waitFor();
+  assert.ok(writes.some(([type,body])=>type==="company-insert"&&body.name==="Compañía de Prueba QA"&&body.tenant_id===A));
+  assert.ok(writes.some(([type,body])=>type==="contact-insert"&&body.display_name==="Persona nueva empresa QA"&&body.company_id==="co-3"&&body.job_title===null));
   await page.getByRole("button",{name:"Editar contacto"}).first().click();
   await page.getByLabel("Nombre",{exact:true}).fill("Contacto actualizado");
   await page.getByRole("button",{name:"Guardar cambios"}).click();
