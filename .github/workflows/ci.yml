@@ -80,6 +80,8 @@ jobs:
         run: node --test tests/mcp-pilot.test.mjs
       - name: MCP model adapter stays disabled without explicit consent
         run: node --test tests/mcp-ai-agent.test.mjs
+      - name: MCP preview-only browser test and non-persistent credentials contracts
+        run: node --test tests/mcp-pilot-ui.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
