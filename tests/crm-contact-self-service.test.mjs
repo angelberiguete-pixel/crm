@@ -10,6 +10,11 @@ test("existing CRM contacts can be edited without creating duplicates",()=>{
  assert.match(ui,/setEditingContactId\(r\.id\)/);
  assert.match(ui,/q\.get\("contactId"\)/);
  assert.match(ui,/CrmContactEditor key=\{tenantId\+":"\+editingContactId\}/);
+ const companies=ui.split("function Companies(")[1].split("function Contacts(")[0];
+ const contacts=ui.split("function Contacts(")[1].split("function Revenue(")[0];
+ assert.doesNotMatch(companies,/CrmContactEditor|setEditingContactId/);
+ assert.match(contacts,/const \[editingContactId,setEditingContactId\]/);
+ assert.match(contacts,/CrmContactEditor key=\{tenantId\+":"\+editingContactId\}/);
  assert.match(editor,/\.from\("contacts"\)\.update\(/);
  assert.match(editor,/\.eq\("tenant_id",tenantId\)\.eq\("id",contactId\)\.select\("id"\)\.single\(\)/);
  assert.doesNotMatch(editor,/\.from\("contacts"\)\.insert\(|\.delete\(/);
