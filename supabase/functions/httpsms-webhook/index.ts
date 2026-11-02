@@ -109,9 +109,10 @@ Deno.serve(async request=>{
     if(/^\s*(stop|baja|cancelar|unsubscribe)\s*$/i.test(sms.content)){
       const prev=customer.metadata&&typeof customer.metadata==="object"
         ?customer.metadata as Record<string,unknown>:{};
-      await db.from("contacts").update({metadata:{...prev,sms_opted_out:true,
-        sms_optout_source:"inbound_keyword"}}).eq("tenant_id",route.tenant_id)
-        .eq("id",customer.id);
+      const {error:optoutError}=await db.from("contacts").update({
+        metadata:{...prev,sms_opted_out:true,sms_optout_source:"inbound_keyword"}
+      }).eq("tenant_id",route.tenant_id).eq("id",customer.id);
+      if(optoutError)return json({error:"optout_storage_failed"},503);
     }
   }else{
     if(typeof sms.message_id!=="string"||sms.message_id.length>200)
