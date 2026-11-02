@@ -23,8 +23,8 @@ export default function CrmHttpsmsStatus({tenantId,className}:{
   async function requestSms(event:FormEvent){
     event.preventDefault();
     if(saving||status?.requested)return;
-    const sender=phone.replace(/[\\s()-]/g,"");
-    if(!/^\\+[1-9]\\d{7,14}$/.test(sender)){
+    const sender=phone.replace(/[\s()-]/g,"");
+    if(!/^\+[1-9]\d{7,14}$/.test(sender)){
       setFeedback("Introduce el número completo, incluido el código de país.");return;
     }
     setSaving(true);setFeedback("");
