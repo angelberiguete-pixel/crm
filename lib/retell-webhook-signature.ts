@@ -5,8 +5,11 @@
  */
 const encoder=new TextEncoder();
 const maxAgeMs=300_000;
-const hexBytes=(s:string):Uint8Array=>
- Uint8Array.from(s.match(/../g)??[],b=>parseInt(b,16));
+function hexBytes(s:string):ArrayBuffer{
+ const bytes=new Uint8Array(new ArrayBuffer(s.length/2));
+ for(let i=0;i<bytes.length;i++)bytes[i]=parseInt(s.slice(i*2,i*2+2),16);
+ return bytes.buffer;
+}
 
 export async function verifyRetellWebhookSignature(
  rawBody:string,header:string|null,key:string|undefined,now=Date.now()
