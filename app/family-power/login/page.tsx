@@ -112,7 +112,7 @@ export default function FamilyPowerLogin(){
        <h2>Bienvenido a tu espacio</h2>
        <p>Inicia sesión con la cuenta que te haya autorizado Family Power.</p>
        {otherSession&&<div className={styles.sessionNote}>
-         Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
+         Si estabas trabajando en otra empresa, utiliza el <Link href="/login">acceso general</Link>.
        </div>}
        <form onSubmit={signIn} className={styles.form}>
          <label htmlFor="family-email">Correo electrónico</label>
@@ -130,7 +130,7 @@ export default function FamilyPowerLogin(){
        </form>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
-       <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
+       <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público. <Link href="/login">Cambiar a otra empresa</Link></div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
