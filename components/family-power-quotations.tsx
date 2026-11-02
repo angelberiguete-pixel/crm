@@ -58,7 +58,7 @@ export default function FamilyPowerQuotations({tenantId}:{tenantId:string}){
  const matches=quotes.filter(q=>[q.quote_number,clientFor(q),date(q.created_at)].join(" ").toLowerCase().includes(search.toLowerCase().trim()));
  const preview=quotes.find(q=>q.id===previewId)??null;
  const previewItems=savedLines.filter(l=>l.quotation_id===previewId);
- function clientFor(q:Quote){return people.find(p=>p.id===q.contact_id)?.display_name??label(q.metadata?.customer_name_snapshot)??"Cliente";}
+ function clientFor(q:Quote){return label(q.metadata?.customer_name_snapshot)||people.find(p=>p.id===q.contact_id)?.display_name||"Cliente";}
  function phoneFor(q:Quote){const p=people.find(v=>v.id===q.contact_id);return p?.whatsapp_phone??p?.phone??label(q.metadata?.customer_phone_snapshot);}
  function dataFor(q:Quote):QuotePdfData{
    return {number:q.quote_number,client:clientFor(q),phone:phoneFor(q),createdAt:q.created_at,
@@ -105,8 +105,8 @@ export default function FamilyPowerQuotations({tenantId}:{tenantId:string}){
    setLines(v=>[...v,{key:createKey(),product_id:id,description:name,quantity:q,unit_price:price}]);
    setCatalogId("");setDescription("");setQuantity("1");setUnitPrice("");
  }
- async function createQuote(e:FormEvent){
-   e.preventDefault();setError("");setSuccess("");
+ async function createQuote(){
+   setError("");setSuccess("");
    const name=clientName.trim(),phone=clientPhone.trim();
    if(name.length<2||name.length>160)return setError("Escribe el nombre del cliente.");
    if(phone&&validPhone(phone).length<8)return setError("Revisa el teléfono del cliente.");
@@ -182,7 +182,7 @@ export default function FamilyPowerQuotations({tenantId}:{tenantId:string}){
  return <div className={styles.root}>
    <section className="card">
      <div className={styles.sectionHead}><h2>Nueva cotización</h2><span className={styles.hint}>Un formulario · cliente, artículos e importes</span></div>
-     <form onSubmit={createQuote} className={styles.form}>
+     <form onSubmit={e=>{e.preventDefault();void createQuote();}} className={styles.form}>
        <div className={styles.grid}>
          <label>Contacto registrado (opcional)
            <select value={personId} onChange={e=>pickPerson(e.target.value)}><option value="">Escribir nuevo cliente</option>
@@ -209,7 +209,7 @@ export default function FamilyPowerQuotations({tenantId}:{tenantId:string}){
      </form>
      {lines.length>0&&<div className={styles.lines}>{lines.map(l=><div key={l.key} className={styles.line}><div><strong>{l.description}</strong><small>{l.quantity} × {money(l.unit_price)}</small></div><strong>{money(l.quantity*l.unit_price)}</strong><button type="button" className={styles.iconButton} aria-label={"Quitar "+l.description} onClick={()=>setLines(v=>v.filter(x=>x.key!==l.key))}><Trash2 size={16}/></button></div>)}</div>}
      <div className={styles.total}><span>Total propuesto</span><strong>{money(total)}</strong></div>
-     <button className="button primary" type="button" disabled={busy} onClick={e=>void createQuote(e as unknown as FormEvent)}>{busy?"Guardando…":"Guardar cotización completa"}</button>
+     <button className="button primary" type="button" disabled={busy} onClick={()=>void createQuote()}>{busy?"Guardando…":"Guardar cotización completa"}</button>
      <p className="muted">Las cotizaciones se guardan como borradores hasta su revisión comercial.</p>
    </section>
    {error&&<div className="notice" role="alert">{error}</div>}
