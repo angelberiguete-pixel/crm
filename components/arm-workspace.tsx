@@ -97,7 +97,7 @@ export default function ArmWorkspace(){
     </article>)}
    </div>
   </section>
-  <ArmOperationalBoard tenantId={tenantId} tenantSlug={tenant?.tenant_slug??""}/>
+  <ArmOperationalBoard tenantId={tenantId} tenantSlug={tenant?.tenant_slug??""} memberRole={tenant?.membership_role??""}/>
   <section className="section-gap card">
    <h2>Gestión empresarial</h2>
    <p className="muted">Cada módulo verifica tus permisos antes de permitir el acceso. Los datos se mantienen separados por empresa.</p>
