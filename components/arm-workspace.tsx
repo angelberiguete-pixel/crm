@@ -7,6 +7,7 @@ import {useActiveTenant} from "@/components/tenant-context";
 import {supabase} from "@/lib/supabase";
 import BrandLogo from "@/components/brand-logo";
 import FamilyPowerArmCockpit from "@/components/family-power-arm-cockpit";
+import ArmOperationalBoard from "@/components/arm-operational-board";
 
 type MetricKey="contacts"|"opportunities"|"quotations"|"conversations"|"tasks"|"automation_rules"|"ai_agents"|"ai_agent_runs";
 type Agent={id:string;name:string;status:string;approval_mode:string};
@@ -96,6 +97,7 @@ export default function ArmWorkspace(){
     </article>)}
    </div>
   </section>
+  <ArmOperationalBoard tenantId={tenantId} tenantSlug={tenant?.tenant_slug??""}/>
   <section className="section-gap card">
    <h2>Gestión empresarial</h2>
    <p className="muted">Cada módulo verifica tus permisos antes de permitir el acceso. Los datos se mantienen separados por empresa.</p>
