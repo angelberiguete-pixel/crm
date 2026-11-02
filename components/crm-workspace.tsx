@@ -24,6 +24,7 @@ import { signOutOfTenant } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
+import CrmContactEditor from "@/components/crm-contact-editor";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
@@ -319,7 +320,10 @@ function Companies({ tenantId, reloadKey, refresh, notice }: { tenantId: string;
   const [rows,setRows]=useState<Company[]>([]);
   const [name,setName]=useState("");const[sector,setSector]=useState("");const[city,setCity]=useState("");const[phone,setPhone]=useState("");const[email,setEmail]=useState("");
   const [showForm,setShowForm]=useState(false),[saving,setSaving]=useState(false),[feedback,setFeedback]=useState("");
-  useEffect(()=>{setShowForm(new URLSearchParams(window.location.search).get("new")==="1");setFeedback("");},[tenantId]);
+  const [editingContactId,setEditingContactId]=useState<string|null>(null);
+  useEffect(()=>{const q=new URLSearchParams(window.location.search);setShowForm(q.get("new")==="1");
+    const target=q.get("contactId");setEditingContactId(target&&/^[0-9a-f-]{36}$/i.test(target)?target:null);
+    setFeedback("");},[tenantId]);
   useEffect(()=>{let alive=true;(async()=>{const r=await supabase.from("companies").select("id,name,sector,city,email,phone,whatsapp_phone,website,created_at").eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(500);if(!alive)return;if(r.error)notice(r.error.message);else setRows((r.data??[]) as Company[]);})();return()=>{alive=false};},[tenantId,reloadKey,notice]);
   async function add(e:FormEvent){
     e.preventDefault();if(saving)return;setSaving(true);setFeedback("");
@@ -341,6 +345,7 @@ function Companies({ tenantId, reloadKey, refresh, notice }: { tenantId: string;
         <tbody>{rows.map(r=><tr key={r.id}><td data-label="Empresa"><strong>{r.name}</strong></td><td data-label="Sector">{r.sector??"—"}</td><td data-label="Ciudad">{r.city??"—"}</td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td><td data-label="Creada">{date.format(new Date(r.created_at))}</td></tr>)}</tbody>
       </table></div>}
     </section>
+    {editingContactId&&<CrmContactEditor key={tenantId+":"+editingContactId} tenantId={tenantId} contactId={editingContactId} onSaved={refresh} onClose={()=>setEditingContactId(null)}/>}
     {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nueva empresa</h2>
       <div className="form-grid"><label>Nombre<input autoFocus value={name} onChange={e=>setName(e.target.value)} required /></label><label>Sector<input value={sector} onChange={e=>setSector(e.target.value)}/></label><label>Ciudad<input value={city} onChange={e=>setCity(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
       <div className="top-actions section-gap"><button className="button primary" disabled={saving}>{saving?"Guardando…":"Guardar empresa"}</button><button className="button" type="button" disabled={saving} onClick={()=>setShowForm(false)}>Cancelar</button></div>
@@ -373,8 +378,8 @@ function Contacts({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
       <div className="crm-list-heading"><div><div className="eyebrow">Personas y prospectos</div><h2>Contactos registrados</h2></div><button type="button" className="button primary" aria-expanded={showForm} onClick={()=>{setShowForm(v=>!v);setFeedback("");}}>{showForm?"Cerrar formulario":"+ Nuevo contacto"}</button></div>
       {feedback&&<div className="notice" role="status" style={{marginTop:12}}>{feedback}</div>}
       {rows.length===0?<Empty title="Aún no hay contactos" text="Pulsa Nuevo contacto para registrar tu primer prospecto. No hay contactos ficticios."/>:
-      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th></tr></thead>
-      <tbody>{rows.map(r=><tr key={r.id}><td data-label="Nombre"><strong>{r.display_name}</strong></td><td data-label="Empresa">{r.company_id?companyMap.get(r.company_id)??"—":"—"}</td><td data-label="Cargo">{r.job_title??"—"}</td><td data-label="Estado"><span className="pill">{r.status}</span></td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td></tr>)}</tbody></table></div>}
+      <div className="table-wrap section-gap"><table className="data-table crm-mobile-table"><thead><tr><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Estado</th><th>Contacto</th><th>Acciones</th></tr></thead>
+      <tbody>{rows.map(r=><tr key={r.id}><td data-label="Nombre"><strong>{r.display_name}</strong></td><td data-label="Empresa">{r.company_id?companyMap.get(r.company_id)??"—":"—"}</td><td data-label="Cargo">{r.job_title??"—"}</td><td data-label="Estado"><span className="pill">{r.status}</span></td><td data-label="Contacto">{r.email??r.whatsapp_phone??r.phone??"—"}</td><td data-label="Acciones"><button type="button" className="button small" onClick={()=>setEditingContactId(r.id)}>Editar</button></td></tr>)}</tbody></table></div>}
     </section>
     {showForm&&<form className="card crm-entry-form" onSubmit={add}><h2>Nuevo contacto</h2>
       <div className="form-grid"><label>Nombre<input autoFocus value={displayName} onChange={e=>setDisplayName(e.target.value)} required /></label><label>Empresa<select value={companyId} onChange={e=>setCompanyId(e.target.value)}><option value="">Sin empresa</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Cargo<input value={job} onChange={e=>setJob(e.target.value)}/></label><label>WhatsApp / Teléfono<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label></div>
