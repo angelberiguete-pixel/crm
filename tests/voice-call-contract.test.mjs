@@ -5,7 +5,7 @@ import {parseRetellAnalyzedCall} from "../lib/voice-call-contract.ts";
 
 const valid={
  event:"call_analyzed",tenant_id:"forged-tenant",
- call:{call_id:"call_test_000001",direction:"inbound",
+ call:{call_id:"call_test_000001",agent_id:"agent_test_000001",direction:"inbound",
   from_number:"+18495550123",to_number:"+18495706550",
   call_analysis:{call_summary:"Solicita una cotización; transferir a ventas."},
   recording_url:"https://example.invalid/private-recording",
@@ -13,7 +13,7 @@ const valid={
 };
 test("analysed call is normalized without trusting tenant IDs or raw recordings",()=>{
  assert.deepEqual(parseRetellAnalyzedCall(valid),{
-  provider:"retell",callId:"call_test_000001",direction:"inbound",
+  provider:"retell",callId:"call_test_000001",agentId:"agent_test_000001",direction:"inbound",
   fromNumber:"+18495550123",toNumber:"+18495706550",
   summary:"Solicita una cotización; transferir a ventas."
  });
@@ -23,6 +23,7 @@ test("fail closed for unrelated events and malformed provider data",()=>{
   {...valid,event:"call_started"},
   {...valid,event:"call_ended"},
   {...valid,call:{...valid.call,call_id:"made-up"}},
+  {...valid,call:{...valid.call,agent_id:"not-an-agent"}},
   {...valid,call:{...valid.call,to_number:"18495706550"}},
   {...valid,call:{...valid.call,from_number:"+123"}},
   {...valid,call:{...valid.call,direction:"sideways"}},
