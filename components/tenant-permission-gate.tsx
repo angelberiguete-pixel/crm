@@ -57,6 +57,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   const [validatedSection, setValidatedSection] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "allow" | "deny">("loading");
   const [reason, setReason] = useState("");
+  const [restrictedFamilyBrand, setRestrictedFamilyBrand] = useState(false);
   const [choices, setChoices] = useState<TenantAccess[]>([]);
   const [selecting, setSelecting] = useState(false);
   const [contextVersion, setContextVersion] = useState(0);
@@ -99,6 +100,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
         return;
       }
       let activeTenant = resolved;
+      setRestrictedFamilyBrand(activeTenant.tenant_slug==="family-power");
       setChoices([]);
       if (!memberships.some((membership) => membership.is_active)) {
         const selected = await supabase.rpc("set_active_tenant", { p_tenant_id: activeTenant.tenant_id });
@@ -209,7 +211,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
     </TenantBrandProvider> : children}
   </TenantContextProvider>;
 
-  return <main className="auth-shell">
+  return <main className={restrictedFamilyBrand?"auth-shell family-power-denied":"auth-shell"}>
     <section className="auth-panel">
       <RouteLoadingBrand size="compact"/><ShieldAlert size={32} />
       <div className="eyebrow" style={{ marginTop: 12 }}>Acceso restringido</div>
