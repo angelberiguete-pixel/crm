@@ -58,6 +58,8 @@ try {
   await page.getByRole("button", { name: "Cerrar sesión de empresa para entrar como propietario" }).waitFor();
   assert.equal(new URL(page.url()).pathname, "/login",
     "a client-locked session must not silently redirect back to Family Power");
+  assert.equal(await page.getByRole("button", { name: "Entrar", exact: true }).count(), 0,
+    "login form must remain hidden until client session is explicitly closed");
   await page.getByRole("button", { name: "Cerrar sesión de empresa para entrar como propietario" }).click();
   await page.getByText("Sesión anterior cerrada.", { exact: false }).waitFor();
   platformOwner = true;
