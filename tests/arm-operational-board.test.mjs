@@ -6,7 +6,7 @@ const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("ARM operational queue only queries active tenant records and checks modules",()=>{
  const board=source("components/arm-operational-board.tsx");
  const arm=source("components/arm-workspace.tsx");
- assert.match(arm,/ArmOperationalBoard tenantId=\{tenantId\}/);
+ assert.match(arm,/ArmOperationalBoard key=\{tenantId\} tenantId=\{tenantId\}/);
  assert.match(board,/tenant_current_permissions/);
  assert.match(board,/tenant_effective_modules/);
  assert.match(board,/operationsAllowed=allowed\("operations"\)/);
