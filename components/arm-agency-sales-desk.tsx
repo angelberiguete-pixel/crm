@@ -267,7 +267,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   </div>
   {selected&&<div className="stack gap-12 section-gap">
    <ArmAgencyProspectProfile key={tenantId+":"+selected.id} tenantId={tenantId} tenantSlug={tenantSlug} prospectId={selected.id}
-    onSaved={(id,fields)=>setRows(current=>current.map(p=>p.id===id?{...p,decision_maker:fields.decision_maker??null}:p))}/>
+    onSaved={(id,fields)=>setRows(current=>current.map(p=>p.id===id?{...p,decision_maker:fields.decision_maker===undefined?p.decision_maker:fields.decision_maker}:p))}/>
    <div className="priority-item">
     <strong>{selected.name}</strong>
     <span>{selected.city??"Ciudad no registrada"} · {selected.decision_maker??"Responsable no registrado"}</span>
