@@ -58,6 +58,8 @@ jobs:
         run: node --test tests/family-power-arm-published.test.mjs
       - name: General ARM tenant isolation and integration safety
         run: node --test tests/universal-arm-workspace.test.mjs
+      - name: ARM real task queue, platform prospect and authorization contracts
+        run: node --test tests/arm-operational-board.test.mjs
       - name: Tenant white-label identity and input safety tests
         run: node --experimental-strip-types --test tests/tenant-white-label.test.mjs
       - name: WhatsApp marketing events, tenant KPI safety and quote buttons
