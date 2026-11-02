@@ -5,6 +5,7 @@ import {useCallback,useEffect,useState} from "react";
 import {ArrowRight,Building2,RefreshCw,ShieldCheck} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {notifyTenantContextChanged} from "@/lib/tenant-context-events";
+import {markPlatformClientEntry} from "@/lib/tenant-login-return";
 import {safeTenantAsset,safeHex} from "@/lib/tenant-brand";
 import {isCommercialClientTenant} from "@/lib/visible-client-tenants";
 import styles from "./platform-company-portfolio.module.css";
@@ -84,6 +85,7 @@ export default function PlatformCompanyPortfolio(){
     if(target.tenant_slug==="family-power")window.sessionStorage.setItem("crm:login-intent","family-power");
     else window.sessionStorage.removeItem("crm:login-intent");
   }catch{}
+  if(target.tenant_slug!=="eurevector")markPlatformClientEntry();
   notifyTenantContextChanged();
   window.location.assign("/crm");
  }
