@@ -9,7 +9,7 @@ type Trial={
   output:{draft?:string;review_required?:boolean}|null;
 };
 type Review={run_id:string;decision:string;created_at:string};
-export default function DigitalEmployeeReviewQueue({tenantId}:{tenantId:string}){
+export default function DigitalEmployeeReviewQueue({tenantId,compact=false}:{tenantId:string;compact?:boolean}){
  const tenantRef=useRef(tenantId);tenantRef.current=tenantId;
  const [runs,setRuns]=useState<Trial[]>([]);
  const [reviewed,setReviewed]=useState<Set<string>>(new Set());
@@ -73,10 +73,10 @@ export default function DigitalEmployeeReviewQueue({tenantId}:{tenantId:string})
    }finally{if(tenantRef.current===forTenant)setSaving(false);}
  }
  return <section className="card" aria-label="Aprobación humana de empleados digitales" style={{marginTop:18}}>
-  <div className="topbar"><div><div className="eyebrow">Control humano obligatorio</div><h2>Bandeja de borradores IA</h2></div>
+  <div className="topbar"><div>{!compact&&<div className="eyebrow">Control humano obligatorio</div>}<h2>{compact?"Aprobaciones":"Bandeja de borradores IA"}</h2></div>
    <button type="button" className="button" onClick={()=>setRefresh(v=>v+1)}><RefreshCw size={15}/> Actualizar</button>
   </div>
-  <div className="notice"><ShieldCheck size={16}/> Aprobar no envía mensajes, no confirma citas y no cambia oportunidades. Solo registra tu decisión en una auditoría inmutable.</div>
+  {!compact&&<div className="notice"><ShieldCheck size={16}/> Aprobar no envía mensajes, no confirma citas y no cambia oportunidades. Solo registra tu decisión en una auditoría inmutable.</div>}
   {notice&&<div className="notice" role="status">{notice}</div>}
   {error&&<div className="notice" role="alert">{error}</div>}
   {loading?<p>Cargando borradores…</p>:pending.length===0?<div className="empty">Sin borradores pendientes de aprobación.</div>:

@@ -116,6 +116,49 @@ export default function CrmIntegrationCenter(){
  }
  if(!tenant)return <main className="content"><div className="loading">Selecciona la empresa para revisar sus integraciones.</div></main>;
  if(!admin)return <main className="content"><div role="alert" className="notice">Solo el propietario o administrador de la empresa puede gestionar integraciones.</div></main>;
+
+ if(tenant.tenant_slug==="family-power")return <main className={styles.page+" "+styles.familyCompact}>
+   <header className={styles.header}>
+     <h1>Integraciones</h1>
+     <button className={styles.refresh} disabled={loading} type="button" onClick={refresh}><RefreshCw size={16}/> Actualizar</button>
+   </header>
+   {loading&&<p role="status" className={styles.loading}>Consultando conexiones…</p>}
+   {error&&<div role="alert" className={styles.error}>{error}</div>}
+   {notice&&<div role="status" className={styles.success}>{notice}</div>}
+   <div className={styles.compactGrid}>
+     {(["whatsapp","instagram","email"] as Provider[]).map(kind=>{
+       const status=integrationState(kind,health,requests);
+       const Icon=kind==="whatsapp"?MessageCircle:kind==="instagram"?AtSign:Mail;
+       const channels=(health?.channels??[]).filter(c=>c.provider===kind);
+       return <section className={styles.compactCard} key={kind}>
+         <div className={styles.compactHead}>
+           <span className={styles.compactIcon}><Icon size={21}/></span>
+           <span className={styles.status+" "+styles[status.color]}>{status.text}</span>
+         </div>
+         <h2>{formLabel[kind].title}</h2>
+         {channels.map(c=><div className={styles.record} key={c.id}><span>{c.name}</span><small>{c.verified?"Verificado":"Pendiente"}</small></div>)}
+         {requests.filter(r=>r.provider===kind&&!channels.some(c=>c.id===r.channel_id)).map(r=><div className={styles.record} key={r.channel_id}><span>{r.display_name}</span><small>{r.request_stage||"Pendiente"}</small></div>)}
+         <button className={styles.secondary} type="button" disabled={loading} onClick={()=>choose(kind)}>{status.color==="off"?"Solicitar conexión":"Ver solicitud"}</button>
+       </section>;
+     })}
+     <section className={styles.compactCard}>
+       <div className={styles.compactHead}><span className={styles.compactIcon}><Bot size={21}/></span>
+         <span className={styles.status+" "+styles.off}>{health?.ai_spending_blocked===false?"Estado por verificar":"Sin activar"}</span></div>
+       <h2>Motor de IA</h2>
+       <div className={styles.record}><span>Agentes registrados</span><strong>{health?.staff_profiles??"—"}</strong></div>
+       <Link className={styles.secondary} href="/crm/arm">Ver agentes</Link>
+     </section>
+   </div>
+   {provider&&<section className={styles.wizard} aria-label={"Solicitud de "+formLabel[provider].title}>
+     <div className={styles.wizardTitle}><h2>{formLabel[provider].title}</h2><button className={styles.close} type="button" onClick={()=>setProvider(null)}>Cerrar</button></div>
+     <form className={styles.form} onSubmit={e=>void submit(e)}>
+       <label>Nombre del canal<input required minLength={2} maxLength={90} value={channelName} onChange={e=>setChannelName(e.target.value)}/></label>
+       <label>{formLabel[provider].label}<input type={provider==="email"?"email":"text"} required maxLength={160} placeholder={formLabel[provider].placeholder} value={identifier} onChange={e=>setIdentifier(e.target.value)}/></label>
+       <button className={styles.primary} disabled={saving}>{saving?"Guardando…":"Registrar solicitud"}</button>
+     </form>
+     <small className={styles.smallPrint}>Solo registra una solicitud. No activa envíos ni conecta la API. Nunca introduzcas contraseñas o claves.</small>
+   </section>}
+ </main>;
  return <main className={styles.page}>
    <div className={styles.header}>
      <div><div className={styles.eyebrow}>CONFIGURACIÓN / INTEGRACIONES</div>

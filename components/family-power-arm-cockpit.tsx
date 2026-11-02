@@ -137,7 +137,7 @@ export default function FamilyPowerArmCockpit(){
   {isAdmin&&tenantId&&<section className="section-gap card" aria-label="Revisión humana de agentes">
    <div className="eyebrow">Gobierno de agentes</div><h2>Cola de aprobaciones</h2>
 
-   <DigitalEmployeeReviewQueue tenantId={tenantId}/>
+   <DigitalEmployeeReviewQueue tenantId={tenantId} compact/>
   </section>}
  </main>;
 }

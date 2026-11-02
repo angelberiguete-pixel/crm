@@ -1,8 +1,8 @@
 // Confirms the real pre-existing public domain received the ARM release,
 // rather than merely proving that CI can build the repository.
 const base=process.env.CRM_PRODUCTION_URL||"https://crm-revenue-os.vercel.app";
-const expected="Family Power UX operational release — 2026-11-01 — catalog tasks reports";
-const url=new URL("/family-power-ux-release-20261101.txt",base);
+const expected="Family Power compact agents and integrations release — 2026-11-01";
+const url=new URL("/family-power-compact-panels-20261101.txt",base);
 let confirmed=false;
 for(let attempt=1;attempt<=18;attempt++){
  try{
