@@ -78,6 +78,8 @@ jobs:
         run: node --experimental-strip-types --test tests/mcp-server.test.mjs
       - name: MCP Family Power pilot two-identity rehearsal and isolation failure tests
         run: node --test tests/mcp-pilot.test.mjs
+      - name: MCP model adapter stays disabled without explicit consent
+        run: node --test tests/mcp-ai-agent.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
