@@ -54,6 +54,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
  const [stage,setStage]=useState("prospecto");
  const [nextAction,setNextAction]=useState("");
  const [nextDate,setNextDate]=useState("");
+ const [meetingLocation,setMeetingLocation]=useState("");
 
  const selected=rows.find(p=>p.id===selectedId)??null;
  const linked=opportunities.length===1?opportunities[0]:null;
@@ -83,7 +84,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   setStage(p?.stage??"prospecto");
   setNextAction(p?.next_action??"");
   setNextDate(dateLocal(p?.next_action_at??null));
-  setSummary("");setOutcome("");setKind("call");setNotice("");
+  setSummary("");setOutcome("");setKind("call");setMeetingLocation("");setNotice("");
  },[selectedId]);
 
  useEffect(()=>{
@@ -113,7 +114,7 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   if(outcome.trim().length>200){setError("El resultado breve supera 200 caracteres.");return;}
   if(!Object.hasOwn(stageLabels,stage)){setError("Etapa comercial inválida.");return;}
   const planned=kind==="scheduled_meeting";
-  const action=planned?("Reunión presencial: "+nextAction.trim()):nextAction.trim();
+  const action=planned?(nextAction.trim().startsWith("Reunión presencial:")?nextAction.trim():"Reunión presencial: "+nextAction.trim()):nextAction.trim();
   if(action.length>300){setError("La próxima acción supera 300 caracteres.");return;}
   if(planned&&!nextAction.trim()){setError("Indica el motivo o asunto de la reunión.");return;}
   if(action&&!nextDate){setError("Indica cuándo debe realizarse la próxima acción.");return;}
@@ -161,6 +162,38 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
      detail+="La actualización de la oportunidad no se confirmó; revisa su seguimiento por separado.";
     }else{
      detail+="El siguiente seguimiento también se actualizó en su oportunidad existente.";
+    }
+   }
+   if(planned&&date){
+    // A scheduled meeting is an internal CRM appointment, not a confirmed customer invitation.
+    const [permissionsResult,modulesResult]=await Promise.all([
+     supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId}),
+     supabase.rpc("tenant_effective_modules",{p_tenant_id:tenantId})
+    ]);
+    const permissions=(permissionsResult.data??{}) as Record<string,unknown>;
+    const modules=(modulesResult.data??[]) as Array<{module_key:string;enabled:boolean}>;
+    const canUseCalendar=!permissionsResult.error&&!modulesResult.error
+     &&(permissions.all===true||permissions.calendar===true)
+     &&modules.find(m=>m.module_key==="calendar")?.enabled!==false;
+    const activityId=(r.data as {activity_id?:string}|null)?.activity_id;
+    if(!canUseCalendar||!activityId){
+     detail+=" No se pudo validar el acceso al calendario; la reunión permanece como seguimiento.";
+    }else{
+     const end=new Date(date.getTime()+45*60*1000);
+     const event=await supabase.from("calendar_events").insert({
+      tenant_id:tenantId,title:"Reunión · "+selected.name,
+      description:summary.trim(),event_type:"meeting",status:"scheduled",
+      starts_at:date.toISOString(),ends_at:end.toISOString(),
+      timezone:"America/Santo_Domingo",location:meetingLocation.trim()||null,
+      contact_id:linked?.contact_id??null,
+      opportunity_id:linked?.id??null,
+      metadata:{agency_prospect_id:selected.id,agency_activity_id:activityId,source:"arm_agency_manual"}
+     }).select("id").single();
+     if(event.error||!event.data?.id){
+      detail+=" El seguimiento se guardó, pero el calendario no confirmó la creación de la cita.";
+     }else{
+      detail+=" Se agregó una reunión interna de 45 minutos al calendario del CRM, sin enviar invitaciones.";
+     }
     }
    }
    setRows(previous=>previous.map(p=>p.id===selected.id
@@ -242,7 +275,13 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
       <input type="datetime-local" value={nextDate} disabled={saving} onChange={e=>setNextDate(e.target.value)}/>
      </label>
     </div>
-    {kind==="scheduled_meeting"&&<p className="muted"><CalendarDays size={15}/> Se registra un compromiso futuro; no se marca la reunión como realizada ni se invita automáticamente al prospecto.</p>}
+    {kind==="scheduled_meeting"&&<>
+     <label>Lugar previsto (opcional)
+      <input maxLength={200} value={meetingLocation} disabled={saving} onChange={e=>setMeetingLocation(e.target.value)}
+       placeholder="Ej. Dirección por confirmar"/>
+     </label>
+     <p className="muted"><CalendarDays size={15}/> Se registra un evento interno de 45 minutos y su seguimiento. No se marca la reunión como realizada, confirmada por el cliente ni se le envía una invitación.</p>
+    </>}
     {notice&&<div role="status" className="notice">{notice}</div>}
     {error&&<div role="alert" className="notice">{error}</div>}
     <button type="submit" disabled={saving||linkLoading||summary.trim().length<3} className="button primary">
