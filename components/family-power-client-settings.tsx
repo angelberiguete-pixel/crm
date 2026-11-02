@@ -24,7 +24,7 @@ export default function FamilyPowerClientSettings(){
  if(!allowed)return <div className="notice" role="alert">Solo administración autorizada de Family Power.</div>;
  return <div className="stack gap-16">
   <header><div className="eyebrow">Family Power · Administración</div><h1>Configuración de la empresa</h1>
-    <p className="muted">Las opciones de marca blanca y plataforma se administran desde el panel general de Ángel Berigüete.</p></header>
+    <p className="muted">La identidad visual y los permisos de la plataforma están protegidos. Para solicitar cambios de acceso o marca, contacta al responsable autorizado de Family Power.</p></header>
   {error&&<div className="notice" role="alert">{error}</div>}
   <div className="grid two-col">
    <section className="card"><h2><ShieldCheck size={19}/> Identidad corporativa</h2>
@@ -36,8 +36,7 @@ export default function FamilyPowerClientSettings(){
     </div>
    </section>
    <section className="card"><h2><Users size={19}/> Equipo autorizado</h2>
-    <p className="muted">Historial de sesiones, presencia aproximada y acceso autorizado.</p>
-    <Link href="/crm/sessions" className="button">Ver sesiones</Link>
+    <p className="muted">Los accesos se gestionan mediante cuentas individuales y permisos autorizados. La consulta de sesiones está pendiente de habilitación segura para esta empresa.</p>
    </section>
    <section className="card"><h2><PlugZap size={19}/> WhatsApp e integraciones</h2>
     <p className="muted">Consulta las conexiones y solicita autorización sin pegar claves en el navegador.</p>
