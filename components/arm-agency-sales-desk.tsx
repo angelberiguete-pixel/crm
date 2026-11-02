@@ -4,6 +4,7 @@ import Link from "next/link";
 import {type FormEvent,useEffect,useState} from "react";
 import {CalendarDays,PhoneCall,Search,Target} from "lucide-react";
 import {supabase} from "@/lib/supabase";
+import ArmAgencyProspectProfile from "@/components/arm-agency-prospect-profile";
 
 type Prospect={
  id:string;name:string;stage:string;phone:string|null;decision_maker:string|null;
@@ -38,6 +39,11 @@ const dateLocal=(value:string|null)=>{
 export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:string;tenantSlug:string}){
  const [query,setQuery]=useState("");
  const [appliedQuery,setAppliedQuery]=useState("");
+ const [searchBy,setSearchBy]=useState<"name"|"phone"|"email"|"decision_maker">("name");
+ const [appliedSearchBy,setAppliedSearchBy]=useState<"name"|"phone"|"email"|"decision_maker">("name");
+ const [stageFilter,setStageFilter]=useState("");
+ const [page,setPage]=useState(0);
+ const [total,setTotal]=useState(0);
  const [rows,setRows]=useState<Prospect[]>([]);
  const [selectedId,setSelectedId]=useState("");
  const [loading,setLoading]=useState(false);
@@ -67,19 +73,20 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   if(tenantSlug!=="eurevector"){setLoading(false);return()=>{alive=false;};}
   void (async()=>{
    let request=supabase.from("agency_prospects")
-    .select("id,name,stage,phone,decision_maker,next_action,next_action_at,city");
+    .select("id,name,stage,phone,decision_maker,next_action,next_action_at,city",{count:"exact"});
    if(appliedQuery.trim().length>=2){
     const safe=appliedQuery.trim().replace(/[%_,()]/g," ").slice(0,80).trim();
-    request=request.ilike("name","%"+safe+"%");
+    if(safe)request=request.ilike(appliedSearchBy,"%"+safe+"%");
    }
-   const result=await request.order("created_at",{ascending:false}).limit(25);
+   if(stageFilter&&Object.hasOwn(stageLabels,stageFilter))request=request.eq("stage",stageFilter);
+   const result=await request.order("created_at",{ascending:false}).range(page*25,page*25+24);
    if(!alive)return;
    if(result.error)setError("No se pudieron consultar los prospectos: "+result.error.message);
-   else setRows((result.data??[]) as Prospect[]);
+   else {setRows((result.data??[]) as Prospect[]);setTotal(result.count??0);}
    setLoading(false);
   })().catch(()=>{if(alive){setLoading(false);setError("No se pudo cargar la búsqueda de prospectos.");}});
   return()=>{alive=false;};
- },[appliedQuery,revision,tenantId,tenantSlug]);
+ },[appliedQuery,appliedSearchBy,stageFilter,page,revision,tenantId,tenantSlug]);
 
  useEffect(()=>{
   const p=rows.find(r=>r.id===selectedId);
@@ -215,16 +222,38 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
   <h2>Registrar una llamada, reunión o próximo contacto</h2>
   <p className="muted">Utiliza prospectos existentes y sus oportunidades vinculadas. Esto registra actividades que tú confirmes; no inicia llamadas ni envía mensajes.</p>
   <form className="section-gap" onSubmit={e=>{
-   e.preventDefault();setAppliedQuery(query.trim());setNotice("");
+   e.preventDefault();setPage(0);setAppliedSearchBy(searchBy);setAppliedQuery(query.trim());setNotice("");
   }}>
    <div className="form-grid">
-    <label>Buscar negocio por nombre
+    <label>Buscar prospectos
      <input type="search" value={query} onChange={e=>setQuery(e.target.value)}
-      placeholder="Nombre del prospecto" maxLength={80}/></label>
+      placeholder="Nombre o dato según el filtro" maxLength={80}/></label>
+    <label>Buscar por
+     <select value={searchBy} onChange={e=>setSearchBy(e.target.value as typeof searchBy)}>
+      <option value="name">Nombre del negocio</option>
+      <option value="phone">Teléfono</option>
+      <option value="email">Correo</option>
+      <option value="decision_maker">Persona encargada</option>
+     </select>
+    </label>
+    <label>Etapa comercial
+     <select value={stageFilter} onChange={e=>{setStageFilter(e.target.value);setPage(0);}}>
+      <option value="">Todas las etapas</option>
+      {Object.entries(stageLabels).map(([key,label])=><option key={key} value={key}>{label}</option>)}
+     </select>
+    </label>
     <button className="button" type="submit" disabled={loading}><Search size={16}/> Buscar</button>
    </div>
-   <small className="muted">Hasta 25 resultados por búsqueda. Sin texto muestra los registros más recientes.</small>
+   <small className="muted">Consultas paginadas sobre la cartera existente: 25 registros por página. No se importan prospectos duplicados.</small>
   </form>
+  <div className="section-gap" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+   <span className="muted">{loading?"Consultando…":total+" prospectos encontrados · Página "+(page+1)+" de "+Math.max(1,Math.ceil(total/25))}</span>
+   <div style={{display:"flex",gap:8}}>
+    <button type="button" className="button small" disabled={loading||saving||page===0} onClick={()=>setPage(n=>Math.max(0,n-1))}>Anterior</button>
+    <button type="button" className="button small" disabled={loading||saving||(page+1)*25>=total} onClick={()=>setPage(n=>n+1)}>Siguiente</button>
+    <button type="button" className="button small" disabled={loading||saving} onClick={()=>setRevision(n=>n+1)}>Actualizar</button>
+   </div>
+  </div>
   {loading&&<p className="muted">Consultando prospectos…</p>}
   {!loading&&rows.length===0&&<p className="muted">No se encontraron prospectos visibles con ese nombre.</p>}
   <div className="section-gap">
@@ -237,6 +266,8 @@ export default function ArmAgencySalesDesk({tenantId,tenantSlug}:{tenantId:strin
    </label>
   </div>
   {selected&&<div className="stack gap-12 section-gap">
+   <ArmAgencyProspectProfile key={tenantId+":"+selected.id} tenantId={tenantId} tenantSlug={tenantSlug} prospectId={selected.id}
+    onSaved={(id,fields)=>setRows(current=>current.map(p=>p.id===id?{...p,decision_maker:fields.decision_maker??null}:p))}/>
    <div className="priority-item">
     <strong>{selected.name}</strong>
     <span>{selected.city??"Ciudad no registrada"} · {selected.decision_maker??"Responsable no registrado"}</span>
