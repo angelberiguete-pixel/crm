@@ -61,7 +61,7 @@ test("owners have direct management shortcuts instead of needing code edits",()=
  assert.match(arm,/href="\/crm\/settings"/);
  assert.match(arm,/href="\/crm\/products"/);
  assert.match(arm,/href="\/crm\/calendar"/);
- assert.match(arm,/href="\/crm\/integrations"/);
+ assert.match(arm,/href="\/crm\/automations"/);
  assert.match(arm,/canConfigure&&<section/);
  assert.match(arm,/sujeta al rol y a los permisos de tu empresa/);
 });
