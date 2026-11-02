@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { supabase as canonicalSupabase } from "@/lib/supabase";
+import { CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase";
 import {
   MCP_PROTOCOL_VERSION, MCP_TOOLS, parseMcpRequest, rpcError, rpcResult,
   validateMcpToolCall, validMcpOrigin, mcpToolText, type ValidToolCall
@@ -36,7 +36,7 @@ function sanitizedSearch(value: string): string {
 async function callReadTool(request: Request, call: ValidToolCall) {
   const accessToken = bearer(request);
   if (!accessToken) return deniedTool("Se requiere una sesión válida.");
-  const db = createClient(canonicalSupabase.supabaseUrl, canonicalSupabase.supabaseKey, {
+  const db = createClient(CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { headers: { Authorization: "Bearer " + accessToken } }
   });
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
   const accessToken = bearer(request);
   if (!accessToken) return json(rpcError(message.id ?? null, -32001, "Autenticación requerida."), 401);
 
-  const db = createClient(canonicalSupabase.supabaseUrl, canonicalSupabase.supabaseKey, {
+  const db = createClient(CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { headers: { Authorization: "Bearer " + accessToken } }
   });
