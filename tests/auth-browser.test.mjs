@@ -56,7 +56,7 @@ try {
   await recovery.page.getByRole('button',{name:'Cerrar sesiones y continuar',exact:true}).click();
   await recovery.page.waitForURL(/\/login\?reset=done/);
   assert.equal(recovery.calls.updates,1);assert.equal(recovery.calls.logouts,3);
-  await recovery.page.getByText('Contraseña actualizada y sesiones anteriores cerradas. Inicia sesión con tu nueva contraseña.').waitFor();
+  await recovery.page.getByText('Contraseña actualizada. Inicia sesión con tu nueva contraseña.').waitFor();
   await recovery.context.close();
   console.log('PASS: ordinary session cannot reset, expired links denied, confirmation validated, failed global logout explained and retry closes sessions without a second password update (controlled Auth).');
 }finally{if(browser)await browser.close();if(server)server.kill();}
