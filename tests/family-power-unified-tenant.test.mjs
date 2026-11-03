@@ -117,5 +117,9 @@ test("Family Power sidebar hides denied sections and uses Spanish business label
  assert.match(workspace,/supabase\.rpc\("tenant_effective_modules"/);
  assert.match(workspace,/familyLabels/);
  assert.match(workspace,/isFamilyPower\?familyPowerRoleLabel\(member\.role\):member\.role/);
- assert.match(workspace,/isFamilyPower\?"\/family-power\/login":"\/login"/);
+ assert.match(workspace,/await tenantLogoutDestination\(member\.tenant_slug/);
+ const logout=read("../lib/tenant-session.ts");
+ assert.match(logout,/tenantSlug!=="family-power"/);
+ assert.match(logout,/platform_current_access/);
+ assert.match(logout,/return "\/family-power\/login"/);
 });
