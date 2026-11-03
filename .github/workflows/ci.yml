@@ -20,6 +20,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
+      - name: Look owner global entry and customer logout routing contracts
+        run: node --experimental-strip-types --test tests/look-owner-entry.test.mjs
       - name: Automation execution regression tests
         run: node --experimental-strip-types --test tests/automation-worker.test.mjs
       - name: CRM frontend secrets, tenant isolation and webhook safety regressions
@@ -102,6 +104,8 @@ jobs:
         run: node tests/owner-first-access-edge-live.test.mjs
       - name: Super Admin mobile browser regression tests
         run: node tests/platform-admin-browser.test.mjs
+      - name: Look public CRM entry and prior Family Power tenant regression
+        run: node tests/look-owner-entry-browser.test.mjs
       - name: Family Power portfolio direct-entry browser regression
         run: node tests/family-power-portfolio-browser.test.mjs
       - name: Private tenant files browser regression tests
