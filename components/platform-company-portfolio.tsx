@@ -89,7 +89,7 @@ export default function PlatformCompanyPortfolio(){
   window.location.assign("/crm");
  }
  if(loading)return <main className={styles.page}>Cargando empresas…</main>;
- if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global.</p><Link href="/crm">Volver al CRM</Link></main>;
+ if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global.</p><Link href="/crm">Volver a mi empresa</Link></main>;
  return <main className={styles.page}>
   <header className={styles.top}>
    <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Esta es tu entrada principal. Abre Look Social Media para trabajar en tu CRM o selecciona Family Power y otros clientes para gestionar su empresa.</p></div>
