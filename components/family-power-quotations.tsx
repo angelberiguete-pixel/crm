@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState,type FormEvent} from "react";
 import {FileDown,FileText,Plus,Printer,Search,Send,Trash2,X} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {buildFamilyQuotePdf,type QuotePdfData} from "@/lib/family-power-quote-pdf";
+import {normalizeWhatsAppNumber} from "@/lib/whatsapp-number";
 import styles from "./family-power-quotations.module.css";
 
 type Person={id:string;display_name:string;phone:string|null;whatsapp_phone:string|null};
@@ -155,8 +156,8 @@ export default function FamilyPowerQuotations({tenantId}:{tenantId:string}){
    setError("");setSuccess("");
    if(!shareReviewed)return setError("Confirma que verificaste los precios y productos antes de compartir.");
    if(!savedLines.some(l=>l.quotation_id===q.id))return setError("La cotización no tiene artículos.");
-   const phone=validPhone(phoneFor(q)??"");
-   if(!phone)return setError("Este cliente no tiene teléfono. Edita su contacto para compartir por WhatsApp.");
+   const phone=normalizeWhatsAppNumber(phoneFor(q));
+   if(!phone)return setError("Este cliente no tiene un número válido para WhatsApp. Revisa su contacto antes de compartir.");
    const message="Hola "+clientFor(q)+", te compartimos la cotización "+q.quote_number+" de Family Power. Total: "+money(q.total)+".";
    const file=new File([new Uint8Array(buildFamilyQuotePdf(dataFor(q))).buffer as ArrayBuffer],q.quote_number+".pdf",{type:"application/pdf"});
    try{
