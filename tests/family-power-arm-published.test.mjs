@@ -11,7 +11,9 @@ test("ARM remains a Family Power-only route inside the published shared CRM",()=
  assert.match(gate,/arm: "dashboard"/);
  assert.match(gate,/familyOnlySections\.includes\(section\)&&activeTenant.tenant_slug!=="family-power"/);
  assert.match(cockpit,/tenant\?\.tenant_slug==="family-power"/);
- assert.match(cockpit,/Centro de operaciones inteligentes/);
+ assert.match(cockpit,/Entrar al CRM/);
+ assert.match(cockpit,/href="\/crm"/);
+ assert.doesNotMatch(cockpit,/Equipo digital|Pendiente de configuración|Configurado como borrador/);
  assert.doesNotMatch(cockpit,/rltnmstwqorxtoeqsbgh|service_role|META_WA_ACCESS_TOKEN|sendMessage\(/);
 });
 test("ARM links from Family Power dashboard and mobile menu, never other tenants",()=>{
@@ -23,14 +25,22 @@ test("ARM links from Family Power dashboard and mobile menu, never other tenants
  assert.match(workspace,/!isFamilyPower&&\["arm","tasks","reports"\]\.includes\(key\)/);
  assert.match(workspace,/arm:"dashboard"/);
 });
-test("ARM reads only tenant-scoped production tables and displays honest agent state",()=>{
+test("ARM reads tenant-scoped metrics and keeps functional approval queue without decorative agent cards",()=>{
  const cockpit=read("../components/family-power-arm-cockpit.tsx");
- for(const t of ["ai_agents","ai_agent_runs","contacts","opportunities","quotations"]) {
+ for(const t of ["ai_agent_runs","contacts","opportunities","quotations"]) {
    assert.ok(cockpit.includes('from("'+t+'")'));
  }
- assert.equal((cockpit.match(/\.eq\("tenant_id",tenantId\)/g)||[]).length,5);
- for(const role of ["recepcion","ventas","tecnico","seguimiento","supervision"])assert.ok(cockpit.includes('key:"'+role+'"'));
- assert.match(cockpit,/Pendiente de configuración/);
+ assert.equal((cockpit.match(/\.eq\("tenant_id",tenantId\)/g)||[]).length,4);
+ assert.doesNotMatch(cockpit,/roles\.map|findAgent|from\("ai_agents"\)/);
+ assert.match(cockpit,/Panel principal/);
+ assert.match(cockpit,/href="\/crm\/employees"/);
  assert.match(cockpit,/Revisión humana/);
  assert.doesNotMatch(cockpit,/\.insert\(|\.update\(|\.delete\(|\.invoke\(/);
+});
+
+test("Family Power dashboard has an explicit commercial CRM shortcut",()=>{
+ const dashboard=read("../components/energy-service-dashboard.tsx");
+ assert.match(dashboard,/Abrir gestión comercial/);
+ assert.match(dashboard,/href="\/crm\/revenue"/);
+ assert.doesNotMatch(dashboard,/Clientes, ventas y equipo digital/);
 });

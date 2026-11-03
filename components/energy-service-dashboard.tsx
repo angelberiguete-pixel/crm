@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot} from "lucide-react";
+import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot,LayoutDashboard} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
@@ -57,10 +57,10 @@ export default function EnergyServiceDashboard(){
        <div style={{flex:"1 1 280px"}}>
          <h1 style={{color:"#FFFFFF",margin:"10px 0 12px"}}>{brand?.name??tenant?.tenant_name??"Family Power"}</h1>
          <p style={{color:"#E4E5E8",lineHeight:1.55,maxWidth:480}}>
-           Clientes, ventas y equipo digital.
+           Clientes, ventas, cotizaciones y seguimiento comercial.
          </p>
-         <Link className="button primary" href="/crm/inbox" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
-           <MessageCircle size={16}/> Abrir mensajes
+         <Link className="button primary" href="/crm/revenue" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
+           <LayoutDashboard size={16}/> Abrir gestión comercial <ArrowRight size={16}/>
          </Link>
        </div>
        <div style={{width:"min(100%,355px)",padding:12,background:"transparent",flex:"0 1 355px"}}>
