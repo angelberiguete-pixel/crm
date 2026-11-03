@@ -62,7 +62,7 @@ create table public.crm_contact_evidence_reviews (
   evidence_id uuid not null,
   decision text not null check (decision in ('verified','rejected')),
   reviewer_id uuid not null default auth.uid() references auth.users(id),
-  note text check (note is null or char_length(note)<=1000),
+  note text check (\n    (decision='verified' and char_length(btrim(coalesce(note,''))) between 8 and 1000)\n    or (decision='rejected' and (note is null or char_length(note)<=1000))\n  ),
   reviewed_at timestamptz not null default now(),
   unique(tenant_id,evidence_id),
   constraint crm_contact_evidence_reviews_source_fk
