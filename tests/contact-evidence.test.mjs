@@ -62,6 +62,6 @@ test("route and UI require CRM tenant permission and never execute external acti
   assert.match(ui, /useActiveTenant\(\)/);
   assert.match(ui, /\.eq\("tenant_id", tenantId\)/);
   assert.match(ui, /crm_contact_evidence_reviews/);
-  assert.match(ui, /no modificó la ficha del cliente/);
+  assert.match(ui, /No se modificó la ficha del cliente/);
   assert.doesNotMatch(ui, /\.update\(|\.delete\(|fetch\(|supabase\.functions\.invoke\(/);
 });
