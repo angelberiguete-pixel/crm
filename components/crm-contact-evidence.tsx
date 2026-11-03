@@ -44,7 +44,7 @@ export default function CrmContactEvidence() {
 
   useEffect(() => {
     setContacts([]); setEvidence([]); setReviews([]); setContactId("");
-    setSelectedReview(null); setReviewNote(""); setError(""); setNotice("");
+    setSelectedReview(null); setReviewNote(""); setBusy(false); setError(""); setNotice("");
   }, [tenantId]);
 
   useEffect(() => {
