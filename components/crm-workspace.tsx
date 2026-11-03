@@ -20,7 +20,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { signOutOfTenant } from "@/lib/tenant-session";
+import { signOutOfTenant, tenantLogoutDestination } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
@@ -196,7 +196,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         </nav>
         <div className="sidebar-footer">
           <div className="muted">Rol: {isFamilyPower?familyPowerRoleLabel(member.role):member.role}</div>
-          <button className="text-button" onClick={async () => { await signOutOfTenant(tenantId); router.replace(isFamilyPower?"/family-power/login":"/login"); }}><LogOut size={14} /> Salir</button>
+          <button className="text-button" onClick={async () => { const destination=await tenantLogoutDestination(member.tenant_slug??""); const result=await signOutOfTenant(tenantId); if(result.error){setNotice("No se pudo cerrar la sesión.");return;} if(destination==="/login")try{window.sessionStorage.removeItem("crm:login-intent");}catch{} router.replace(destination); }}><LogOut size={14} /> Salir</button>
         </div>
       </aside>
       <main className="content">
