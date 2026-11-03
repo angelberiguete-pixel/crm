@@ -49,12 +49,13 @@ export default function MobileTenantNavigation() {
   },[tenant?.tenant_id,tenant?.membership_role]);
   if (!tenant) return null;
   const tenantId=tenant.tenant_id;
+  const logoutDestination=tenantLogoutDestination(tenant.tenant_slug);
   async function logout() {
     setBusy(true);setError("");
     const result=await signOutOfTenant(tenantId);
     setBusy(false);
     if(result.error) {setError("No se pudo cerrar la sesión. Intenta nuevamente.");return;}
-    router.replace(tenantLogoutDestination(tenant.tenant_slug));
+    router.replace(logoutDestination);
   }
   return <details className="mobile-tenant-navigation"><summary aria-label="Abrir todos los módulos">Módulos <span aria-hidden="true">☰</span></summary>
     <div className="mobile-module-panel"><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><nav aria-label={`Otros módulos de ${tenant.tenant_name}`}>{links.filter(([path])=>allowed?.includes(path)).map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
