@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Building2, CalendarDays, FileText, Gauge, Inbox, Pencil, Phone, Mail, MessageCircle, Search, Target, Users, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import {normalizeWhatsAppNumber} from "@/lib/whatsapp-number";
 import { useActiveTenant } from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
@@ -234,10 +235,8 @@ export default function CrmCustomers({kind}:{kind:"companies"|"contacts"}) {
 
 function ContactLinks({name,phone,whatsappPhone,email}:{name:string;phone:string|null;whatsappPhone:string|null;email:string|null}) {
  const safePhone=phone?cleanPhone(phone):"";
- const rawWhatsApp=(whatsappPhone??"").replace(/\D/g,"");
- // Dominican local mobile numbers require the +1 country code for wa.me.
- const whatsAppNumber=rawWhatsApp.length===10&&/^(809|829|849)/.test(rawWhatsApp)?"1"+rawWhatsApp:rawWhatsApp.startsWith("00")?rawWhatsApp.slice(2):rawWhatsApp;
- const whatsAppUrl=whatsAppNumber.length>=8&&whatsAppNumber.length<=15?"https://wa.me/"+whatsAppNumber:null;
+ const whatsAppNumber=normalizeWhatsAppNumber(whatsappPhone);
+ const whatsAppUrl=whatsAppNumber?"https://wa.me/"+whatsAppNumber:null;
  const safeEmail=email?.trim()??"";
  return <div className={styles.detailLinks} aria-label={"Contactar a "+name}>
    {safePhone&&<a href={"tel:"+safePhone} aria-label={"Llamar a "+name}><Phone size={17}/> Llamar</a>}

@@ -2,6 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildFamilyQuotePdf} from "../lib/family-power-quote-pdf.ts";
+import {normalizeWhatsAppNumber} from "../lib/whatsapp-number.ts";
 
 const source=readFileSync(new URL("../components/family-power-quotations.tsx",import.meta.url),"utf8");
 const workspace=readFileSync(new URL("../components/crm-workspace.tsx",import.meta.url),"utf8");
@@ -38,4 +39,20 @@ test("Family Power uses dedicated quote interface only inside its tenant",()=>{
  assert.match(source,/className=\{styles\.pdf\}/);
  assert.match(source,/navigator\.canShare/);
  assert.match(source,/status==="active"/);
+});
+
+test("WhatsApp links normalize Dominican local phones and reject invalid destinations",()=>{
+ assert.equal(normalizeWhatsAppNumber("809-555-1234"),"18095551234");
+ assert.equal(normalizeWhatsAppNumber("(829) 555-4040"),"18295554040");
+ assert.equal(normalizeWhatsAppNumber("849 555 2000"),"18495552000");
+ assert.equal(normalizeWhatsAppNumber("+1 (809) 555-1234"),"18095551234");
+ assert.equal(normalizeWhatsAppNumber("0018095551234"),"18095551234");
+ assert.equal(normalizeWhatsAppNumber("+44 7700 900123"),"447700900123");
+ assert.equal(normalizeWhatsAppNumber(""),null);
+ assert.equal(normalizeWhatsAppNumber(null),null);
+ assert.equal(normalizeWhatsAppNumber("123"),null);
+ assert.equal(normalizeWhatsAppNumber("000"),null);
+ assert.equal(normalizeWhatsAppNumber("1809555123456789"),null);
+ assert.match(source,/normalizeWhatsAppNumber\(phoneFor\(q\)\)/);
+ assert.match(source,/if\(!phone\)return setError/);
 });
