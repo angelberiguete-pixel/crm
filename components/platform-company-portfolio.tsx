@@ -50,7 +50,8 @@ export default function PlatformCompanyPortfolio(){
   setAuthorized(true);
   const r=await supabase.rpc("platform_admin_tenants");
   if(r.error){setError(r.error.message);setLoading(false);return;}
-  const rows=((r.data??[]) as Tenant[]).filter(t=>isCommercialClientTenant(t.tenant_slug));
+  const rows=((r.data??[]) as Tenant[]).filter(t=>isCommercialClientTenant(t.tenant_slug))
+     .sort((a,b)=>Number(b.tenant_slug==="eurevector")-Number(a.tenant_slug==="eurevector"));
   setTenants(rows);
   setSelected(id=>id&&rows.some(t=>t.tenant_id===id)?id:rows[0]?.tenant_id??null);
   setLoading(false);
@@ -91,8 +92,8 @@ export default function PlatformCompanyPortfolio(){
  if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global.</p><Link href="/crm">Volver al CRM</Link></main>;
  return <main className={styles.page}>
   <header className={styles.top}>
-   <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Todos los espacios comerciales que administras, sin mezclar sus datos.</p></div>
-   <div className={styles.actions}><Link href="/crm">Volver al CRM</Link><Link href="/platform-admin">Configuración</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
+   <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Esta es tu entrada principal. Abre Look Social Media para trabajar en tu CRM o selecciona Family Power y otros clientes para gestionar su empresa.</p></div>
+   <div className={styles.actions}><Link href="/look-social-media">Sitio de Look Social Media</Link><Link href="/platform-admin">Configuración de plataforma</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
   </header>
   {error&&<div className={styles.warning} role="alert">{error}</div>}
   <h2>Empresas registradas <small>({n(tenants.length)})</small></h2>
