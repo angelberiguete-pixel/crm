@@ -38,9 +38,9 @@ test("ARM reads tenant-scoped metrics and keeps functional approval queue withou
  assert.doesNotMatch(cockpit,/\.insert\(|\.update\(|\.delete\(|\.invoke\(/);
 });
 
-test("Family Power landing offers a direct CRM entrance without choosing a module",()=>{
+test("Family Power dashboard has an explicit commercial CRM shortcut",()=>{
  const dashboard=read("../components/energy-service-dashboard.tsx");
- assert.match(dashboard,/Entrar al CRM/);
- assert.match(dashboard,/href="\/crm\/arm"/);
+ assert.match(dashboard,/Abrir gestión comercial/);
+ assert.match(dashboard,/href="\/crm\/revenue"/);
  assert.doesNotMatch(dashboard,/Clientes, ventas y equipo digital/);
 });
