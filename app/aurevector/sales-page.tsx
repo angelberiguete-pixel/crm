@@ -18,7 +18,7 @@ export default function AurevectorSalesPage() {
           <a href="#sistema">Cómo funciona</a>
           <a href="#planes">Planes</a>
           <a href="#diagnostico">Contacto</a>
-          <a href="/crm">Acceso CRM</a>
+          <a href="/acceso-crm">Acceso CRM</a>
         </nav>
       </header>
 
@@ -96,7 +96,7 @@ export default function AurevectorSalesPage() {
         <strong>LOOK SOCIAL MEDIA</strong>
         <span>CRM + automatización + IA + growth para convertir con control.</span>
         <a href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a>
-        <a href="/crm">Acceso al CRM</a>
+        <a href="/acceso-crm">Acceso al CRM</a>
       </footer>
     </main>
   );
