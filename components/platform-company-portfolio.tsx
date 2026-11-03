@@ -5,6 +5,7 @@ import {useCallback,useEffect,useState} from "react";
 import {ArrowRight,Building2,RefreshCw,ShieldCheck} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {notifyTenantContextChanged} from "@/lib/tenant-context-events";
+import {markPlatformClientEntry} from "@/lib/tenant-login-return";
 import {safeTenantAsset,safeHex} from "@/lib/tenant-brand";
 import {isCommercialClientTenant} from "@/lib/visible-client-tenants";
 import styles from "./platform-company-portfolio.module.css";
@@ -84,15 +85,16 @@ export default function PlatformCompanyPortfolio(){
     if(target.tenant_slug==="family-power")window.sessionStorage.setItem("crm:login-intent","family-power");
     else window.sessionStorage.removeItem("crm:login-intent");
   }catch{}
+  if(target.tenant_slug!=="eurevector")markPlatformClientEntry();
   notifyTenantContextChanged();
   window.location.assign("/crm");
  }
  if(loading)return <main className={styles.page}>Cargando empresas…</main>;
- if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global.</p><Link href="/crm">Volver al CRM</Link></main>;
+ if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global. Si abriste un cliente, cierra primero la sesión de esa empresa.</p><Link href="/login">Acceso de propietario</Link></main>;
  return <main className={styles.page}>
   <header className={styles.top}>
    <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Todos los espacios comerciales que administras, sin mezclar sus datos.</p></div>
-   <div className={styles.actions}><Link href="/crm">Volver al CRM</Link><Link href="/platform-admin">Configuración</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
+   <div className={styles.actions}><Link href="/platform-admin">Configuración</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
   </header>
   {error&&<div className={styles.warning} role="alert">{error}</div>}
   <h2>Empresas registradas <small>({n(tenants.length)})</small></h2>
