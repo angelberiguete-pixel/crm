@@ -10,7 +10,8 @@ test("pending agent expansion stays draft-only, no services or permissions activ
  assert.match(sql,/and not exists/);
  assert.match(sql,/'draft','unconfigured','not-connected'/);
  assert.match(sql,/'human_approval','\[\]'::jsonb/);
- assert.match(cockpit,/settings.arm_role===key/);
+ assert.doesNotMatch(cockpit,/settings.arm_role===key|roles\.map|Pendiente de configuración/);
+ assert.match(cockpit,/DigitalEmployeeReviewQueue/);
  assert.doesNotMatch(sql,/send_whatsapp|execute_http|service_role|insert into public\.contacts/i);
 });
 test("specialized ARM drafts cannot be accidentally recast as reception agent",()=>{
