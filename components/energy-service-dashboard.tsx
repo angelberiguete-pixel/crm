@@ -59,8 +59,8 @@ export default function EnergyServiceDashboard(){
          <p style={{color:"#E4E5E8",lineHeight:1.55,maxWidth:480}}>
            Clientes, ventas, cotizaciones y seguimiento comercial.
          </p>
-         <Link className="button primary" href="/crm/arm" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
-           <LayoutDashboard size={16}/> Entrar al CRM <ArrowRight size={16}/>
+         <Link className="button primary" href="/crm/revenue" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
+           <LayoutDashboard size={16}/> Abrir gestión comercial <ArrowRight size={16}/>
          </Link>
        </div>
        <div style={{width:"min(100%,355px)",padding:12,background:"transparent",flex:"0 1 355px"}}>
