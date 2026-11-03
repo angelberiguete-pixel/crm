@@ -64,6 +64,8 @@ jobs:
         run: node --test tests/marketing-conversation-events.test.mjs
       - name: YCloud signed webhooks, CTWA referrals, reply controls and guarded human sender
         run: node --experimental-strip-types --test tests/ycloud-whatsapp-webhook.test.mjs tests/ycloud-whatsapp-send.test.mjs
+      - name: OpenWA v5 webhook parser and verified tenant routing safeguards
+        run: node --test tests/openwa-whatsapp-webhook.test.mjs
       - name: YCloud integrations status and onboarding safeguards
         run: node --test tests/ycloud-integrations-live-status.test.mjs
       - name: Family Power brand and portal authorization contracts
