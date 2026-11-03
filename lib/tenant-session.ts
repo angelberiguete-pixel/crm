@@ -13,3 +13,22 @@ export async function signOutOfTenant(tenantId:string|null) {
   }
   return supabase.auth.signOut({scope:"local"});
 }
+
+/**
+ * A platform owner leaving a customer's locked workspace returns to LOOK login.
+ * Customer users return to their own branded login. This decision checks the
+ * authoritative platform role BEFORE the shared Supabase session is closed.
+ * Errors fail closed to the customer's login and never grant platform access.
+ */
+export async function tenantLogoutDestination(tenantSlug:string):Promise<"/login"|"/family-power/login"> {
+  if(tenantSlug!=="family-power")return "/login";
+  try{
+    const access=await supabase.rpc("platform_current_access");
+    if(!access.error&&
+      (access.data as {is_platform_admin?:boolean}|null)?.is_platform_admin===true)
+      return "/login";
+  }catch{
+    // An unavailable platform authority cannot grant elevated navigation.
+  }
+  return "/family-power/login";
+}
