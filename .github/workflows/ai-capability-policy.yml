@@ -1,0 +1,23 @@
+name: AI capability policy checks
+on:
+  pull_request:
+    paths:
+      - 'src/lib/ai-capabilities/**'
+      - 'tests/ai-capabilities-policy.test.mjs'
+      - '.github/workflows/ai-capability-policy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: node --test tests/ai-capabilities-policy.test.mjs
+      - run: npm run typecheck
