@@ -27,3 +27,21 @@ Ampliar el CRM multiempresa EXISTENTE de Look Social Media para admitir Instagra
 
 ### Seguridad de este PR
 No modifica producción, no crea secretos, no activa webhook HTTP, no manda mensajes, no habilita IA, no ejecuta migraciones SQL ni crea falsos contactos. Revisión y aceptación obligatorias antes de fusionar/desplegar.
+
+
+## Evaluación del proveedor alternativo — Kunfu DM (4 noviembre 2026)
+Referencia aportada por Ángel Berigüete: https://kunfupay.com/apps/kunfu-dm (sin parámetros de seguimiento).
+
+**Decisión de arquitectura:** evaluar Kunfu DM como adaptador opcional de automatización de mensajes de Instagram/Facebook; no sustituye a los módulos compartidos `channels`, `conversations`, `messages`, ni al control de tenants/RLS.
+
+**Verificación externa:** el dominio principal de Kunfupay y el catálogo general de sus herramientas son públicos; la ruta concreta de Kunfu DM no fue accesible al verificador web en este ciclo. La API y webhooks que la empresa publica para *pagos/suscripciones* no acreditan que la app de mensajes disponga de API o webhooks equivalentes. No hay credenciales, cuenta vinculada, endpoints de Kunfu DM, catálogo de webhooks de mensajes ni tarifas específicas verificadas.
+
+**Contrato de integración requerido antes de escribir un adaptador:**
+- Evidencia de que Kunfu DM permite autorización/uso para terceros, integración legal de Meta y una cuenta por tenant.
+- Documentación oficial de API o webhook de entrada/salida para DM, comentarios, destinatarios, post/media ID, origen, replies, asignación y estado de entrega. Si solo hay exportación CSV, no equivale a sincronización de una bandeja en tiempo real.
+- Autenticación de servidor y firma de eventos, conservación limitada del contenido, exportación/supresión de datos, rate limits, idempotencia, reintentos, historial y costos.
+- Pruebas: evento real de IG y Messenger, comentario y respuesta, mapeo seguro a `tenant_id`, no duplicación entre Kunfu DM/Meta, y un turno de agente IA supervisado dentro del CRM.
+
+**Alternativa si no existe API de mensajes:** conectar Meta Graph API directamente sobre la infraestructura existente y utilizar Kunfu DM como herramienta separada de campañas donde sea lícito y el usuario lo prefiera, sin afirmar centralización ficticia.
+
+Estado: **HOLD / integración de Kunfu DM no implementada ni conectada**, sin modificaciones de producción ni activación de automatizaciones.
