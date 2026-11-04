@@ -388,6 +388,7 @@ export default function PlatformAdmin() {
                  setNewTemplate("energia-instalaciones");
                  setNotice("Configuración Family Power preparada. Verifica el plan y pulsa Crear cliente solo cuando corresponda. No se han importado datos ni generado cobros.");
                }}>Preparar Family Power</button>
+              <Link className="button" href="/platform-admin/family-power-propietario">Configurar acceso presencial del propietario</Link>
               <p className="muted">La preparación no crea contactos ni importa el prototipo anterior. Un contrato y permisos vigentes deben verificarse antes de habilitar accesos del cliente.</p>
             </section>
             <label>Empresa / cliente<input value={newName} onChange={(e) => { setNewName(e.target.value); if (!newSlug) setNewSlug(e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")); }} required /></label>
