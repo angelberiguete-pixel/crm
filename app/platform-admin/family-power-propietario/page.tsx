@@ -18,11 +18,16 @@ export default function FamilyPowerOwnerAdmin(){
   const [message,setMessage]=useState("");
   useEffect(()=>{
     let active=true;
-    void supabase.rpc("platform_current_access").then(({data,error})=>{
-      if(!active)return;
-      setAuthorized(!error&&Boolean((data as {is_platform_admin?:boolean}|null)?.is_platform_admin));
-      setLoading(false);
-    }).catch(()=>{if(active)setLoading(false);});
+    void (async()=>{
+      try{
+        const {data,error}=await supabase.rpc("platform_current_access");
+        if(active)setAuthorized(!error&&Boolean((data as {is_platform_admin?:boolean}|null)?.is_platform_admin));
+      }catch{
+        if(active)setAuthorized(false);
+      }finally{
+        if(active)setLoading(false);
+      }
+    })();
     return()=>{active=false;};
   },[]);
   async function create(e:FormEvent){
