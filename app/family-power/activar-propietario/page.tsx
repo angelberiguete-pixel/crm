@@ -65,8 +65,13 @@ export default function FamilyPowerOwnerActivation(){
         </>:<>
           <h2>Crear mi contraseña</h2>
           <p>El administrador debe comprobar tu identidad y entregarte el enlace durante la reunión. El correo será tu identificador de entrada; este proceso no comprueba la propiedad de la bandeja de correo.</p>
-          {loaded&&!ticket?<div className={styles.notice} role="alert">Falta un código de activación válido. Solicita al administrador un enlace nuevo de un solo uso.</div>:
           <form className={styles.form} onSubmit={activate}>
+            {!ticket&&<div className={styles.notice} role="status">Antes de crear tu contraseña, el administrador de Look Social Media debe verificar tu identidad y darte un código privado de activación. No hay registro público.</div>}
+            <label htmlFor="fp-owner-ticket">Código privado de activación</label>
+            <input id="fp-owner-ticket" type="password" required minLength={64} maxLength={64}
+              autoComplete="off" spellCheck={false} value={ticket}
+              onChange={e=>setTicket(e.target.value.trim().toLowerCase())}
+              placeholder="Código temporal entregado por el administrador"/>
             <label htmlFor="fp-owner-email">Correo de acceso autorizado</label>
             <input id="fp-owner-email" autoComplete="username" type="email" required maxLength={254}
               value={email} onChange={e=>setEmail(e.target.value)} placeholder="correo de acceso"/>
@@ -80,7 +85,7 @@ export default function FamilyPowerOwnerActivation(){
             <button className={styles.submit} type="submit" disabled={busy||!loaded||!ticket}>
               {busy?"Creando acceso seguro…":"Crear contraseña y activar mi cuenta"}
             </button>
-          </form>}
+          </form>
           <div className={styles.invite}>Si no utilizas correo electrónico, el acceso se puede preparar con un identificador bajo control de la empresa. No uses la dirección de una persona ajena: los mensajes de recuperación podrían llegarle.</div>
         </>}
       </section>
