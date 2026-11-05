@@ -128,6 +128,13 @@ export default function FamilyPowerLogin(){
            {busy||checking?"Verificando acceso…":<><LogIn size={18}/> Entrar a Family Power</>}
          </button>
        </form>
+       <div className={styles.ownerRegistration}>
+         <p>¿Es la primera vez que entras como propietario de Family Power?</p>
+         <Link className={styles.ownerRegistrationLink} href="/family-power/activar-propietario">
+           Crear mi contraseña de propietario
+         </Link>
+         <small>El primer acceso requiere un código privado entregado por Look Social Media tras comprobar la identidad del dueño.</small>
+       </div>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
        <div className={styles.invite}>El propietario recibirá un código privado para crear su propia cuenta y contraseña; este paso todavía requiere habilitación del administrador. Vendedores y administradores entran por invitación. No hay registro público.</div>
