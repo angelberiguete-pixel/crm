@@ -103,9 +103,13 @@ export default function FamilyPowerOwnerAdmin(){
               <label htmlFor="owner-setup-link">Enlace de activación — secreto temporal</label>
               <input id="owner-setup-link" readOnly value={link}
                 style={{width:"100%",padding:12,margin:"8px 0",borderRadius:8}}/>
+              <label htmlFor="owner-setup-code">Código privado (para activar desde el login normal)</label>
+              <input id="owner-setup-code" readOnly value={link.split("#ticket=")[1]??""}
+                style={{width:"100%",padding:12,margin:"8px 0",borderRadius:8}}/>
               <button type="button" onClick={()=>void copy()} className={styles.submit}>
                 Copiar enlace para entregarlo en persona
               </button>
+              <small>El dueño puede abrir el login habitual, pulsar «Crear mi contraseña de propietario» e introducir este código. Entrégalo únicamente en persona.</small>
             </div>}
             <p className={styles.invite}>Si el propietario no dispone de correo utilizable, habrá que definir un identificador corporativo cuya dirección no controle un tercero. La recuperación de contraseña exigirá una comprobación manual de identidad.</p>
             <Link className={styles.recovery} href="/platform-admin">Volver a Administración</Link>
