@@ -253,5 +253,6 @@ export default function DigitalEmployeeStudio(){
     </section>
     {tenantId&&<DigitalEmployeeChannelBinding tenantId={tenantId} agentId={selectedId}/>}
     {tenantId&&<DigitalEmployeeReviewQueue tenantId={tenantId}/>}
+    {tenantId&&<section className="card section-gap" style={{marginTop:18}}><h2>Evidencias verificables</h2><p className="muted">Revisa la procedencia de los datos sin modificar automáticamente contactos ni enviar mensajes.</p><Link className="button" href="/crm/evidence">Abrir registro de evidencias</Link></section>}
   </main>;
 }

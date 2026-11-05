@@ -30,6 +30,7 @@ const sectionPermission: Record<string, string> = {
   integrations: "settings",
   marketing: "settings",
   employees: "settings",
+  evidence: "settings",
   arm: "dashboard",
   tasks: "operations",
   reports: "dashboard",
