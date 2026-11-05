@@ -70,3 +70,8 @@ jobs:
       - name: Verify real native outbox collection, signing, retry leases and isolation
         working-directory: .build/openreply
         run: npx tsx --test lib/crm-bridge/integration.test.ts
+      - name: Build standalone production application
+        working-directory: .build/openreply
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build

@@ -18,6 +18,13 @@ const errors: Record<string, string> = {
   provider_timeout: "OpenReply tardó demasiado en responder. Intenta de nuevo.",
   campaign_not_found: "La campaña ya no está disponible para esta empresa.",
 };
+type BridgeStatus = {
+  tenant_id: string;
+  routes: Array<{ id: string; is_enabled: boolean; verified_at: string | null }>;
+  received_events: number;
+  draft_quotes: number;
+  last_received_at: string | null;
+};
 
 export default function OpenReplyAutomationPanel({ tenantId }: { tenantId: string }) {
   const [snapshot, setSnapshot] = useState<OpenReplySnapshot | null>(null);
@@ -30,6 +37,8 @@ export default function OpenReplyAutomationPanel({ tenantId }: { tenantId: strin
   const [comment, setComment] = useState("Hola, quiero una cotización 🙌");
   const [wholeWord, setWholeWord] = useState(true);
   const [tested, setTested] = useState(false);
+  const [bridge, setBridge] = useState<BridgeStatus | null>(null);
+  const [bridgeLoading, setBridgeLoading] = useState(true);
   const result = useMemo(() => matchKeywords(comment, keywords.split(",").map(k => k.trim()).filter(Boolean), wholeWord), [comment, keywords, wholeWord]);
 
   useEffect(() => {
@@ -58,6 +67,19 @@ export default function OpenReplyAutomationPanel({ tenantId }: { tenantId: strin
     }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; controller.abort(); };
   }, [tenantId, revision, campaignId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let alive = true;
+    setBridge(null); setBridgeLoading(true);
+    (async () => {
+      const { data, error: statusError } = await supabase.rpc("openreply_bridge_status", { p_tenant_id: tenantId }).abortSignal(controller.signal);
+      if (!alive || statusError || !data || data.tenant_id !== tenantId || !Array.isArray(data.routes)
+        || !Number.isSafeInteger(data.received_events) || !Number.isSafeInteger(data.draft_quotes)) return;
+      setBridge(data as BridgeStatus);
+    })().catch(() => {}).finally(() => { if (alive) setBridgeLoading(false); });
+    return () => { alive = false; controller.abort(); };
+  }, [tenantId, revision]);
 
   const connected = snapshot?.state === "connected_readonly";
   function test(e: FormEvent) { e.preventDefault(); setTested(true); }
@@ -104,8 +126,17 @@ export default function OpenReplyAutomationPanel({ tenantId }: { tenantId: strin
       </form>
     </div>
     <div className={styles.next}>
-      <strong>Próxima conexión: de la conversación a la venta</strong>
-      <p>El registro automático de prospectos, las cotizaciones y el seguimiento serán el siguiente paso al conectar las conversaciones al CRM. Por ahora puedes consultar campañas y probar palabras clave.</p>
+      <strong>Conversaciones, prospectos y seguimiento</strong>
+      {bridgeLoading ? <p>Comprobando la conexión comercial de esta empresa…</p> : !bridge ?
+        <p>No se pudo verificar la conexión comercial. Actualiza o solicita revisar su instalación y tus permisos.</p> : <>
+        <p>{bridge.routes.some(r => r.is_enabled && r.verified_at) ? "Cuenta vinculada al receptor comercial." : "Pendiente de autorizar Instagram y verificar la cuenta de esta empresa."} La recepción de eventos no confirma por sí sola la entrega de mensajes en Instagram.</p>
+        <div className={styles.stats} aria-label="Eventos comerciales recibidos">
+          <div><strong>{bridge.received_events.toLocaleString("es-DO")}</strong><span>Eventos recibidos</span></div>
+          <div><strong>{bridge.draft_quotes.toLocaleString("es-DO")}</strong><span>Borradores creados</span></div>
+          <p>{bridge.last_received_at ? "Último evento: " + new Date(bridge.last_received_at).toLocaleString("es-DO") : "Todavía no hay eventos recibidos para esta empresa."}</p>
+        </div>
+      </>}
+      <p>Al responder el cliente, el puente registra la conversación, el prospecto y una tarea. Una solicitud de cotización solo crea un borrador cuando la campaña tiene un producto aprobado y conserva su precio e inventario válidos. El envío requiere revisión humana.</p>
       <div className={styles.links}><Link href="/crm/inbox">Conversaciones</Link><Link href="/crm/automations">Flujos del CRM</Link><Link href="/crm/marketing">Resultados comerciales</Link></div>
     </div>
   </section>;

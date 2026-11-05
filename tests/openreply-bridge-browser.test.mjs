@@ -36,6 +36,7 @@ try {
     else if (path.endsWith("/tenant_current_permissions")) result = { all: true };
     else if (path.endsWith("/tenant_effective_modules")) result = [{ module_key: "settings", enabled: true }];
     else if (path.endsWith("/tenant_integration_health")) result = { tenant_id: tenant, whatsapp_verified_route: false, ai_spending_blocked: true, staff_profiles: 0, channels: [] };
+    else if (path.endsWith("/openreply_bridge_status")) result = { tenant_id: tenant, routes: [], received_events: tenant === A ? 3 : 0, draft_quotes: tenant === A ? 1 : 0, last_received_at: null };
     else if (path.endsWith("/user")) result = user;
     else if (path.endsWith("/tenant_settings")) result = null;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(result), headers: { "access-control-allow-origin": "*" } });
@@ -57,6 +58,8 @@ try {
   await page.goto(base + "/crm/integrations");
   const panel = page.getByRole("region", { name: "Automatización de Instagram con OpenReply" });
   await panel.getByText("OpenReply todavía no está conectado a esta empresa.").waitFor();
+  await panel.getByText("Pendiente de autorizar Instagram y verificar la cuenta de esta empresa.", { exact: false }).waitFor();
+  assert.equal(await panel.getByLabel("Eventos comerciales recibidos").getByText("3", { exact: true }).count(), 1);
   await panel.getByLabel("Comentario de prueba").fill("Quiero COTIZACION por favor 🙌");
   await panel.getByRole("button", { name: "Probar coincidencia" }).click();
   assert.match(await panel.getByRole("status").innerText(), /COTIZACIÓN/);
@@ -94,6 +97,7 @@ try {
   assert.equal(await panel.getByText("Catálogo Empresa Uno", { exact: true }).count(), 0);
   assert.equal(await panel.getByRole("region", { name: "Resultados de la campaña" }).count(), 0);
   assert.equal(calls.at(-1).tenantId, B);
+  assert.equal(await panel.getByLabel("Eventos comerciales recibidos").getByText("3", { exact: true }).count(), 0, "previous company's event count is cleared");
   const beforeFamily = calls.length;
   await page.getByLabel("Empresa activa").selectOption(F);
   await page.getByRole("heading", { name: "Integraciones", exact: true }).waitFor();

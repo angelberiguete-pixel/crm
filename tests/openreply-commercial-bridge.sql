@@ -90,6 +90,19 @@ set local role authenticated;
 select public.set_active_tenant((select id from qa_or_ids where k='tenant_b'));
 insert into qa_or_results select 'other_owner_cannot_read_approval',count(*)=0 from public.openreply_campaign_products;
 insert into qa_or_results select 'other_owner_cannot_read_contacts',count(*)=0 from public.contacts where tenant_id=(select id from qa_or_ids where k='tenant_a');
+insert into qa_or_results select 'other_owner_cannot_read_conversations_quotes_tasks',
+ not exists(select 1 from public.conversations where tenant_id=(select id from qa_or_ids where k='tenant_a'))
+ and not exists(select 1 from public.messages where tenant_id=(select id from qa_or_ids where k='tenant_a'))
+ and not exists(select 1 from public.quotations where tenant_id=(select id from qa_or_ids where k='tenant_a'))
+ and not exists(select 1 from public.tasks where tenant_id=(select id from qa_or_ids where k='tenant_a'));
+with changed as (update public.contacts set display_name='Forbidden change' where tenant_id=(select id from qa_or_ids where k='tenant_a') returning id)
+insert into qa_or_results select 'other_owner_cannot_modify_contacts',count(*)=0 from changed;
+with changed as (update public.conversations set subject='Forbidden change' where tenant_id=(select id from qa_or_ids where k='tenant_a') returning id)
+insert into qa_or_results select 'other_owner_cannot_modify_conversations',count(*)=0 from changed;
+with changed as (update public.quotations set notes='Forbidden change' where tenant_id=(select id from qa_or_ids where k='tenant_a') returning id)
+insert into qa_or_results select 'other_owner_cannot_modify_quotes',count(*)=0 from changed;
+with changed as (update public.tasks set title='Forbidden change' where tenant_id=(select id from qa_or_ids where k='tenant_a') returning id)
+insert into qa_or_results select 'other_owner_cannot_modify_tasks',count(*)=0 from changed;
 do $$ begin
  begin
   perform public.openreply_bridge_status((select id from qa_or_ids where k='tenant_a'));

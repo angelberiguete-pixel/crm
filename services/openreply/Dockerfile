@@ -16,10 +16,13 @@ ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/openreply
 RUN npm ci --no-audit --no-fund && npm run build
 
 FROM node:22-bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl wget && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 COPY --from=build --chown=node:node /app /app
+COPY --chown=node:node services/openreply/preflight.mjs /app/crm-preflight.mjs
+COPY --chown=node:node services/openreply/entrypoint.sh /app/crm-entrypoint.sh
 USER node
 EXPOSE 3000
+ENTRYPOINT ["sh", "/app/crm-entrypoint.sh"]
 CMD ["npm", "run", "start"]

@@ -1,5 +1,9 @@
 # Deployment recipe for an existing, authorized host. This file does not
 # provision hosting. Fill the host secret store before starting any service.
+x-runtime: &runtime
+  DATABASE_URL: postgresql://openreply:${POSTGRES_PASSWORD:?Set a URL-safe database password}@postgres:5432/openreply
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set a URL-safe Redis password}@redis:6379
+  NEXTAUTH_URL: https://${OPENREPLY_HOST:?Set a verified public hostname}
 services:
   postgres:
     image: postgres:16-bookworm
@@ -30,6 +34,7 @@ services:
     build: {context: ../.., dockerfile: services/openreply/Dockerfile}
     image: crm-openreply:c78b2d2-crm1
     env_file: ["runtime.env"]
+    environment: *runtime
     command: ["npm", "run", "db:migrate"]
     depends_on:
       postgres: {condition: service_healthy}
@@ -39,6 +44,7 @@ services:
     restart: unless-stopped
     env_file: ["runtime.env"]
     environment:
+      <<: *runtime
       CRM_BRIDGE_BINDINGS_JSON: ""
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -46,9 +52,20 @@ services:
     image: crm-openreply:c78b2d2-crm1
     restart: unless-stopped
     env_file: ["runtime.env"]
+    environment: *runtime
     command: ["npm", "run", "worker"]
     depends_on:
       migrate: {condition: service_completed_successfully}
+  cron:
+    image: crm-openreply:c78b2d2-crm1
+    restart: unless-stopped
+    env_file: ["runtime.env"]
+    environment:
+      <<: *runtime
+      CRON_BASE_URL: http://web:3000
+      CRM_BRIDGE_BINDINGS_JSON: ""
+    command: ["sh", "scripts/cron.sh"]
+    depends_on: [web]
   https:
     image: caddy:2-alpine
     restart: unless-stopped
