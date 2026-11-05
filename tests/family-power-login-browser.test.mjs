@@ -29,6 +29,16 @@ try{
  assert.ok(svg&&svg.includes("family-power"));
  const widths=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,inner:innerWidth}));
  assert.ok(widths.scroll<=widths.inner+2,"390px viewport must not overflow: "+JSON.stringify(widths));
+
+ const firstAccessLink=page.getByRole("link",{name:"¿Es tu primera vez? Solicitar registro"});
+ await firstAccessLink.waitFor();
+ assert.equal(await firstAccessLink.getAttribute("href"),"/family-power/activar-propietario");
+ await firstAccessLink.click();
+ await page.getByRole("heading",{name:"Crear mi contraseña"}).waitFor();
+ await page.locator('#fp-owner-ticket').waitFor();
+ assert.equal(await page.getByRole("button",{name:"Crear contraseña y activar mi cuenta"}).isDisabled(),true,
+   "the proprietor cannot activate without a private one-time code");
+
  await context.close();
 
  const disallowed=await browser.newContext({viewport:{width:390,height:844},isMobile:true});
