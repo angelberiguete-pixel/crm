@@ -63,7 +63,7 @@ test("proprietor chooses password in branded page; token remains in fragment",()
 test("Family Power login exposes protected first access, not unrestricted signup",()=>{
   const css=read("app/family-power/login/family-login.module.css");
   assert.ok(login.includes('href="/family-power/activar-propietario"'));
-  assert.match(login,/Crear mi contraseña de propietario/);
+  assert.match(login,/¿Es tu primera vez\? Solicitar registro/);
   assert.match(login,/Primer acceso seguro para el propietario/);
   assert.match(login,/Si eres el dueño y es tu primera vez/);
   assert.match(login,/no necesitas una cuenta anterior/);
