@@ -130,6 +130,12 @@ export default function FamilyPowerLogin(){
        </form>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
+       <div className={styles.ownerRegistration}>
+  <Link className={styles.ownerRegistrationLink} href="/family-power/activar-propietario">
+    ¿Es tu primera vez? Solicitar registro
+  </Link>
+  <small>El dueño debe presentar un código privado de activación entregado tras comprobar su identidad.</small>
+</div>
        <div className={styles.invite}>El propietario recibirá un código privado para crear su propia cuenta y contraseña; este paso todavía requiere habilitación del administrador. Vendedores y administradores entran por invitación. No hay registro público.</div>
      </section>
    </div>
