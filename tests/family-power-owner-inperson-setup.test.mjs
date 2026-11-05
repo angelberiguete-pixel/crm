@@ -62,13 +62,13 @@ test("proprietor chooses password in branded page; token remains in fragment",()
 
 test("Family Power login exposes protected first access, not unrestricted signup",()=>{
   const css=read("app/family-power/login/family-login.module.css");
-  assert.match(login,/href="\\/family-power\\/activar-propietario"/);
+  assert.ok(login.includes('href="/family-power/activar-propietario"'));
   assert.match(login,/Crear mi contraseña de propietario/);
   assert.match(login,/Acceso por invitación/);
-  assert.doesNotMatch(login,/supabase\\.auth\\.signUp/);
+  assert.ok(!login.includes("supabase.auth.signUp"));
   assert.match(css,/ownerRegistrationLink/);
-  assert.match(owner,/id="fp-owner-ticket"/);
-  assert.match(owner,/onChange=\\{e=>setTicket/);
-  assert.match(owner,/disabled=\\{busy\\|\\|!loaded\\|\\|!ticket\\}/);
-  assert.match(operator,/id="owner-setup-code"/);
+  assert.ok(owner.includes('id="fp-owner-ticket"'));
+  assert.ok(owner.includes("onChange={e=>setTicket"));
+  assert.ok(owner.includes("disabled={busy||!loaded||!ticket}"));
+  assert.ok(operator.includes('id="owner-setup-code"'));
 });
