@@ -1,0 +1,6 @@
+# Only Family Power's one-time owner bootstrap function can be reached without
+# an existing user JWT. The function itself verifies the platform admin JWT
+# before issuing a ticket and requires a 256-bit single-use ticket for claim.
+# This is not public self-registration.
+[functions.family-power-owner-setup]
+verify_jwt = false
