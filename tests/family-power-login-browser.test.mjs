@@ -32,12 +32,13 @@ try{
 
  const firstAccessLink=page.getByRole("link",{name:"¿Es tu primera vez? Solicitar registro"});
  await firstAccessLink.waitFor();
- assert.equal(await firstAccessLink.getAttribute("href"),"/family-power/activar-propietario");
+ assert.equal(await firstAccessLink.getAttribute("href"),"/family-power/registro");
  await firstAccessLink.click();
- await page.getByRole("heading",{name:"Crear mi contraseña"}).waitFor();
- await page.locator('#fp-owner-ticket').waitFor();
- assert.equal(await page.getByRole("button",{name:"Crear contraseña y activar mi cuenta"}).isDisabled(),true,
-   "the proprietor cannot activate without a private one-time code");
+ await page.getByRole("heading",{name:"Crea tu cuenta"}).waitFor();
+ await page.locator('#fp-register-name').waitFor();
+ assert.equal(await page.locator('#fp-register-email').count(),1);
+ assert.equal(await page.locator('#fp-register-password').count(),1);
+ assert.equal(await page.getByRole("button",{name:"Solicitar registro"}).count(),1);
 
  await context.close();
 
