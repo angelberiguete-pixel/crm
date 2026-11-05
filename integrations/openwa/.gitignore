@@ -1,0 +1,5 @@
+.env
+.openwa/
+*.data.json
+*.session.data.json
+node_modules/
