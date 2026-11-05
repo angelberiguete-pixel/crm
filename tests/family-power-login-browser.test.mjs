@@ -22,6 +22,10 @@ try{
  await page.getByRole("heading",{name:"Bienvenido a tu espacio"}).waitFor();
  await page.getByRole("img",{name:/Family Power — Energía alternativa sin límites/}).waitFor();
  await page.getByRole("button",{name:"Entrar a Family Power"}).waitFor();
+ const requestRegistration=page.getByRole("link",{name:"¿Es tu primera vez? Solicitar registro"});
+ await requestRegistration.waitFor();
+ assert.equal(await requestRegistration.getAttribute("href"),"/family-power/activar-propietario",
+   "Family Power first-time owner registration stays in the principal CRM");
  assert.equal(await page.getByRole("button",{name:/Crear cuenta|Registrarse/i}).count(),0,
    "customer staff only enters by invitation");
  assert.equal(await page.getByText("LOOK SOCIAL MEDIA CRM",{exact:true}).count(),0);
