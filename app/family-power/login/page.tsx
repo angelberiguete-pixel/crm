@@ -110,7 +110,7 @@ export default function FamilyPowerLogin(){
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>Si ya tienes cuenta, entra con tu correo y contraseña. Si eres el dueño y es tu primera vez, utiliza «Crear mi contraseña de propietario» para activar tu acceso.</p>
+       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, tu cuenta se crea con una activación privada de Family Power: no necesitas una cuenta anterior.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -137,7 +137,7 @@ export default function FamilyPowerLogin(){
        </div>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
-       <div className={styles.invite}>El propietario crea su cuenta con un código privado de un solo uso. Los demás integrantes reciben una invitación del administrador. Nadie puede asignarse el rol de propietario desde un registro público.</div>
+       <div className={styles.invite}>El propietario recibirá un código privado para crear su propia cuenta y contraseña; este paso todavía requiere habilitación del administrador. Vendedores y administradores entran por invitación. No hay registro público.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
