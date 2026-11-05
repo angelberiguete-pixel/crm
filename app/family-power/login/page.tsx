@@ -35,7 +35,7 @@ export default function FamilyPowerLogin(){
    const access=familyPowerMembership(list.data as TenantAccess[]|null);
    if(!access){
      if(newSignIn)await supabase.auth.signOut({scope:"local"});
-     setMessage("Esta cuenta no tiene acceso autorizado a Family Power. Solicita una invitación a su administrador.");
+     setMessage("Tu acceso a Family Power todavía no está autorizado. Si te registraste, espera la aprobación del administrador central.");
      setOtherSession(!newSignIn);
      return;
    }
@@ -110,7 +110,7 @@ export default function FamilyPowerLogin(){
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, tu cuenta se crea con una activación privada de Family Power: no necesitas una cuenta anterior.</p>
+       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, crea tu cuenta con tu nombre completo, correo y contraseña. El acceso necesita aprobación de la administración central.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -131,12 +131,12 @@ export default function FamilyPowerLogin(){
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
        <div className={styles.ownerRegistration}>
-  <Link className={styles.ownerRegistrationLink} href="/family-power/activar-propietario">
+  <Link className={styles.ownerRegistrationLink} href="/family-power/registro">
     ¿Es tu primera vez? Solicitar registro
   </Link>
-  <small>El dueño debe presentar un código privado de activación entregado tras comprobar su identidad.</small>
+  <small>La solicitud queda pendiente hasta que el administrador central la apruebe.</small>
 </div>
-       <div className={styles.invite}>El propietario recibirá un código privado para crear su propia cuenta y contraseña; este paso todavía requiere habilitación del administrador. Vendedores y administradores entran por invitación. No hay registro público.</div>
+       <div className={styles.invite}>El propietario crea sus credenciales y solicita aprobación. Vendedores y colaboradores acceden únicamente cuando reciben los permisos autorizados.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
