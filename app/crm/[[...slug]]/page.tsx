@@ -5,7 +5,7 @@ import CrmCommercialDashboard from "@/components/crm-commercial-dashboard";
 import OmnichannelInbox from "@/components/omnichannel-inbox";
 import CrmChannelSetup from "@/components/crm-channel-setup";
 import DigitalEmployeeStudio from "@/components/digital-employee-studio";
-import FamilyPowerArmCockpit from "@/components/family-power-arm-cockpit";
+import ArmWorkspace from "@/components/arm-workspace";
 import CrmIntegrationCenter from "@/components/crm-integration-center";
 import CrmMarketingPerformance from "@/components/crm-marketing-performance";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
@@ -31,7 +31,7 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
             : section === "marketing"
               ? <CrmMarketingPerformance />
             : section === "arm"
-              ? <FamilyPowerArmCockpit />
+              ? <ArmWorkspace />
             : section === "employees"
               ? <DigitalEmployeeStudio />
             : section === "sessions"

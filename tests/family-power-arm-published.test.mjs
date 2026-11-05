@@ -2,27 +2,29 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const read=p=>readFileSync(new URL(p,import.meta.url),"utf8");
-test("ARM remains a Family Power-only route inside the published shared CRM",()=>{
+test("ARM keeps a specialized Family Power cockpit inside the shared platform",()=>{
  const page=read("../app/crm/[[...slug]]/page.tsx");
  const gate=read("../components/tenant-permission-gate.tsx");
  const cockpit=read("../components/family-power-arm-cockpit.tsx");
  assert.match(page,/section === "arm"/);
- assert.match(page,/FamilyPowerArmCockpit/);
+ assert.match(page,/ArmWorkspace/);
+ const shared=read("../components/arm-workspace.tsx");
+ assert.match(shared,/FamilyPowerArmCockpit/);
  assert.match(gate,/arm: "dashboard"/);
- assert.match(gate,/familyOnlySections\.includes\(section\)&&activeTenant.tenant_slug!=="family-power"/);
+ assert.match(gate,/const familyOnlySections=\["tasks","reports"\]/);
  assert.match(cockpit,/tenant\?\.tenant_slug==="family-power"/);
  assert.match(cockpit,/Entrar al CRM/);
  assert.match(cockpit,/href="\/crm"/);
  assert.doesNotMatch(cockpit,/Equipo digital|Pendiente de configuración|Configurado como borrador/);
  assert.doesNotMatch(cockpit,/rltnmstwqorxtoeqsbgh|service_role|META_WA_ACCESS_TOKEN|sendMessage\(/);
 });
-test("ARM links from Family Power dashboard and mobile menu, never other tenants",()=>{
+test("ARM links remain for Family Power and general tenants",()=>{
  const dashboard=read("../components/energy-service-dashboard.tsx");
  const mobile=read("../components/mobile-tenant-navigation.tsx");
  const workspace=read("../components/crm-workspace.tsx");
  assert.match(dashboard,/href="\/crm\/arm"/);
- assert.match(mobile,/tenant.tenant_slug!=="family-power"&&\["arm","tasks","reports"\]\.includes\(path\)/);
- assert.match(workspace,/!isFamilyPower&&\["arm","tasks","reports"\]\.includes\(key\)/);
+ assert.match(mobile,/tenant.tenant_slug!=="family-power"&&\["tasks","reports"\]\.includes\(path\)/);
+ assert.match(workspace,/!isFamilyPower&&\["tasks","reports"\]\.includes\(key\)/);
  assert.match(workspace,/arm:"dashboard"/);
 });
 test("ARM reads tenant-scoped metrics and keeps functional approval queue without decorative agent cards",()=>{
