@@ -59,6 +59,30 @@ try{
  assert.ok(new URL(wrong.url()).pathname==="/family-power/login");
  console.log("PASS: authorized brand-only login; wrong-tenant sessions cannot activate Family Power; mobile layout works.");
  await disallowed.close();
+
+ // An authorized alias is sent to Supabase Auth internally; no public registration
+ // or real credential is used in this test.
+ const managed=await browser.newContext({viewport:{width:390,height:844},isMobile:true});
+ let receivedEmail="";
+ await managed.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+   const request=route.request();
+   if(request.url().includes("/auth/v1/token")){
+     receivedEmail=String(request.postDataJSON()?.email??"");
+     await route.fulfill({status:400,contentType:"application/json",
+       body:JSON.stringify({error:"invalid_grant",error_description:"Invalid login credentials"}),
+       headers:{"access-control-allow-origin":"*"}});
+   }else await route.fulfill({status:200,contentType:"application/json",body:"[]",
+     headers:{"access-control-allow-origin":"*"}});
+ });
+ const login=await managed.newPage();
+ await login.goto(base+"/family-power/login",{waitUntil:"domcontentloaded"});
+ await login.getByLabel("Nombre de usuario o correo").fill("emerson.familia");
+ await login.getByLabel("Contraseña").fill("fictitious-only-no-real-credential");
+ await login.getByRole("button",{name:"Entrar a Family Power"}).click();
+ await login.getByText(/Revisa tu usuario y contraseña/i).waitFor();
+ assert.equal(receivedEmail,"family-power.emerson.familia@login.looksocialmedia.invalid",
+   "managed username resolves internally but must authenticate through Supabase");
+ await managed.close();
 }finally{
  if(browser)await browser.close();
  if(server)server.kill("SIGTERM");
