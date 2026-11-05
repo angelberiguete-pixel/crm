@@ -64,7 +64,7 @@ try{
  });
  const wrong=await disallowed.newPage();
  await wrong.goto(base+"/family-power/login",{waitUntil:"domcontentloaded"});
- await wrong.getByText(/no tiene acceso autorizado a Family Power/i).waitFor({timeout:12000});
+ await wrong.getByText(/todavía no está autorizado/i).waitFor({timeout:12000});
  assert.ok(called.includes("list_my_tenants"));
  assert.equal(called.includes("set_active_tenant"),false,"must NEVER activate Family Power without membership");
  assert.ok(new URL(wrong.url()).pathname==="/family-power/login");
