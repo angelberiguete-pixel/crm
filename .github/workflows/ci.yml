@@ -84,6 +84,8 @@ jobs:
         run: npm run build
       - name: Install browser for regression tests
         run: npx playwright install --with-deps chromium
+      - name: OpenReply campaign bridge, keyword simulator and company switching browser test
+        run: node tests/openreply-bridge-browser.test.mjs
       - name: Official logo browser rendering and loading test
         run: node tests/look-brand-browser.test.mjs
       - name: Family Power official branded login, mobile and membership denial
@@ -118,5 +120,3 @@ jobs:
         run: node tests/company-channel-onboarding-browser.test.mjs
       - name: CRM integrations center mobile and tenant-scoped request browser test
         run: node tests/crm-integration-center-browser.test.mjs
-      - name: OpenReply campaign bridge, keyword simulator and company switching browser test
-        run: node tests/openreply-bridge-browser.test.mjs
