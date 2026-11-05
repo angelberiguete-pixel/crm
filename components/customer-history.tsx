@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, RefreshCw, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import styles from "@/components/customer-history.module.css";
@@ -27,6 +27,41 @@ export default function CustomerHistory({tenantId,record,contacts,opportunities,
  const [reload,setReload]=useState(0),[feedback,setFeedback]=useState(""),[error,setError]=useState("");
  const [taskTitle,setTaskTitle]=useState(""),[taskDue,setTaskDue]=useState(""),[taskAssignee,setTaskAssignee]=useState(""),[taskPriority,setTaskPriority]=useState("normal");
  const [noteText,setNoteText]=useState(""),[noteContact,setNoteContact]=useState(record.kind==="contact"?record.id:"");
+ const panelRef=useRef<HTMLDivElement>(null);
+ const closeButtonRef=useRef<HTMLButtonElement>(null);
+ useEffect(()=>{
+   const opener=document.activeElement instanceof HTMLElement?document.activeElement:null;
+   const oldOverflow=document.body.style.overflow;
+   document.body.style.overflow="hidden";
+   closeButtonRef.current?.focus();
+   const trapTab=(event:KeyboardEvent)=>{
+     if(event.key!=="Tab"||!panelRef.current)return;
+     const panel=panelRef.current;
+     const focusable=Array.from(panel.querySelectorAll<HTMLElement>(
+       'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled])'
+     )).filter(element=>element.getClientRects().length>0);
+     if(!focusable.length){event.preventDefault();panel.focus();return;}
+     const first=focusable[0],last=focusable[focusable.length-1];
+     if(event.shiftKey&&(document.activeElement===first||!panel.contains(document.activeElement))){
+       event.preventDefault();last.focus();
+     }else if(!event.shiftKey&&(document.activeElement===last||!panel.contains(document.activeElement))){
+       event.preventDefault();first.focus();
+     }
+   };
+   document.addEventListener("keydown",trapTab,true);
+   return()=>{
+     document.removeEventListener("keydown",trapTab,true);
+     document.body.style.overflow=oldOverflow;
+     if(opener?.isConnected)opener.focus();
+   };
+ },[]);
+ useEffect(()=>{
+   const closeOnEscape=(event:KeyboardEvent)=>{
+     if(event.key==="Escape"&&!saving){event.preventDefault();event.stopPropagation();onClose();}
+   };
+   document.addEventListener("keydown",closeOnEscape,true);
+   return()=>document.removeEventListener("keydown",closeOnEscape,true);
+ },[onClose,saving]);
  useEffect(()=>{setNoteContact(record.kind==="contact"?record.id:"");setFeedback("");setError("");},[record.id,record.kind]);
  useEffect(()=>{
    let alive=true;setLoading(true);setError("");setTasks([]);setActivities([]);
@@ -102,8 +137,8 @@ export default function CustomerHistory({tenantId,record,contacts,opportunities,
  }
  const activityLabel:Record<string,string>={task:"Tarea",call:"Llamada",meeting:"Reunión",note:"Nota",email:"Correo",message:"Mensaje",follow_up:"Seguimiento",whatsapp:"WhatsApp",linkedin:"LinkedIn",proposal:"Propuesta",other:"Actividad"};
  return <div className={styles.overlay} role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget&&!saving)onClose();}}>
-   <div className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="history-title">
-     <header className={styles.header}><div><div className={styles.muted}>Ficha comercial · {record.kind==="company"?"Empresa":"Contacto"}</div><h2 id="history-title">{record.name}</h2><div className={styles.muted}>Tareas, oportunidades y actividades de esta cuenta</div></div><button type="button" className="button" onClick={onClose} aria-label="Cerrar ficha comercial"><X size={16}/> Cerrar</button></header>
+   <div ref={panelRef} className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="history-title" tabIndex={-1}>
+     <header className={styles.header}><div><div className={styles.muted}>Ficha comercial · {record.kind==="company"?"Empresa":"Contacto"}</div><h2 id="history-title">{record.name}</h2><div className={styles.muted}>Tareas, oportunidades y actividades de esta cuenta</div></div><button ref={closeButtonRef} type="button" className="button" onClick={onClose} aria-label="Cerrar ficha comercial"><X size={16}/> Cerrar</button></header>
      <div className={styles.actions}><button type="button" className="button" disabled={loading} onClick={()=>setReload(n=>n+1)}><RefreshCw size={15}/> Actualizar ficha</button>
        <Link className="button" href={"/crm/revenue?"+(record.kind==="company"?"companyId":"contactId")+"="+encodeURIComponent(record.id)}>Abrir oportunidades</Link></div>
      {error&&<div className={styles.notice} role="alert">{error}</div>}
