@@ -32,3 +32,9 @@
 @media(max-width:860px){.layout{grid-template-columns:1fr;gap:26px;max-width:570px}.logo{max-width:340px;margin-bottom:26px}.intro h1{font-size:37px}.features{flex-direction:row;flex-wrap:wrap;margin-top:20px}.panel{padding:26px}.intro>p:not(.eyebrow){font-size:15px}}
 @media(max-width:470px){.layout{padding:24px 17px}.logo{max-width:290px;margin-bottom:20px}.intro h1{font-size:33px}.intro>p:not(.eyebrow){font-size:14px}.features{gap:8px}.features span{font-size:12px}.panel{padding:21px}.panel h2{font-size:24px}}
 @media(prefers-reduced-motion:reduce){.glow{filter:none}}
+
+/* First-time owner entry on the official Family Power login. */
+.ownerRegistration{border-top:1px solid #e5e5e8;margin-top:16px;padding-top:16px;text-align:center}
+.ownerRegistrationLink{display:flex;align-items:center;justify-content:center;min-height:48px;padding:9px 4px;color:#a30912;text-decoration:none;font-size:16px;font-weight:850;line-height:1.35}
+.ownerRegistrationLink:hover,.ownerRegistrationLink:focus-visible{text-decoration:underline;outline-offset:3px}
+.ownerRegistration small{display:block;color:#656974;font-size:12px;line-height:1.6;margin-top:4px}
