@@ -34,8 +34,7 @@
 @media(prefers-reduced-motion:reduce){.glow{filter:none}}
 
 /* Owner-only first access is separated from normal staff login. */
-.ownerRegistration{display:flex;flex-direction:column;gap:8px;border-top:1px solid #e5e5e8;margin-top:20px;padding-top:17px}
-.ownerRegistration p{font-size:13px;font-weight:750;color:#34353b;margin:0}
-.ownerRegistrationLink{display:flex;align-items:center;justify-content:center;min-height:47px;padding:11px 14px;border:1px solid #D20A14;border-radius:10px;color:#a30912;text-decoration:none;font-weight:750;text-align:center;font-size:14px}
-.ownerRegistrationLink:hover,.ownerRegistrationLink:focus-visible{background:#fff0f1;outline-offset:2px}
-.ownerRegistration small{color:#656974;line-height:1.6;font-size:12px}
+.ownerRegistration{display:flex;flex-direction:column;gap:8px;border-top:1px solid #e5e5e8;margin-top:16px;padding-top:18px}
+.ownerRegistrationLink{display:flex;align-items:center;justify-content:center;min-height:48px;padding:9px 4px;color:#a30912;text-decoration:none;font-weight:850;text-align:center;font-size:16px;line-height:1.35}
+.ownerRegistrationLink:hover,.ownerRegistrationLink:focus-visible{text-decoration:underline;outline-offset:3px}
+.ownerRegistration small{color:#656974;line-height:1.6;font-size:12px;text-align:center}
