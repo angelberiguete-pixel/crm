@@ -76,6 +76,8 @@ jobs:
         run: node --experimental-strip-types --test tests/family-power-quotation-pdf.test.mjs
       - name: Family Power verified inbound contact names safety
         run: node --test tests/family-power-verified-name-capture.test.mjs
+      - name: httpSMS tenant route, signed webhook and manual reply safety
+        run: node --test tests/httpsms-adapter-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build

@@ -7,6 +7,7 @@ import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "./crm-integration-center.module.css";
+import CrmHttpsmsStatus from "./crm-httpsms-status";
 
 type Provider="whatsapp"|"instagram"|"email";
 type Channel={id:string;provider:Provider;name:string;record_status:string;verified:boolean};
@@ -151,6 +152,7 @@ export default function CrmIntegrationCenter(){
          <button className={styles.secondary} type="button" disabled={loading} onClick={()=>choose(kind)}>{status.color==="off"?"Solicitar conexión":"Ver solicitud"}</button>
        </section>;
      })}
+     {id&&<CrmHttpsmsStatus tenantId={id} className={styles.compactCard}/>}
      <section className={styles.compactCard} aria-label="Llamadas con agentes de voz">
        <div className={styles.compactHead}><span className={styles.compactIcon}><PhoneCall size={21}/></span>
          <span className={styles.status+" "+styles.off}>Sin conectar</span></div>
@@ -227,6 +229,7 @@ export default function CrmIntegrationCenter(){
         </div>
       </section>;
     })}
+    {id&&<CrmHttpsmsStatus tenantId={id} className={styles.card}/>}
     <section className={styles.card}>
       <div className={styles.cardHead}><span className={styles.icon}><Bot size={23}/></span>
         <span className={styles.status+" "+styles.off}>Bloqueado para gasto</span></div>
