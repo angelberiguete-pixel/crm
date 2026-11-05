@@ -34,7 +34,7 @@ export default function FamilyPowerRegistration(){
       }
       // Database trigger queues an access request; neither signup nor metadata confers a tenant role.
       setDone(true);setPassword("");
-      if(result.data.session)await supabase.auth.signOut({scope:"local"});
+      if(result.data.session)window.location.assign("/family-power/login");
     }catch{setError("No se pudo completar el registro. Inténtalo nuevamente.");}
     finally{setBusy(false);}
   }
