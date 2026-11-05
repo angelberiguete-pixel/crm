@@ -103,8 +103,8 @@ export default function FamilyPowerLogin(){
        <h1>Tu empresa, en control.</h1>
        <p>Gestiona clientes, cotizaciones, instalaciones y ventas desde un solo lugar.</p>
        <div className={styles.features}>
-         <span><ShieldCheck size={17}/> Acceso por invitación</span>
-         <span><UsersRound size={17}/> Dueño, administradores y vendedores</span>
+         <span><ShieldCheck size={17}/> Primer acceso seguro para el propietario</span>
+         <span><UsersRound size={17}/> Administradores y vendedores por invitación</span>
        </div>
      </header>
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
