@@ -76,6 +76,14 @@ jobs:
         run: node --experimental-strip-types --test tests/family-power-quotation-pdf.test.mjs
       - name: Family Power verified inbound contact names safety
         run: node --test tests/family-power-verified-name-capture.test.mjs
+      - name: MCP stateless transport, tenant authorization and read-only tool contracts
+        run: node --experimental-strip-types --test tests/mcp-server.test.mjs
+      - name: MCP Family Power pilot two-identity rehearsal and isolation failure tests
+        run: node --test tests/mcp-pilot.test.mjs
+      - name: MCP model adapter stays disabled without explicit consent
+        run: node --test tests/mcp-ai-agent.test.mjs
+      - name: MCP preview-only browser test and non-persistent credentials contracts
+        run: node --test tests/mcp-pilot-ui.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
