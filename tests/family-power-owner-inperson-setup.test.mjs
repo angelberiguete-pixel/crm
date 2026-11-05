@@ -66,6 +66,7 @@ test("Family Power login exposes protected first access, not unrestricted signup
   assert.match(login,/Crear mi contraseña de propietario/);
   assert.match(login,/Primer acceso seguro para el propietario/);
   assert.match(login,/Si eres el dueño y es tu primera vez/);
+  assert.match(login,/no necesitas una cuenta anterior/);
   assert.ok(!login.includes("supabase.auth.signUp"));
   assert.match(css,/ownerRegistrationLink/);
   assert.ok(owner.includes('id="fp-owner-ticket"'));
