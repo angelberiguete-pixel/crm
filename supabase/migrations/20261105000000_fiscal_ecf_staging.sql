@@ -80,3 +80,42 @@ create policy fiscal_events_read on public.fiscal_events for select to authentic
 -- No client-side UPDATE/DELETE on invoices; no INSERT/UPDATE/DELETE on events.
 -- No public fiscal profile writes until a server-validated configuration workflow is built.
 -- Before rollout: verify membership RLS, role values, and security tests using two separate tenant users.
+
+-- Atomic creation of one-line E32 draft. Never issues a fiscal document.
+create policy fiscal_lines_insert_draft on public.fiscal_invoice_lines for insert to authenticated
+ with check (exists(
+ select 1 from public.fiscal_invoices i join public.memberships m on m.tenant_id=i.tenant_id
+ where i.id=fiscal_invoice_lines.invoice_id and i.tenant_id=fiscal_invoice_lines.tenant_id
+ and i.status='draft' and i.created_by=(select auth.uid())
+ and m.user_id=(select auth.uid()) and m.status='active' and m.role in ('owner','admin')));
+
+create or replace function public.fiscal_create_demo_draft(
+ p_tenant_id uuid, p_buyer_name text, p_description text, p_unit_price numeric
+) returns uuid
+language plpgsql security invoker set search_path = ''
+as $$
+declare v_id uuid; v_base numeric(18,2); v_tax numeric(18,2);
+begin
+ if auth.uid() is null or not exists (
+  select 1 from public.memberships m where m.tenant_id=p_tenant_id
+  and m.user_id=auth.uid() and m.status='active' and m.role in ('owner','admin')
+ ) then raise exception 'Not authorized'; end if;
+ if length(trim(coalesce(p_description,''))) < 2 or length(p_description)>250
+    or p_unit_price is null or p_unit_price <= 0 or p_unit_price > 999999999
+ then raise exception 'Invalid draft'; end if;
+ v_base:=round(p_unit_price,2);v_tax:=round(v_base*0.18,2);
+ insert into public.fiscal_invoices(tenant_id,document_type,status,buyer_name,currency,subtotal,tax_total,total,created_by)
+ values(p_tenant_id,'E32','draft',nullif(trim(p_buyer_name),''),'DOP',v_base,v_tax,v_base+v_tax,auth.uid())
+ returning id into v_id;
+ insert into public.fiscal_invoice_lines(tenant_id,invoice_id,description,quantity,unit_price,discount,itbis_rate)
+ values(p_tenant_id,v_id,trim(p_description),1,p_unit_price,0,0.18);
+ return v_id;
+end;
+$$;
+revoke all on function public.fiscal_create_demo_draft(uuid,text,text,numeric) from public, anon;
+grant execute on function public.fiscal_create_demo_draft(uuid,text,text,numeric) to authenticated;
+
+-- Register as disabled by default. Activation requires deliberate admin action after migration and QA.
+insert into public.platform_modules(module_key,name,category,description,default_enabled,is_active)
+values('fiscal_ecf','Facturación electrónica','erp','Borradores fiscales RD; sin emisión real',false,true)
+on conflict (module_key) do nothing;
