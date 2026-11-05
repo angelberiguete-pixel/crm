@@ -1,0 +1,64 @@
+# Deployment recipe for an existing, authorized host. This file does not
+# provision hosting. Fill the host secret store before starting any service.
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openreply
+      POSTGRES_USER: openreply
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a dedicated database password}
+    volumes: ["openreply_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openreply -d openreply"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set a dedicated Redis password}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes: ["openreply_redis:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  migrate:
+    build: {context: ../.., dockerfile: services/openreply/Dockerfile}
+    image: crm-openreply:c78b2d2-crm1
+    env_file: ["runtime.env"]
+    command: ["npm", "run", "db:migrate"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  web:
+    image: crm-openreply:c78b2d2-crm1
+    restart: unless-stopped
+    env_file: ["runtime.env"]
+    environment:
+      CRM_BRIDGE_BINDINGS_JSON: ""
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    image: crm-openreply:c78b2d2-crm1
+    restart: unless-stopped
+    env_file: ["runtime.env"]
+    command: ["npm", "run", "worker"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      OPENREPLY_HOST: ${OPENREPLY_HOST:?Set a hostname whose DNS points to this host}
+    ports: ["80:80", "443:443"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "openreply_tls:/data", "openreply_caddy:/config"]
+    depends_on: [web]
+volumes:
+  openreply_pg:
+  openreply_redis:
+  openreply_tls:
+  openreply_caddy:

@@ -1,0 +1,72 @@
+name: OpenReply commercial bridge
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  crm-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: qa_local_only
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: qa_local_only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Load disposable CRM contract
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/fixtures/openreply/crm-contract.sql
+      - name: Apply new integration schema to disposable PostgreSQL
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/proposals/openreply_commercial_bridge.sql
+      - name: Verify commercial effects, approvals, rollback and cross-company authorization
+        run: |
+          { echo 'BEGIN;'; cat tests/openreply-commercial-bridge.sql; echo 'ROLLBACK;'; } | psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1
+  upstream-outbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: qa_local_only
+          POSTGRES_DB: openreply_qa
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:qa_local_only@127.0.0.1:5432/openreply_qa
+      NEXTAUTH_SECRET: qa_test_secret_not_a_real_credential
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      OPENREPLY_DISPOSABLE_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: diwenne/openreply
+          ref: c78b2d2f68c9764ef7a7dde51dfa5bfa99304a09
+          path: .build/openreply
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prepare pinned upstream without changing its sending logic
+        run: node services/openreply/prepare.mjs .build/openreply
+      - name: Install pinned upstream dependencies
+        working-directory: .build/openreply
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client and migrate disposable native database
+        working-directory: .build/openreply
+        run: npm run db:generate && npm run db:migrate
+      - name: Typecheck standalone OpenReply extension
+        working-directory: .build/openreply
+        run: npm run typecheck
+      - name: Verify real native outbox collection, signing, retry leases and isolation
+        working-directory: .build/openreply
+        run: npx tsx --test lib/crm-bridge/integration.test.ts

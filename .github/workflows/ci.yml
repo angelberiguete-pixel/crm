@@ -79,7 +79,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: OpenReply tenant authorization, native API and Spanish keyword tests
-        run: npm run test:openreply
+        run: npm run test:openreply && node --experimental-strip-types --test tests/openreply-events.test.mjs
       - name: Production build
         run: npm run build
       - name: Install browser for regression tests
