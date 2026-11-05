@@ -317,7 +317,7 @@ begin
       updated_at = now()
   where q.tenant_id = p_tenant_id and q.id = p_quotation_id;
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION private.quotation_items_recalc_trigger()
  RETURNS trigger
@@ -333,6 +333,6 @@ begin
   end if;
   return coalesce(new, old);
 end;
-$function$
+$function$;
 
 CREATE TRIGGER quotation_items_recalculate AFTER INSERT OR UPDATE OR DELETE ON public.quotation_items FOR EACH ROW EXECUTE FUNCTION private.quotation_items_recalc_trigger();
