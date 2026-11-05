@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {decideQuoteTransition} from "../lib/commercial/quote-lifecycle.ts";
+const quote={id:"q1",tenantId:"t1",customerId:"c1",status:"sent",totalMinor:250000,currency:"DOP",expiresAt:"2026-12-01T00:00:00Z",revision:2};
+const customer={userId:"u1",tenantId:"t1",role:"customer",active:true,customerId:"c1"};
+const base={quote,actor:customer,action:"approve",now:"2026-11-10T00:00:00Z",expectedRevision:2};
+test("approves only matching customer and increments revision",()=>{const r=decideQuoteTransition(base);assert.equal(r.ok,true);assert.equal(r.next.status,"approved");assert.equal(r.next.revision,3)});
+test("denies cross-tenant and wrong customer",()=>{assert.equal(decideQuoteTransition({...base,actor:{...customer,tenantId:"t2"}}).reason,"unauthorized");assert.equal(decideQuoteTransition({...base,actor:{...customer,customerId:"c2"}}).reason,"forbidden")});
+test("denies expired, stale and invalid transitions",()=>{assert.equal(decideQuoteTransition({...base,now:"2026-12-02T00:00:00Z"}).reason,"expired");assert.equal(decideQuoteTransition({...base,expectedRevision:1}).reason,"stale_revision");assert.equal(decideQuoteTransition({...base,quote:{...quote,status:"draft"}}).reason,"invalid_transition")});
+test("only staff converts approved quote",()=>{const q={...quote,status:"approved"};assert.equal(decideQuoteTransition({...base,quote:q,action:"convert"}).reason,"forbidden");assert.equal(decideQuoteTransition({...base,quote:q,action:"convert",actor:{...customer,role:"sales"}}).ok,true)});
