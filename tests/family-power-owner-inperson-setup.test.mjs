@@ -59,3 +59,16 @@ test("proprietor chooses password in branded page; token remains in fragment",()
   assert.match(login,/supabase\.auth\.signInWithPassword/);
   assert.doesNotMatch(login,/supabase\.auth\.signUp/);
 });
+
+test("Family Power login exposes protected first access, not unrestricted signup",()=>{
+  const css=read("app/family-power/login/family-login.module.css");
+  assert.match(login,/href="\\/family-power\\/activar-propietario"/);
+  assert.match(login,/Crear mi contraseña de propietario/);
+  assert.match(login,/Acceso por invitación/);
+  assert.doesNotMatch(login,/supabase\\.auth\\.signUp/);
+  assert.match(css,/ownerRegistrationLink/);
+  assert.match(owner,/id="fp-owner-ticket"/);
+  assert.match(owner,/onChange=\\{e=>setTicket/);
+  assert.match(owner,/disabled=\\{busy\\|\\|!loaded\\|\\|!ticket\\}/);
+  assert.match(operator,/id="owner-setup-code"/);
+});
