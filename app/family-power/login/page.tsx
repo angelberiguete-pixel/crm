@@ -103,14 +103,14 @@ export default function FamilyPowerLogin(){
        <h1>Tu empresa, en control.</h1>
        <p>Gestiona clientes, cotizaciones, instalaciones y ventas desde un solo lugar.</p>
        <div className={styles.features}>
-         <span><ShieldCheck size={17}/> Acceso por invitación</span>
-         <span><UsersRound size={17}/> Dueño, administradores y vendedores</span>
+         <span><ShieldCheck size={17}/> Primer acceso seguro para el propietario</span>
+         <span><UsersRound size={17}/> Administradores y vendedores por invitación</span>
        </div>
      </header>
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>Inicia sesión con la cuenta que te haya autorizado Family Power.</p>
+       <p>Si ya tienes cuenta, entra con tu correo y contraseña. Si eres el dueño y es tu primera vez, utiliza «Crear mi contraseña de propietario» para activar tu acceso.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -137,7 +137,7 @@ export default function FamilyPowerLogin(){
        </div>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
-       <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
+       <div className={styles.invite}>El propietario crea su cuenta con un código privado de un solo uso. Los demás integrantes reciben una invitación del administrador. Nadie puede asignarse el rol de propietario desde un registro público.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
