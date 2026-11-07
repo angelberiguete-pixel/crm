@@ -133,3 +133,69 @@ from public.tenants t
 left join public.tenant_subscriptions s on s.tenant_id=t.id
 where t.slug='family-power'
 on conflict (provider,provider_invoice_id) do nothing;
+
+-- Permit platform-owner verified payments even when the customer never reports them.
+-- Reference is mandatory and deduplicated to avoid double-crediting a bank or PayPal receipt.
+create unique index if not exists billing_payment_reports_verified_reference_uq
+ on public.billing_payment_reports (tenant_id,payment_method,lower(reference_text))
+ where status='verified' and reference_text is not null;
+
+create or replace function public.platform_confirm_billing_invoice(
+ p_invoice_id uuid,
+ p_payment_method text,
+ p_reference text,
+ p_confirmed_usd_cents bigint default null
+) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_invoice public.billing_invoices%rowtype;
+        v_credit bigint; v_remaining bigint;
+begin
+ if (select auth.uid()) is null or not private.crm_is_platform_owner() then
+   raise exception 'Not authorized to confirm received money' using errcode='42501';
+ end if;
+ if p_payment_method not in ('paypal','transfer','cash')
+    or length(btrim(coalesce(p_reference,''))) < 4
+    or length(btrim(coalesce(p_reference,''))) > 180 then
+   raise exception 'Valid method and unique verified receipt reference required';
+ end if;
+ select * into v_invoice from public.billing_invoices where id=p_invoice_id for update;
+ if not found or v_invoice.status<>'open' or v_invoice.amount_due_cents<=0
+    or v_invoice.currency<>'USD' then
+   raise exception 'Invoice is not open and payable in USD';
+ end if;
+ if exists(select 1 from public.billing_payment_reports
+           where tenant_id=v_invoice.tenant_id and status='verified'
+             and payment_method=p_payment_method and lower(reference_text)=lower(btrim(p_reference))) then
+   raise exception 'Receipt reference already verified';
+ end if;
+ v_credit:=coalesce(p_confirmed_usd_cents,v_invoice.amount_due_cents);
+ if v_credit <= 0 or v_credit > v_invoice.amount_due_cents then
+   raise exception 'Received USD amount is outside open balance';
+ end if;
+ v_remaining:=v_invoice.amount_due_cents-v_credit;
+ update public.billing_invoices
+  set amount_paid_cents=amount_paid_cents+v_credit,
+      amount_due_cents=v_remaining,
+      status=case when v_remaining=0 then 'paid' else 'open' end,
+      paid_at=case when v_remaining=0 then now() else paid_at end,
+      updated_at=now()
+  where id=v_invoice.id;
+ insert into public.billing_payment_reports(
+   tenant_id,invoice_id,submitted_by,payment_method,reference_text,status,
+   verified_amount_cents,reviewed_by,reviewed_at,review_note
+ ) values(
+   v_invoice.tenant_id,v_invoice.id,null,p_payment_method,btrim(p_reference),
+   'verified',v_credit,(select auth.uid()),now(),'Verified directly by platform owner'
+ );
+ if v_remaining=0 and v_invoice.metadata->>'billing_stage'='initial' then
+   update public.tenant_subscriptions
+    set custom_monthly_price_cents=8000,current_period_start=now(),
+        current_period_end=now()+interval '1 month',updated_at=now()
+    where tenant_id=v_invoice.tenant_id;
+ end if;
+ return jsonb_build_object('invoice_id',v_invoice.id,'credited_usd_cents',v_credit,
+    'remaining_usd_cents',v_remaining,'status',case when v_remaining=0 then 'paid' else 'open' end);
+end $$;
+revoke all on function public.platform_confirm_billing_invoice(uuid,text,text,bigint) from public, anon;
+grant execute on function public.platform_confirm_billing_invoice(uuid,text,text,bigint) to authenticated;
