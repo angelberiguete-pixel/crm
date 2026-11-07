@@ -1,0 +1,18 @@
+export const DEMO_PRODUCTS = [
+{ id:"cv-pro", name:"CV profesional + carta", category:"servicio", price_cents:3900, description:"Currículum moderno y carta personalizada para una vacante.", accent:"violet", icon:"✦", delivery:"Entrega personalizada" },
+{ id:"excel", name:"Limpieza de Excel y datos", category:"servicio", price_cents:5900, description:"Depuración y estructura de hasta 1,000 filas.", accent:"mint", icon:"◫", delivery:"Servicio por encargo" },
+{ id:"catalogo", name:"Catálogo comercial digital", category:"servicio", price_cents:7900, description:"Catálogo profesional de hasta 15 productos.", accent:"peach", icon:"▦", delivery:"Servicio por encargo" },
+{ id:"competencia", name:"Análisis de 10 competidores", category:"servicio", price_cents:8900, description:"Investigación estructurada y resumen ejecutivo.", accent:"sky", icon:"◈", delivery:"Servicio por encargo" },
+{ id:"paypal", name:"Configuración comercial PayPal", category:"servicio", price_cents:9900, description:"Configuración de cobros en la cuenta del propio negocio.", accent:"mint", icon:"↗", delivery:"Servicio por encargo" },
+{ id:"video", name:"Video publicitario", category:"servicio", price_cents:9900, description:"Video promocional breve con una ronda de ajustes.", accent:"peach", icon:"▶", delivery:"Servicio por encargo" },
+{ id:"navidad", name:"Paquete de anuncios estacionales", category:"servicio", price_cents:14900, description:"Diseños listos para publicar en redes.", accent:"violet", icon:"✳", delivery:"Servicio por encargo" },
+{ id:"reels", name:"Edición de 5 videos cortos", category:"servicio", price_cents:14900, description:"Reels o Shorts con subtítulos y formato vertical.", accent:"sky", icon:"◉", delivery:"Servicio por encargo" },
+{ id:"web", name:"Landing page comercial", category:"servicio", price_cents:19700, description:"Página de captación con formulario y llamada a la acción.", accent:"peach", icon:"⌘", delivery:"Servicio por encargo" },
+{ id:"ecommerce", name:"Catálogo para ecommerce", category:"servicio", price_cents:24900, description:"Organización y carga inicial de productos.", accent:"mint", icon:"▤", delivery:"Servicio por encargo" },
+{ id:"automatizacion", name:"Automatización de formularios", category:"servicio", price_cents:29900, description:"Flujo de registros y aviso automático conectado.", accent:"violet", icon:"⚡", delivery:"Servicio por encargo" },
+{ id:"contenido", name:"Contenido mensual para negocios", category:"membresia", price_cents:29900, description:"Plan de contenido recurrente; contratación manual hasta habilitar suscripciones.", accent:"sky", icon:"∞", delivery:"Mensual · activación pendiente" },
+{ id:"plantilla-presupuesto", name:"Plantilla de presupuesto empresarial", category:"digital", price_cents:1900, description:"Archivo original editable para controlar ingresos y gastos.", accent:"mint", icon:"▥", delivery:"Archivo digital · se carga antes de vender" },
+{ id:"curso-ventas", name:"Curso: ventas digitales para pymes", category:"curso", price_cents:4900, description:"Programa en preparación con lecciones y biblioteca privada.", accent:"violet", icon:"▷", delivery:"Curso en preparación" },
+{ id:"regalo", name:"Regalo personalizado por pedido", category:"fisico", price_cents:2900, description:"Ejemplo de producto físico sujeto a disponibilidad y entrega.", accent:"peach", icon:"✿", delivery:"Cotización y disponibilidad" }
+].map(p=>({...p, price:Number((p.price_cents/100).toFixed(2)), currency:"USD", published:false}));
+export const LABELS={servicio:"Servicios",digital:"Descargables",curso:"Cursos",membresia:"Membresías",fisico:"Productos físicos"};
