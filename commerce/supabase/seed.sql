@@ -13,3 +13,9 @@ insert into public.commerce_products(slug,name,description,category,price_cents,
 ('automatizacion-formularios','Automatización de formularios','Flujo de registros y aviso automático conectado.','servicio',29900,'USD',false,'Servicio por encargo'),
 ('contenido-mensual','Contenido mensual para negocios','Plan de contenido recurrente, requiere configuración de suscripciones.','membresia',29900,'USD',false,'Mensual')
 on conflict(slug) do nothing;
+
+insert into public.commerce_products(slug,name,description,category,price_cents,currency,published,delivery_note) values
+('plantilla-presupuesto','Plantilla de presupuesto empresarial','Plantilla original editable para gestionar finanzas de negocio.','digital',1900,'USD',false,'Entrega digital'),
+('curso-ventas','Curso de ventas digitales para pymes','Programa privado con recursos y lecciones.','curso',4900,'USD',false,'Acceso a curso'),
+('regalo-personalizado','Regalo personalizado por pedido','Producto físico bajo pedido y disponibilidad.','fisico',2900,'USD',false,'Entrega física')
+on conflict(slug) do nothing;

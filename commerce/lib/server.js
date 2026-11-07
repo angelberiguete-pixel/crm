@@ -44,6 +44,9 @@ export async function fulfill(order,capture) {
  const amount=Number(capture.amount?.value);
  if(capture.amount?.currency_code!==order.currency || Math.round(amount*100)!==order.amount_cents) throw new Error("PayPal amount mismatch");
  const admin=db();
+ const {data:current,error:loadError}=await admin.from("commerce_orders").select("status").eq("id",order.id).single();
+ if(loadError)throw loadError;
+ if(current.status==="refunded"||current.status==="cancelled")throw new Error("Order was revoked");
  const {error}=await admin.from("commerce_orders").update({status:"paid", capture_id:capture.id, updated_at:new Date().toISOString()}).eq("id",order.id).in("status",["pending","paid"]);
  if(error)throw error;
  const {data:product,error:productError}=await admin.from("commerce_products").select("category").eq("id",order.product_id).single();

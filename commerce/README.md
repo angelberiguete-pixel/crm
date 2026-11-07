@@ -20,7 +20,7 @@ Aplicación independiente en `commerce/`, construida sobre Next.js 16, React 19,
 ## No implementado todavía
 - Suscripciones automáticas con PayPal Billing y conciliación mensual (no habilitar productos de categoría membresía).
 - Carrito multiartículo y pagos divididos, impuestos/facturación fiscal DGII.
-- Reproducción de videos grandes, cursos por módulos, subida reanudable de video, certificados.
+- Gestión avanzada de cursos, videos grandes/reanudables, certificados y rutas pedagógicas. La biblioteca ya lista lecciones y reproduce MP4 con enlaces temporales, pero no ofrece un LMS completo.
 - Gestión integral de envíos/stock y logística, flujo completo de brief y entrega de servicios, editor de productos ya existentes, panel de ventas con reportes.
 - Marketplace de terceros: no utilizar esta cuenta para procesar ingresos de vendedores ajenos.
 
