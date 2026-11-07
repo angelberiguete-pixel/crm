@@ -8,7 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["inbox", "Conversaciones"], ["marketing", "Marketing"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
+const links = [["inbox", "Conversaciones"], ["marketing", "Marketing"], ["web-analytics", "Analítica web"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -29,14 +29,16 @@ export default function MobileTenantNavigation() {
         const permissions=(p.data??{}) as Record<string,unknown>;
         const modules=(m.data??[]) as Array<{module_key:string;enabled:boolean}>;
         const permissionKey=(name:string)=>(
-          ["channels","integrations","marketing","sessions","settings"].includes(name)?"settings":
+          ["channels","integrations","marketing","web-analytics","sessions","settings"].includes(name)?"settings":
           ["files","arm","reports"].includes(name)?"dashboard":name==="tasks"?"operations":name
         );
         setAllowed(links.filter(([path])=>{
-          const familyKeys=["inbox","products","quotations","arm","tasks","reports","settings"];
+          const familyKeys=["inbox","products","quotations","arm","tasks","reports","settings","web-analytics"];
           if(tenant.tenant_slug==="family-power"&&!familyKeys.includes(path))return false;
           if(tenant.tenant_slug!=="family-power"&&["arm","tasks","reports"].includes(path))return false;
-          if(path==="settings"&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;
+          if(["settings","web-analytics"].includes(path)&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;
+          if(path==="web-analytics"&&tenant.tenant_slug!=="family-power")return false;
+          if(path==="web-analytics"&&modules.find(mod=>mod.module_key==="umami_analytics")?.enabled!==true)return false;
           if(path==="sessions"&&!["owner","admin"].includes(role))return false;
           const key=permissionKey(path);
           return (permissions.all===true||permissions[key]===true)

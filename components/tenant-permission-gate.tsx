@@ -29,6 +29,7 @@ const sectionPermission: Record<string, string> = {
   channels: "settings",
   integrations: "settings",
   marketing: "settings",
+  "web-analytics": "settings",
   employees: "settings",
   arm: "dashboard",
   tasks: "operations",
