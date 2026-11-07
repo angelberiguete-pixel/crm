@@ -173,7 +173,7 @@ export function readPaypalWebhookHeaders(headers:Headers){
     throw new Error("paypal_untrusted_certificate_url");
   if(authAlgo!=="SHA256withRSA")throw new Error("paypal_unapproved_signature_algorithm");
   const time=Date.parse(transmissionTime);
-  if(!Number.isFinite(time)||Math.abs(Date.now()-time)>5*60*1000)
+  if(!Number.isFinite(time)||time>Date.now()+5*60*1000||Date.now()-time>3*24*60*60*1000+5*60*1000)
     throw new Error("paypal_stale_webhook");
   return {transmissionId,transmissionTime,transmissionSig,authAlgo,certUrl};
 }
