@@ -68,7 +68,8 @@ try{
  assert.equal(writes[0].p_identifier,"+18495706550");
  await page.getByText("Pendiente de autorización",{exact:true}).first().waitFor();
  assert.equal(await page.getByText("Número verificado en servidor").count(),0);
- assert.equal(await page.getByRole("textbox",{name:/contraseña|token|clave/i}).count(),0);
+ // Campaign keywords ("palabras clave") are public trigger text, not secrets.
+ assert.equal(await page.getByRole("textbox",{name:/contraseña|token|api[ _-]?key|^clave$|clave (?:api|de acceso|secreta|privada)/i}).count(),0);
  const size=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,inner:innerWidth}));
  assert.ok(size.scroll<=size.inner+2,"mobile center must fit 390px: "+JSON.stringify(size));
  console.log("PASS: tenant-branded CRM integrations, real pending request, no false connected status or secrets (mocked API).");
