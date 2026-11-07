@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="870" viewBox="0 0 920 870" role="img" aria-labelledby="title desc">
+<title id="title">Ángel Berigüete Commerce, mundo digital accesible</title><desc id="desc">Composición gráfica de una tienda digital con currículum, productos descargables y precios accesibles.</desc>
+<defs>
+ <linearGradient id="back" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e6e0ff"/><stop offset=".52" stop-color="#f5eefe"/><stop offset="1" stop-color="#e1f7ee"/></linearGradient>
+ <linearGradient id="indigo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6c62e9"/><stop offset="1" stop-color="#4137a6"/></linearGradient>
+ <linearGradient id="peach" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe2d4"/><stop offset="1" stop-color="#ffc2ab"/></linearGradient>
+ <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8fff2"/><stop offset="1" stop-color="#b6ebd4"/></linearGradient>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#3b337f" flood-opacity=".16"/></filter>
+ <filter id="small" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="14" stdDeviation="15" flood-color="#41397c" flood-opacity=".18"/></filter>
+ <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.5" fill="#c4bbff" opacity=".6"/></pattern>
+</defs>
+<g>
+ <circle cx="465" cy="430" r="369" fill="url(#back)"/>
+ <circle cx="469" cy="432" r="326" fill="none" stroke="#d2c7fc" stroke-dasharray="7 11" stroke-width="2"/>
+ <circle cx="465" cy="430" r="277" fill="none" stroke="#ffffff" stroke-width="3" opacity=".75"/>
+ <circle cx="193" cy="218" r="91" fill="url(#peach)" opacity=".8"/>
+ <circle cx="751" cy="655" r="103" fill="url(#mint)" opacity=".85"/>
+ <circle cx="713" cy="172" r="58" fill="#c4b6ff" opacity=".56"/>
+ <rect x="115" y="100" width="690" height="655" fill="url(#dots)" opacity=".65" rx="150"/>
+</g>
+<g filter="url(#shadow)" transform="rotate(-3 460 424)">
+ <rect x="117" y="154" width="685" height="532" rx="30" fill="#ffffff"/>
+ <rect x="117" y="154" width="685" height="62" rx="30" fill="#171a40"/>
+ <path d="M117 186h685v30H117z" fill="#171a40"/>
+ <circle cx="149" cy="184" r="7" fill="#ff8f9e"/><circle cx="170" cy="184" r="7" fill="#ffd48b"/><circle cx="191" cy="184" r="7" fill="#b9eeca"/>
+ <rect x="254" y="173" width="303" height="23" rx="12" fill="#30345e"/><rect x="277" y="182" width="178" height="5" rx="2" fill="#a5a1cb"/>
+ <rect x="143" y="242" width="629" height="135" rx="20" fill="url(#indigo)"/>
+ <circle cx="700" cy="309" r="73" stroke="#bdb5ff" stroke-width="2" fill="none" opacity=".6"/>
+ <circle cx="700" cy="309" r="47" stroke="#bdb5ff" stroke-width="2" fill="none" opacity=".6"/>
+ <text x="172" y="275" font-size="14" fill="#d9d2ff" font-family="Arial,sans-serif" font-weight="700" letter-spacing="2">DESCUBRE TU PRÓXIMO PASO</text>
+ <text x="171" y="320" font-size="36" fill="#ffffff" font-family="Arial,sans-serif" font-weight="800">Ideas grandes.</text>
+ <text x="171" y="351" font-size="30" fill="#c6f0dc" font-family="Arial,sans-serif" font-weight="800">Precios pequeños.</text>
+ <rect x="145" y="405" width="195" height="229" rx="18" fill="#f2edff"/>
+ <rect x="365" y="405" width="195" height="229" rx="18" fill="#e8f7ee"/>
+ <rect x="586" y="405" width="186" height="229" rx="18" fill="#ffebdf"/>
+ <g transform="translate(173 424)">
+  <rect x="20" y="7" width="100" height="131" rx="7" fill="#ffffff" stroke="#b3a6e9" stroke-width="2"/>
+  <rect x="34" y="26" width="42" height="6" rx="3" fill="#5e51cb"/>
+  <rect x="34" y="41" width="70" height="4" rx="2" fill="#b8b5cb"/>
+  <rect x="34" y="52" width="63" height="4" rx="2" fill="#c9c7d6"/>
+  <rect x="34" y="78" width="72" height="4" rx="2" fill="#b8b5cb"/>
+  <rect x="34" y="90" width="56" height="4" rx="2" fill="#b8b5cb"/>
+  <rect x="34" y="102" width="72" height="4" rx="2" fill="#b8b5cb"/>
+  <circle cx="111" cy="27" r="20" fill="#ffc6b2"/>
+  <path d="M101 26a11 11 0 0 1 22 0" fill="#554895"/>
+  <rect x="104" y="29" width="14" height="8" rx="4" fill="#4c458c"/>
+ </g>
+ <text x="164" y="586" font-size="14" fill="#40387a" font-family="Arial,sans-serif" font-weight="700">CV Express</text>
+ <text x="164" y="611" font-size="21" fill="#40387a" font-family="Arial,sans-serif" font-weight="800">US$4.90</text>
+ <g transform="translate(391 421)">
+  <rect x="0" y="13" width="142" height="113" rx="15" fill="#ffffff" stroke="#bbdacc" stroke-width="2"/>
+  <rect x="16" y="28" width="109" height="14" rx="6" fill="#d9f2e5"/>
+  <rect x="16" y="51" width="49" height="26" rx="6" fill="#b4e5cd"/>
+  <rect x="73" y="51" width="52" height="26" rx="6" fill="#c8c3ff"/>
+  <rect x="16" y="89" width="23" height="20" rx="4" fill="#79cba2"/>
+  <rect x="43" y="82" width="23" height="27" rx="4" fill="#63b991"/>
+  <rect x="70" y="71" width="23" height="38" rx="4" fill="#5d5ad0"/>
+  <rect x="97" y="94" width="23" height="15" rx="4" fill="#d8c7ff"/>
+ </g>
+ <text x="384" y="586" font-size="14" fill="#2b6b4d" font-family="Arial,sans-serif" font-weight="700">Plantilla de gastos</text>
+ <text x="384" y="611" font-size="21" fill="#2b6b4d" font-family="Arial,sans-serif" font-weight="800">US$2.90</text>
+ <g transform="translate(600 427)">
+  <rect x="14" y="16" width="143" height="106" rx="15" fill="#fff" stroke="#f1c6b4" stroke-width="2"/>
+  <rect x="25" y="29" width="120" height="18" rx="8" fill="#ffd3bf"/>
+  <circle cx="48" cy="79" r="20" fill="#685bd6"/>
+  <path d="m40 80 6 6 12-14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <rect x="75" y="67" width="54" height="7" rx="3.5" fill="#e0dad7"/>
+  <rect x="75" y="82" width="42" height="7" rx="3.5" fill="#ece5e1"/>
+  <rect x="75" y="98" width="64" height="12" rx="6" fill="#edb4a0"/>
+ </g>
+ <text x="603" y="586" font-size="14" fill="#9a5235" font-family="Arial,sans-serif" font-weight="700">Servicios digitales</text>
+ <text x="603" y="611" font-size="17" fill="#9a5235" font-family="Arial,sans-serif" font-weight="800">Para LATAM</text>
+ <rect x="144" y="650" width="264" height="9" rx="5" fill="#ebebf4"/>
+ <rect x="423" y="650" width="131" height="9" rx="5" fill="#f4f2f7"/>
+</g>
+<g filter="url(#small)" transform="rotate(8 724 542)">
+ <rect x="632" y="381" width="194" height="333" rx="29" fill="#1a1c45"/>
+ <rect x="640" y="390" width="178" height="316" rx="23" fill="#fff"/>
+ <rect x="689" y="402" width="81" height="13" rx="7" fill="#1a1c45"/>
+ <text x="658" y="456" font-size="15" font-family="Arial,sans-serif" font-weight="800" fill="#272151">Mi próximo paso</text>
+ <rect x="656" y="472" width="146" height="110" rx="14" fill="#efebff"/>
+ <rect x="689" y="487" width="79" height="80" rx="7" fill="#fff" stroke="#bbb0ee"/>
+ <rect x="700" y="501" width="51" height="5" rx="2" fill="#675ad1"/>
+ <rect x="700" y="515" width="45" height="4" rx="2" fill="#c5bdea"/>
+ <rect x="700" y="527" width="50" height="4" rx="2" fill="#d9d2ed"/>
+ <rect x="700" y="548" width="42" height="4" rx="2" fill="#cec4e6"/>
+ <text x="657" y="612" font-size="14" font-family="Arial,sans-serif" font-weight="700" fill="#615b81">CV Express</text>
+ <text x="656" y="645" font-size="25" font-family="Arial,sans-serif" font-weight="800" fill="#4e44b8">US$4.90</text>
+ <rect x="654" y="660" width="149" height="28" rx="14" fill="#6558d7"/>
+ <text x="696" y="679" font-size="11" font-family="Arial,sans-serif" font-weight="700" fill="#fff">CONSULTAR</text>
+</g>
+<g filter="url(#small)" transform="rotate(-10 178 666)">
+ <rect x="60" y="590" width="232" height="119" rx="22" fill="#fff"/>
+ <rect x="78" y="609" width="65" height="65" rx="19" fill="#d4f5e1"/>
+ <path d="m95 646 14 13 23-28" fill="none" stroke="#3e9a71" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+ <text x="157" y="637" font-size="17" font-family="Arial,sans-serif" font-weight="800" fill="#2a305b">A tu ritmo</text>
+ <text x="157" y="659" font-size="12" font-family="Arial,sans-serif" fill="#7b8197">Para tus metas</text>
+ <rect x="83" y="687" width="176" height="5" rx="3" fill="#f0eff6"/>
+</g>
+<g fill="#6658cf" font-family="Arial,sans-serif" font-weight="800">
+ <text x="91" y="379" font-size="62" transform="rotate(-14 91 379)">✳</text>
+ <text x="820" y="300" font-size="54" transform="rotate(11 820 300)">✦</text>
+ <text x="485" y="790" font-size="42" opacity=".85">✧</text>
+</g>
+</svg>
