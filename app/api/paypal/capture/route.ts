@@ -9,9 +9,9 @@ const fail=(status:number,message:string)=>NextResponse.json({error:message},
 
 export async function POST(request:NextRequest){
   try{
-    const {config,admin}=paypalSandboxServerConfiguration();
+    const {config,admin,sandboxDb}=paypalSandboxServerConfiguration();
     const data=await paypalSmallJson(request);
-    const {invoice}=await paypalInvoiceFromAuthorizedUser(request,data.invoiceId);
+    const {invoice}=await paypalInvoiceFromAuthorizedUser(request,data.invoiceId,sandboxDb);
     if(invoice.status!=="open"||invoice.currency!=="USD")return fail(409,"Factura no abierta en USD.");
     const linked=await admin.from("paypal_checkout_orders")
       .select("id,paypal_order_id,merchant_id,currency,amount_cents,status")
