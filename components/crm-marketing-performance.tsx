@@ -6,6 +6,7 @@ import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {buildQuoteInteractiveMessage} from "@/lib/whatsapp-quote-buttons";
 import styles from "./crm-marketing-performance.module.css";
+import CrmUmamiAnalytics from "./crm-umami-analytics";
 type Meta={dataset_id:string;waba_id:string;status:string;export_enabled:boolean};
 type Counts={
  inbound_messages_30d:number;active_conversations_30d:number;human_replies_30d:number;
@@ -120,5 +121,6 @@ export default function CrmMarketingPerformance(){
    <p className={styles.empty}>No has seleccionado una cotización. Podrás crearla desde <Link href="/crm/quotations">Cotizaciones</Link>.</p>}
    <p className={styles.status}><FileCheck2 size={16}/> Pendiente: activar envío YCloud seguro, validar webhook de respuesta y vincular el clic a la cotización y al contacto correctos.</p>
   </section>
+  <CrmUmamiAnalytics />
  </main>;
 }
