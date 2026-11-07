@@ -9,9 +9,9 @@ const fail=(status:number,message:string)=>NextResponse.json({error:message},
 
 export async function POST(request:NextRequest){
   try{
-    const {config,admin}=paypalSandboxServerConfiguration();
+    const {config,admin,sandboxDb}=paypalSandboxServerConfiguration();
     const data=await paypalSmallJson(request);
-    const {invoice}=await paypalInvoiceFromAuthorizedUser(request,data.invoiceId);
+    const {invoice}=await paypalInvoiceFromAuthorizedUser(request,data.invoiceId,sandboxDb);
     if(invoice.currency!=="USD"||invoice.status!=="open"||invoice.amount_due_cents<=0)
       return fail(409,"Factura no elegible para pago PayPal en USD.");
     const existing=await admin.from("paypal_checkout_orders")
