@@ -22,7 +22,10 @@ create table if not exists public.commerce_products (
 );
 create table if not exists public.commerce_orders (
  id uuid primary key default gen_random_uuid(),
- buyer_id uuid not null references auth.users(id),
+ buyer_id uuid references auth.users(id),
+ buyer_name text,
+ buyer_email text,
+ guest_token_hash text,
  product_id uuid not null references public.commerce_products(id),
  status text not null default 'pending' check(status in ('pending','paid','refunded','cancelled')),
  amount_cents integer not null check(amount_cents>0),
@@ -35,7 +38,7 @@ create table if not exists public.commerce_orders (
 create table if not exists public.commerce_entitlements (
  id uuid primary key default gen_random_uuid(),
  order_id uuid not null unique references public.commerce_orders(id),
- buyer_id uuid not null references auth.users(id),
+ buyer_id uuid references auth.users(id),
  product_id uuid not null references public.commerce_products(id),
  status text not null default 'active' check(status in ('active','revoked')),
  created_at timestamptz not null default now()
@@ -98,3 +101,13 @@ insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 -- No client storage policies: privileged server creates signed links after verifying paid entitlement.
 -- Assign the first admin only AFTER signup, by a trusted DB administrator:
 -- insert into public.commerce_roles(user_id,role) values ('USER_UUID_FROM_AUTH_USERS','admin');
+
+-- Upgrade path for projects created before guest checkout.
+alter table public.commerce_orders alter column buyer_id drop not null;
+alter table public.commerce_orders add column if not exists buyer_name text;
+alter table public.commerce_orders add column if not exists buyer_email text;
+alter table public.commerce_orders add column if not exists guest_token_hash text;
+alter table public.commerce_entitlements alter column buyer_id drop not null;
+create index if not exists commerce_orders_email_idx on public.commerce_orders (buyer_email);
+-- Guests are identified only through a server-managed HttpOnly token.
+-- No anon policies allow reading or changing orders or entitlements.

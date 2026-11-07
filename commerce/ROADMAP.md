@@ -59,3 +59,13 @@
 - No cargar copias de material ajeno sin licencia.
 - Evitar publicar y cobrar productos sin entrega verificable, alcance comercial definido y política de soporte.
 - Los precios iniciales son hipótesis comerciales, no ventas aseguradas.
+
+## Rediseño comercial LATAM de noviembre 2026
+- [x] Web responsive con textos de ventas, beneficios, catálogo, comparación conceptual y FAQ.
+- [x] Precios LATAM y nombres comerciales para doce ofertas, sin promesas de resultados no verificadas.
+- [x] Checkout de invitados en servidor: cookie aleatoria HttpOnly y verificación contra la compra antes de capturar.
+- [x] Recursos digitales recuperables en el navegador original con verificación del pedido; el correo transaccional y acceso entre dispositivos están pendientes.
+- [x] Botones de WhatsApp condicionados a número comercial real para no redirigir a un contacto inventado.
+- [x] Ilustraciones SVG locales y prompts para seis escenas fotográficas originales con IA.
+- [ ] Migrar y probar Supabase exclusivo; enlazar credenciales PayPal Sandbox, verificar captura y reembolso, probar emails.
+- [ ] Cargar imágenes IA optimizadas al repositorio o almacenamiento CDN aprobado; el despliegue inicial utiliza SVG locales.

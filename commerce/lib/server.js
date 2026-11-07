@@ -1,3 +1,4 @@
+import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 export const configured = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
 export function db() {
@@ -56,4 +57,24 @@ export async function fulfill(order,capture) {
  if(result.error)throw result.error;
  }
  return true;
+}
+
+export const GUEST_COOKIE="angel_commerce_guest";
+export function newGuestToken(){return randomBytes(32).toString("base64url");}
+export function guestHash(token){return createHash("sha256").update(token).digest("hex");}
+export function requestGuestToken(request){
+ const value=request.headers.get("cookie")||"";
+ return value.split(";").map(x=>x.trim()).find(x=>x.startsWith(GUEST_COOKIE+"="))?.split("=")[1]||"";
+}
+export function matchGuest(request,order){
+ const token=requestGuestToken(request);
+ if(!token || !order?.guest_token_hash || token.length>128)return false;
+ const left=Buffer.from(guestHash(token),"hex");
+ const right=Buffer.from(order.guest_token_hash,"hex");
+ return right.length===left.length && timingSafeEqual(left,right);
+}
+export function setGuestCookie(response,request,token){
+ const isHttps=new URL(request.url).protocol==="https:";
+ response.headers.append("Set-Cookie",GUEST_COOKIE+"="+token+"; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"+(isHttps?"; Secure":""));
+ return response;
 }
