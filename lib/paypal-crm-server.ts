@@ -4,8 +4,23 @@ import {loadPaypalSandboxCredentials,type CrmPayableInvoice} from "@/lib/paypal-
 
 // Same published Supabase project as the existing CRM auth client.
 // The service-role key is NEVER sent to the browser.
-const SUPABASE_URL="https://ygipjqgyreeahslzorik.supabase.co";
-const PUBLIC_KEY="sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
+const PRODUCTION_SUPABASE_URL="https://ygipjqgyreeahslzorik.supabase.co";
+type SandboxDatabase={url:string;publishableKey:string};
+export function requireIsolatedPaypalSandboxDatabase(
+  env:Record<string,string|undefined>
+):SandboxDatabase & {serviceRoleKey:string}{
+  const raw=env.PAYPAL_SANDBOX_SUPABASE_URL??"";
+  const publishableKey=env.PAYPAL_SANDBOX_SUPABASE_PUBLISHABLE_KEY??"";
+  const serviceRoleKey=env.PAYPAL_SANDBOX_SUPABASE_SERVICE_ROLE_KEY??"";
+  let url:URL;
+  try{url=new URL(raw)}catch{throw new Error("paypal_isolated_database_required");}
+  if(url.protocol!=="https:"||!/^[-a-z0-9]+\.supabase\.co$/.test(url.hostname)||
+     url.pathname!=="/"||url.username||url.password||
+     url.origin===PRODUCTION_SUPABASE_URL||
+     !publishableKey.startsWith("sb_publishable_")||serviceRoleKey.length<20)
+    throw new Error("paypal_isolated_database_required");
+  return {url:url.origin,publishableKey,serviceRoleKey};
+}
 const UUID=/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 export function isPaypalInvoiceId(value:unknown):value is string{
   return typeof value==="string"&&UUID.test(value);
@@ -16,23 +31,24 @@ export function paypalSandboxServerConfiguration(){
   if(process.env.VERCEL_ENV==="production")
     throw new Error("paypal_disabled_in_production");
   const config=loadPaypalSandboxCredentials(process.env);
-  const secret=process.env.SUPABASE_SERVICE_ROLE_KEY??"";
-  if(secret.length<20)throw new Error("paypal_server_database_not_configured");
+  const sandboxDb=requireIsolatedPaypalSandboxDatabase(process.env);
   return {
-    config,
-    admin:createClient(SUPABASE_URL,secret,{
+    config,sandboxDb,
+    admin:createClient(sandboxDb.url,sandboxDb.serviceRoleKey,{
       auth:{persistSession:false,autoRefreshToken:false}
     }),
   };
 }
-export async function paypalInvoiceFromAuthorizedUser(request:NextRequest,id:unknown):
+export async function paypalInvoiceFromAuthorizedUser(
+  request:NextRequest,id:unknown,sandboxDb:SandboxDatabase
+):
   Promise<{invoice:CrmPayableInvoice&{provider:string;amount_paid_cents:number}}>{
   if(!isPaypalInvoiceId(id))throw new Error("paypal_invalid_invoice_id");
   const header=request.headers.get("authorization")??"";
   if(!/^Bearer [A-Za-z0-9._~+/=-]+$/.test(header)||header.length>4096)
     throw new Error("paypal_login_required");
   const accessToken=header.slice(7);
-  const client=createClient(SUPABASE_URL,PUBLIC_KEY,{
+  const client=createClient(sandboxDb.url,sandboxDb.publishableKey,{
     global:{headers:{Authorization:"Bearer "+accessToken}},
     auth:{persistSession:false,autoRefreshToken:false}
   });
