@@ -49,15 +49,18 @@ export function extractPayPalCapture(event: unknown): VerifiedCapture | null {
   const related = supplementary?.related_ids as Record<string,unknown> | undefined;
   const amount = resource.amount as Record<string,unknown> | undefined;
   const payee = resource.payee as Record<string,unknown> | undefined;
+  const captureId=resource.id;
+  const orderId=related?.order_id;
+  const currency=amount?.currency_code;
   if (resource.status !== requiredStatus ||
-      typeof resource.id !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(resource.id) ||
-      typeof related?.order_id !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(related.order_id) ||
-      !isPayPalCurrency(amount?.currency_code)) return null;
+      typeof captureId !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(captureId) ||
+      typeof orderId !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(orderId) ||
+      !isPayPalCurrency(currency)) return null;
   try {
     return {
-      orderId: related.order_id,
-      captureId: resource.id,
-      currency: amount.currency_code,
+      orderId,
+      captureId,
+      currency,
       amountMinor: payPalAmountToMinor(amount.value),
       merchantId: typeof payee?.merchant_id === "string" ? payee.merchant_id : null,
       status: requiredStatus
