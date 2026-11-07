@@ -52,6 +52,7 @@ export function extractPayPalCapture(event: unknown): VerifiedCapture | null {
   const captureId=resource.id;
   const orderId=related?.order_id;
   const currency=amount?.currency_code;
+  if (!amount) return null;
   if (resource.status !== requiredStatus ||
       typeof captureId !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(captureId) ||
       typeof orderId !== "string" || !/^[A-Za-z0-9]{6,64}$/.test(orderId) ||
