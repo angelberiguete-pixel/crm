@@ -78,6 +78,8 @@ jobs:
         run: node --experimental-strip-types --test tests/family-power-quotation-pdf.test.mjs
       - name: Family Power verified inbound contact names safety
         run: node --test tests/family-power-verified-name-capture.test.mjs
+      - name: PayPal Orders v2 checkout and webhook safety contracts
+        run: node --experimental-strip-types --test tests/paypal-core.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
