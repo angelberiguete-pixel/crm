@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/diwenne/openreply",
+  "commit": "c78b2d2f68c9764ef7a7dde51dfa5bfa99304a09",
+  "files": {
+    "keyword-matcher.ts": "lib/utils/keyword-matcher.ts"
+  },
+  "license": "MIT",
+  "changes": "Unmodified keyword matcher; CRM adapter and UI are separate."
+}

@@ -6,6 +6,7 @@ import {AtSign,Bot,CheckCircle2,ClipboardCopy,ExternalLink,Inbox,Mail,MessageCir
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
+import OpenReplyAutomationPanel from "@/components/openreply-automation-panel";
 import styles from "./crm-integration-center.module.css";
 
 type Provider="whatsapp"|"instagram"|"email";
@@ -250,6 +251,7 @@ export default function CrmIntegrationCenter(){
        </form>
        <p className={styles.smallPrint}>No introduzcas tokens, contraseñas, códigos SMS ni secretos. El registro no autoriza el envío de mensajes.</p>
     </section>}
+   <OpenReplyAutomationPanel key={id} tenantId={id!} />
    <section className={styles.panel} aria-label="Conexión YCloud API" style={{margin:"22px 0"}}>
      <div className={styles.eyebrow}>PROVEEDOR PRINCIPAL · YCLOUD</div>
      <h2>WhatsApp Business API · estado real</h2>
