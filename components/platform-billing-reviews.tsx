@@ -11,6 +11,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
+ const [reload,setReload]=useState(0);
  const [reference,setReference]=useState("");
  const [method,setMethod]=useState<Method>("paypal");
  const [amount,setAmount]=useState("");
@@ -30,7 +31,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
      else{setInvoices(i.data as Invoice[]);setReports(r.data as Report[]);}
    })().catch(()=>{if(live)setError("Error al consultar cobros.")});
    return()=>{live=false;};
- },[tenantId,notice]);
+ },[tenantId,reload]);
  const payable=invoices.filter(i=>i.status==="open"&&i.amount_due_cents>0);
  const selected=payable.find(i=>i.id===activeInvoiceId)??payable[0]??null;
  const usd=(c:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(c/100);
@@ -47,7 +48,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
   });
   setBusy(false);
   if(error)setError("No se pudo revisar el reporte: "+error.message);
-  else setNotice(approve?"Pago verificado por administración.":"Reporte rechazado.");
+  else {setNotice(approve?"Pago verificado por administración.":"Reporte rechazado.");setReload(x=>x+1);}
  }
  async function confirmDirect(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!selected||busy)return;
@@ -62,7 +63,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
   });
   setBusy(false);
   if(error)setError("No se confirmó el pago: "+error.message);
-  else{setReference("");setAmount("");setNotice("Pago confirmado y conciliado en el CRM.");}
+  else{setReference("");setAmount("");setNotice("Pago confirmado y conciliado en el CRM.");setReload(x=>x+1);}
  }
  return <section className="card section-gap">
   <div className="eyebrow">Control financiero · Propietario</div><h2>Conciliación de pagos de clientes</h2>
