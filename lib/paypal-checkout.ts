@@ -195,14 +195,16 @@ export async function verifyPaypalSandboxWebhook(input:{
   const response=await (input.fetcher??fetch)(PAYPAL_SANDBOX_API+"/v1/notifications/verify-webhook-signature",{
     method:"POST",headers:{"Authorization":"Bearer "+input.token,
       "Accept":"application/json","Content-Type":"application/json"},
-    body:JSON.stringify({
-      transmission_id:h.transmissionId,
-      transmission_time:h.transmissionTime,
-      cert_url:h.certUrl,auth_algo:h.authAlgo,
-      transmission_sig:h.transmissionSig,
-      webhook_id:input.config.webhookId,
-      webhook_event:event,
-    }),
+    // Do not parse + reserialize the signed PayPal event: PayPal's
+    // postback verifier can reject altered event serialization.
+    body:"{"+
+      '"transmission_id":'+JSON.stringify(h.transmissionId)+","+
+      '"transmission_time":'+JSON.stringify(h.transmissionTime)+","+
+      '"cert_url":'+JSON.stringify(h.certUrl)+","+
+      '"auth_algo":'+JSON.stringify(h.authAlgo)+","+
+      '"transmission_sig":'+JSON.stringify(h.transmissionSig)+","+
+      '"webhook_id":'+JSON.stringify(input.config.webhookId)+","+
+      '"webhook_event":'+input.rawBody+"}",
     cache:"no-store",
   });
   const check=await paypalJson(response);
