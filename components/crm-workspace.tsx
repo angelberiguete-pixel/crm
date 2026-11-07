@@ -24,6 +24,7 @@ import { signOutOfTenant, tenantLogoutDestination } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
+import FiscalWorkspace from "@/components/fiscal-workspace";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
@@ -63,6 +64,7 @@ const nav = [
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
+  ["fiscal", "Facturación electrónica", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
@@ -83,6 +85,7 @@ const familyLabels:Record<string,string>={
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración"
 };
 const permissionForSection:Record<string,string>={
+ fiscal:"settings",
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
@@ -103,8 +106,10 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [familyMenuPermissions,setFamilyMenuPermissions]=useState<Record<string,unknown>|null>(null);
   const [familyEnabledModules,setFamilyEnabledModules]=useState<Record<string,boolean>>({});
+  const [fiscalEnabled,setFiscalEnabled]=useState(false);
 
   const refresh = useCallback(() => setReloadKey((v) => v + 1), []);
+  useEffect(()=>{let alive=true;setFiscalEnabled(false);if(!activeTenant?.tenant_id)return;void supabase.rpc("tenant_effective_modules",{p_tenant_id:activeTenant.tenant_id}).then(result=>{if(!alive||result.error)return;setFiscalEnabled(((result.data??[]) as Array<{module_key:string;enabled:boolean}>).some(m=>m.module_key==="fiscal_ecf"&&m.enabled));});return()=>{alive=false;};},[activeTenant?.tenant_id]);
   useEffect(()=>{
     let alive=true;
     setFamilyMenuPermissions(null);setFamilyEnabledModules({});
@@ -172,6 +177,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
+    if(key==="fiscal")return !isFamilyPower&&fiscalEnabled&&["owner","admin"].includes(member.role);
     const familyKeys=["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
     if(!isFamilyPower&&["arm","tasks","reports"].includes(key))return false;
@@ -215,6 +221,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
+        {section === "fiscal" && !isFamilyPower && fiscalEnabled && ["owner","admin"].includes(member.role) && <FiscalWorkspace tenantId={tenantId}/> }
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "tasks" && isFamilyPower && <FamilyPowerTasks tenantId={tenantId} />}
