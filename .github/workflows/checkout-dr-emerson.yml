@@ -1,0 +1,26 @@
+name: Dr Emerson PayPal checkout checks
+
+on:
+  pull_request:
+    paths:
+      - 'app/checkout/dr-emerson-familia/**'
+      - 'tests/checkout-dr-emerson.test.mjs'
+      - '.github/workflows/checkout-dr-emerson.yml'
+  push:
+    branches:
+      - 'feat/checkout-dr-emerson-paypal-20261107'
+    paths:
+      - 'app/checkout/dr-emerson-familia/**'
+      - 'tests/checkout-dr-emerson.test.mjs'
+
+jobs:
+  checkout-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: PayPal checkout safety and content checks
+        run: node --test tests/checkout-dr-emerson.test.mjs
