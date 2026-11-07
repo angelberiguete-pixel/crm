@@ -37,3 +37,18 @@ test("The tenant UI has no private key and does not fabricate analytics", () => 
   assert.match(ui, /"connected"/);
   assert.match(marketing, /<CrmUmamiAnalytics \/>/);
 });
+
+
+test("Family Power gets a separate protected web analytics route, never the general marketing module", () => {
+  const route = readFileSync("app/crm/[[...slug]]/page.tsx", "utf8");
+  const guard = readFileSync("components/tenant-permission-gate.tsx", "utf8");
+  const workspace = readFileSync("components/crm-workspace.tsx", "utf8");
+  const mobile = readFileSync("components/mobile-tenant-navigation.tsx", "utf8");
+  assert.match(route, /section === "web-analytics"/);
+  assert.match(guard, /"web-analytics": "settings"/);
+  assert.match(guard, /const restrictedFamilySections=\["companies","sales","marketing"/);
+  assert.match(workspace, /familyEnabledModules\.umami_analytics===true/);
+  assert.match(workspace, /if\(isFamilyPower&&key==="web-analytics"\)/);
+  assert.match(mobile, /path==="web-analytics"/);
+  assert.match(mobile, /module_key==="umami_analytics"/);
+});
