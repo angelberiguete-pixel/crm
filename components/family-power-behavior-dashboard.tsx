@@ -63,6 +63,7 @@ export default function FamilyPowerBehaviorDashboard(){
     <div className={styles.period}>{([7,30,90] as const).map(d=><button key={d}
       className={d===days?styles.selected:""} onClick={()=>setDays(d)}
       type="button" aria-pressed={d===days}>{d} días</button>)}</div>
+    <a href="https://us.posthog.com/project/673237/dashboard/2228300" target="_blank" rel="noopener noreferrer" className={styles.refresh} title="Abrir el análisis avanzado de eventos">Detalles</a>
     <button type="button" className={styles.refresh} onClick={()=>setRevision(r=>r+1)}
       aria-label="Actualizar"><RefreshCw size={17}/></button>
    </div>
