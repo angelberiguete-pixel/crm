@@ -1,41 +1,41 @@
-# Ángel Commerce — tienda y academia digital modular
+# Ángel Berigüete Commerce
 
-Aplicación independiente en `commerce/`, construida sobre Next.js 16, React 19, PayPal Orders v2 y Supabase.
+Tienda **comercialmente independiente** para recursos digitales, servicios y formación con público objetivo en Latinoamérica. La marca, navegación y experiencia del comprador son exclusivas de Commerce: no se muestran accesos al CRM general ni la identidad de agencia.
 
-## Alcance implementado
-- Catálogo responsive en USD con 15 ofertas de demostración y filtros por sector.
-- Compras de clientes como invitados: no se exige registro ni contraseña. Solo nombre y correo para el pedido. El acceso de administración sigue protegido mediante Supabase Auth en sus rutas API.
-- Entrega digital a compradores invitados mediante cookie HttpOnly aleatoria, verificación del pago en servidor y enlaces de archivo de corta duración; la recuperación por email se implementará en la fase de notificaciones.
-- Administración limitada al rol `commerce_roles.admin`: crear productos borrador y carga segura de PDFs pequeños mediante endpoint independiente.
-- Checkout: precio y moneda siempre consultados en servidor; compra asociada al usuario; creación de Order PayPal; retorno y captura; comprobación de monto/currency/status; confirmación por webhook con verificación de firma y deduplicación; revocación de acceso en reversos/reembolsos.
-- Esquema SQL con RLS y bucket privado; catálogo de ofertas iniciales como borradores.
+> Arquitectura actual: aplicación Next.js dentro de `commerce/` del repositorio `angelberiguete-pixel/crm`, con proyecto Vercel `angel-commerce` y base Supabase **dedicada** cuando se configure. La independencia de marca y despliegue NO implica todavía repositorio GitHub separado.
 
-## Requisitos antes de cobrar
-1. Crear un Supabase **dedicado** para esta tienda y ejecutar `supabase/schema.sql`, luego `supabase/seed.sql`.
-2. Configurar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_MODE=sandbox`, y `NEXT_PUBLIC_SITE_URL` en Vercel. Secretos solo en el servidor, nunca en Git.
-3. Dar de alta webhook PayPal apuntando a `https://DOMINIO/api/paypal/webhook`, escuchar `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` y `PAYMENT.CAPTURE.REVERSED`.
-4. Crear usuario, asignarle admin mediante SQL autenticado, cargar archivos digitales reales en bucket privado y actualizar `asset_path` en el producto. Publicar solo ofertas revisadas. Los servicios requieren alcance de entrega confirmado.
-5. Probar en PayPal Sandbox: pago completo, monto errado, webhooks duplicados, cancelación, reembolso, comprador A vs comprador B, acceso a biblioteca y descarga firmada; después de esa verificación, configurar Live.
+## Identidad visual 2026-11-07
+- Nombre: **Ángel Berigüete Commerce**.
+- Paleta: índigo profundo, lila, melocotón, menta y fondos claros.
+- Tipografía editorial, hero SVG propio, colecciones visuales, tarjetas con ilustraciones, navegación y filtros responsive, CTA de consulta clara.
+- Moneda base: USD. No se infiere localización/moneda ni se garantizan cobros en todos los países.
+- Catálogo de referencia: **17 ofertas**; CV Express **US$4.90**, acompañamiento laboral distinto **US$24.90**, descargables desde **US$2.90**. Ninguna oferta demo se publica automáticamente.
+- El acompañamiento laboral no promete entrevistas, llamadas ni contratación.
 
-## No implementado todavía
-- Suscripciones automáticas con PayPal Billing y conciliación mensual (no habilitar productos de categoría membresía).
-- Carrito multiartículo y pagos divididos, impuestos/facturación fiscal DGII.
-- Gestión avanzada de cursos, videos grandes/reanudables, certificados y rutas pedagógicas. La biblioteca ya lista lecciones y reproduce MP4 con enlaces temporales, pero no ofrece un LMS completo.
-- Gestión integral de envíos/stock y logística, flujo completo de brief y entrega de servicios, editor de productos ya existentes, panel de ventas con reportes.
-- Marketplace de terceros: no utilizar esta cuenta para procesar ingresos de vendedores ajenos.
+## Cobros: desactivados hasta la integración validada
+El frontend distingue productos **publicados** y la preparación real del backend antes de ofrecer PayPal. Los productos demo y borradores solo abren una consulta por email. No activar un cobro o entrega automática sin:
+1. Crear Supabase exclusivo de Commerce, aplicar `supabase/schema.sql`, luego `supabase/seed.sql` y revisar cada producto.
+2. Subir materiales digitales originales y vincular `asset_path`; publicar solo los productos que puedan entregarse.
+3. Configurar en Vercel `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_MODE=sandbox` y `NEXT_PUBLIC_SITE_URL`.
+4. Verificar webhook PayPal `/api/paypal/webhook` (captura completada, reembolsos y reversos).
+5. Probar en sandbox: pedido, pago, resultado, descarga, validación de precios, errores y repetición de webhooks; solo después habilitar credenciales live.
+6. Revisar requisitos de venta internacional, impuestos, privacidad, reembolsos y condiciones de cada servicio.
+7. Configurar `NEXT_PUBLIC_WHATSAPP_NUMBER` solo si existe un número comercial real.
+
+`seed.sql` actualiza únicamente las ofertas aún no publicadas, sin sobreescribir precios de productos vendidos activos. El precio mostrado en una tienda ya conectada a Supabase se toma de la base de datos, no del catálogo ilustrativo.
+
+## Alcance y límites
+- Compra como invitado: nombre y email, sin registro obligatorio.
+- Cotización por correo cuando el backend no está preparado.
+- PayPal Orders v2, captura, comprobación de importe y firma webhook están programados, pero requieren configuración y pruebas en vivo.
+- Entrega digital protegida para productos configurados; recuperación automática por email aún no existe.
+- Sin carrito multiartículo, suscripciones automáticas, facturación electrónica ni promesas de empleabilidad.
 
 ## Desarrollo
 ```bash
+cd commerce
 npm install
 npm test
+npm run build
 npm run dev
 ```
-La tienda muestra muestras etiquetadas y **no acepta pagos sin configuración del backend**. No sustituye pruebas de extremo a extremo ni auditoría de seguridad previa a producción.
-
-## Cambio comercial 2026-11-07
-- Rediseño visual LATAM: más de nueve ilustraciones SVG originales, hero, tarjetas, beneficios, comparación conceptual, FAQ y CTAs para móviles.
-- Catálogo reescrito con nuevos nombres y precios desde US$15; no se afirman resultados garantizados ni testimonios inventados.
-- Compras como invitado: el servidor recibe nombre y correo, genera secreto aleatorio de sesión (cookie HttpOnly) y asocia el pedido sin crear usuario.
-- PayPal continúa DESHABILITADO hasta configurar Supabase exclusivo, credenciales, webhook y pruebas de Sandbox. Durante la preparación, el botón «Lo quiero» abre un correo de consulta prellenado.
-- WhatsApp requiere NEXT_PUBLIC_WHATSAPP_NUMBER con el número comercial real (solo dígitos e indicativo). Sin esta variable, se muestra una advertencia clara y correo alternativo.
-- Prompts de las seis imágenes IA originales: docs/PROMPTS-IMAGENES-IA.md; los SVG locales garantizan carga independiente de proveedores externos.
