@@ -37,11 +37,14 @@ export default function FamilyPowerBehaviorDashboard(){
  useEffect(()=>{
   let active=true;setData(null);setError("");setState("loading");
   if(!allowed||!tenantId){setState("error");return()=>{active=false;};}
-  void supabase.rpc("marketing_behavior_overview",{p_tenant_id:tenantId,p_days:days}).then(({data:result,error:problem})=>{
-   if(!active)return;
-   if(problem||!result||result.tenant_id!==tenantId)throw new Error(problem?.message||"No se verificó la empresa.");
-   setData(result as Payload);setState("ready");
-  }).catch(e=>{if(active){setError(e instanceof Error?e.message:"No disponible");setState("error");}});
+  void (async()=>{
+   try{
+    const {data:result,error:problem}=await supabase.rpc("marketing_behavior_overview",{p_tenant_id:tenantId,p_days:days});
+    if(!active)return;
+    if(problem||!result||result.tenant_id!==tenantId)throw new Error(problem?.message||"No se verificó la empresa.");
+    setData(result as Payload);setState("ready");
+   }catch(e:unknown){if(active){setError(e instanceof Error?e.message:"No disponible");setState("error");}}
+  })();
   return()=>{active=false;};
  },[allowed,tenantId,days,revision]);
  if(!allowed)return <main className={styles.page}><p className={styles.error}>Acceso exclusivo para administración Family Power.</p></main>;
