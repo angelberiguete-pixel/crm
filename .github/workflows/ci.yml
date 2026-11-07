@@ -80,6 +80,8 @@ jobs:
         run: node --test tests/family-power-verified-name-capture.test.mjs
       - name: Umami tenant authorization and secret contracts
         run: node --test tests/umami-analytics-contract.test.mjs
+      - name: Family Power web behavior and privacy contracts
+        run: node --test tests/family-power-behavior-analytics.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
