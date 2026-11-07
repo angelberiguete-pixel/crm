@@ -1,40 +1,50 @@
-# PayPal → CRM/ARM — adaptador inicial (7 noviembre 2026)
+# PayPal → CRM/ARM — implementación segura de Sandbox (7 noviembre 2026)
 
-**Estado real: sandbox-only, módulo backend y pruebas. No hay cobro activo, checkout público ni credenciales, y no se cambia producción.**
+**Estado: CÓDIGO EN PR, NO desplegado ni conectado.** Incluye endpoints servidor, ledger SQL versionado y validaciones unitarias. No se ha creado cuenta merchant, ni credenciales, ni conectado PayPal, ni ejecutado la migración. No hay cobros reales.
 
-## Objetivo y estructura
-Integrar PayPal en el CRM **existente**, reutilizando `billing_invoices`, `billing_payments` y `billing_events`. La primera vía prevista es pagar facturas de uso/licencia del CRM emitidas por el **prestador legal correcto: Ángel Berigüete**, y no por una sociedad Look Social Media inexistente.
+## Alcance empresarial
+Se integra **al CRM existente**, reutilizando `billing_invoices`, `billing_payments` y `billing_events` para facturas de licencia y servicios, inicialmente con **Ángel Berigüete como prestador y beneficiario legal**. La marca Look Social Media no se presenta como una sociedad jurídicamente constituida.
 
-Para que los negocios clientes (Family Power y futuros tenants) cobren sus propios productos, deben vincular **sus propios** comerciantes PayPal, onboarding legal, cuentas y credenciales, con aislamiento estricto. No agrupar ni desviar pagos de una empresa a Ángel; no asumir la función de marketplace, agregador o intermediario.
+Los pagos de productos/servicios propios de Family Power y futuros clientes requieren una identidad comerciante PayPal distinta autorizada. Este adaptador NO enruta ingresos de esos tenants a la cuenta de Ángel, ni activa onboarding de marketplace o multi-vendedor.
 
-## Código incorporado
-`lib/paypal-checkout.ts` incluye:
-- validación de configuración **solo sandbox** y denegación por defecto;
-- conversión monetaria exacta de enteros `amount_due_cents` (sin errores de punto flotante);
-- constructor Orders v2 con importe y moneda tomados de factura verificada del servidor;
-- OAuth sandbox y creación de orden sandbox, `PayPal-Request-Id` fijo por factura para idempotencia y comprobación de URL de aprobación legítima;
-- validación estricta de cabeceras webhook y verificación postback contra PayPal sandbox;
-- validación de evento `PAYMENT.CAPTURE.COMPLETED` frente a cuenta receptora, orden enlazada, importe, moneda y estado de factura;
-- solo evaluación: NO produce un cambio de estado contable en la BD.
+## Cambios reales incorporados a la rama
+- `lib/paypal-checkout.ts`: OAuth Sandbox, Orders v2, importe USD centavos exacto, idempotencia `PayPal-Request-Id`, respuesta a URL de aprobación validada, verificación de firma del webhook por postback y evaluación estricta del evento `PAYMENT.CAPTURE.COMPLETED` (orden, comercio, importe, moneda).
+- `lib/paypal-crm-server.ts`: solo servidor, denegación por defecto, **prohíbe usar la base de datos de producción en Sandbox** y bloquea ejecución desde despliegues `VERCEL_ENV=production`. Usa exclusivamente una base Supabase de pruebas **distinta**, con claves separadas. Autenticación del usuario y lectura de la factura con RLS existente.
+- `app/api/paypal/orders/route.ts`: con JWT de administrador de tenant y una factura `billing_invoices` abierta, `provider=manual`, USD, sin pagos parciales, crea orden PayPal en Sandbox. Persiste la orden en el ledger de pruebas antes de ofrecer el enlace. No acepta monto ni empresa desde el navegador.
+- `app/api/paypal/capture/route.ts`: con factura autorizada y orden existente vinculada, solicita captura Sandbox; devuelve **pendiente de webhook** y no simula pago exitoso.
+- `app/api/paypal/webhook/route.ts`: firma verificada en PayPal Sandbox, deduplicación, conciliación a partir del mapping servidor de order→tenant→invoice. No confía en referencias de la notificación sin cotejarlas.
+- `supabase/migrations/20261107090000_paypal_sandbox_checkout_ledger.sql`: tabla `paypal_checkout_orders`, RLS, sin permisos de usuario final, FK tenant+invoice, UNIQUE IDs, y RPC `apply_verified_paypal_capture` restringida a `service_role` para actualizar pago, factura, evento y orden de forma atómica.
+- Pruebas `tests/paypal-checkout.test.mjs` y workflow de CI.
 
-`tests/paypal-checkout.test.mjs` cubre seguridad, importes, moneda, repetición, phishing de redirect, falsificación de webhook, identidad de comercio y discrepancia de pago.
+## Condiciones para probar realmente
+1. Confirmar titular de la cuenta PayPal Business y elegibilidad para cobros en República Dominicana.
+2. Clonar un dataset de pruebas aislado de producción y aplicar **allí exclusivamente** la migración después de revisión. Usar datos ficticios/anonimizados y un usuario de pruebas autorizado.
+3. Crear una app PayPal Sandbox y verificar merchant ID, PayPal return/cancel URLs y webhook ID oficial. Configurar credenciales solo como secretos de servidor:
+   - `PAYPAL_MODE=sandbox`
+   - `PAYPAL_ARM_SANDBOX_ENABLED=true`
+   - `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`
+   - `PAYPAL_SANDBOX_MERCHANT_ID`, `PAYPAL_SANDBOX_WEBHOOK_ID`
+   - `PAYPAL_SANDBOX_RETURN_URL`, `PAYPAL_SANDBOX_CANCEL_URL`
+   - `PAYPAL_SANDBOX_SUPABASE_URL`, `PAYPAL_SANDBOX_SUPABASE_PUBLISHABLE_KEY`, `PAYPAL_SANDBOX_SUPABASE_SERVICE_ROLE_KEY` (staging, jamás credenciales del Supabase actual `ygipjqgyreeahslzorik`).
+4. Crear factura de prueba `billing_invoices` en USD, `status=open`, `provider=manual`, sin pagos parciales. Usuario administrador llama a `POST /api/paypal/orders` con Bearer y `{invoiceId}`, aprueba en PayPal Sandbox y completa `POST /api/paypal/capture` con JWT. Un webhook firmado valida y reconcilia. Verificar retries, doble captura, reembolsos, diferencias de monto, usuario sin permisos y tenant vecino.
+5. Añadir interfaz de Cobros/Facturación, retornos HTTPS a la UI, estado visible y seguimiento de reembolsos/contracargos; esta interfaz todavía no está implementada. No lanzar Live sin autorización y QA.
 
-## Requisitos ANTES de abrir checkout real
-1. Confirmar titular del comercio PayPal, elegibilidad y cuenta Business para la República Dominicana. La propia cuenta PayPal del titular será la beneficiaria según el contrato.
-2. **Moneda:** PayPal REST Checkout no muestra DOP en sus códigos de pago admitidos. No convertir automáticamente RD$ a USD. Una factura pactada en DOP solo puede pagarse en PayPal si se hace una cotización explícita, se aprueba el tipo de cambio/importe en USD y se guarda trazabilidad; de lo contrario, denegar.
-3. Crear cuenta de desarrollador y una app **sandbox** en https://developer.paypal.com/dashboard/applications/sandbox. Mantener `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`, `PAYPAL_SANDBOX_WEBHOOK_ID`, `PAYPAL_SANDBOX_MERCHANT_ID` en variables de servidor y nunca en `NEXT_PUBLIC_*`, frontend o commits. `PAYPAL_MODE=sandbox` y `PAYPAL_ARM_SANDBOX_ENABLED=true` **solamente en ambiente de pruebas**; no habilitarlo sobre una instancia de clientes.
-4. Crear ledger transaccional de `paypal_order_id`, `invoice_id`, `tenant_id`, identidad de comercio, estado, monto y moneda. Agregar políticas RLS y constraints antes de exponer órdenes, capturas o webhooks.
-5. Endpoint de inicio: comprobar JWT real, propietario/admin del tenant factura, RLS y existencia de `billing_invoices.status=open`; PayPal solo recibe monto desde la BD. Persistir orden+approval URL antes de presentarla al cliente.
-6. Endpoint de captura: no confiar en `?orderId` de la URL del comprador como prueba de pago. Validar orden en ledger, crear captura con `PayPal-Request-Id` y verificar contra PayPal; reconciliar mediante webhook y consulta de estado.
-7. Webhook: autenticar cryptográficamente; exigir `PAYMENT.CAPTURE.COMPLETED` y captura real; `UNIQUE(provider,event_id)` en `billing_events`; dedupe con ledger y reconciliar transaccionalmente `billing_payments` y `billing_invoices`. Los eventos PENDING/DECLINED/REFUNDED/DISPUTED no marcan ninguna factura pagada, y reembolsos/reversiones exigen ajuste contable.
-8. Crear UI del módulo **Facturación / Cobros** con estado verificable, conciliación, control de errores y auditoría. No permitir envío automático de links de pago hasta aprobar marca, importe y destinatario.
-9. Test end-to-end usando comprador/comercio PayPal sandbox: crear orden → aprobar → capturar → recibir webhook firmado → verificar importe y merchant → conciliar → reintentar sin duplicados → reembolso/disputa → aislamiento de dos tenants.
+## Moneda
+El listado de monedas en PayPal REST Checkout no incluye `DOP`. Una cotización RD$75,000 o RD$12,000 no debe convertirse automáticamente a USD. Obtener y aprobar cotización de conversión, incluir moneda e importe acordado, fees y política de cambio antes de enviar cobros PayPal.
 
-## Recursos oficiales
+## Restricciones y pendientes
+- **Producción no alterada:** PR en borrador, sin fusionar, sin aplicar SQL, sin secretos configurados, sin despliegue productivo.
+- No enlaza una cuenta real PayPal. No certifica que el comerciante reciba fondos.
+- No existe todavía pantalla de pago integrada ni prueba E2E con PayPal Sandbox.
+- El módulo está limitado a facturas USD de licencia emitidas por el prestador configurado; no admite marketplace, multi-merchant de clientes, pagos parcializados ni suscripciones automáticas.
+- Para reembolsos, pagos pendientes, contracargos y disputas, añadir conciliación contable posterior (NO activar renovaciones/cancelaciones automáticas hasta tenerla).
+- Las llamadas por HTTP y los estados DB deben pasar pruebas integrales, además del typecheck y unit tests.
+
+## Documentación oficial
 - https://developer.paypal.com/api/rest/integration/orders-api
 - https://developer.paypal.com/api/rest/webhooks/rest/
 - https://developer.paypal.com/api/codes/currency/
 - https://developer.paypal.com/api/make-api-requests
 - https://developer.paypal.com/platforms/seller-onboarding/
 
-**Seguridad:** Sin credenciales, ni ejecución ni cobros. Sin habilitación de Live. No se modifica ni se aplica ninguna migración a producción.
+Esta entrega es una base operacional en modo Sandbox **deshabilitada** hasta infraestructura y autorización. Jamás presentar el pago como cobrado por existir una orden, callback o respuesta HTTP 200.
