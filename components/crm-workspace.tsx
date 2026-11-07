@@ -9,6 +9,7 @@ import {
   Building2,
   CalendarDays,
   FileText,
+  CreditCard,
   Gauge,
   Inbox,
   LogOut,
@@ -64,6 +65,7 @@ const nav = [
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
+  ["payments", "Cobros", CreditCard],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
   ["automations", "Automatizaciones", Bot],
@@ -221,6 +223,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
+        {section === "payments" && !isFamilyPower && <PayPalPayments tenantId={tenantId} />}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "tasks" && isFamilyPower && <FamilyPowerTasks tenantId={tenantId} />}
@@ -684,4 +687,29 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
     <section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>
     <section className="card"><h2>Catálogo web conectado</h2><p className="muted">Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo.</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
   </div>;
+}
+
+/** CRM-native payments module; no separate storefront or public checkout. */
+function PayPalPayments({tenantId}:{tenantId:string}) {
+ const [currency,setCurrency]=useState<"USD"|"EUR">("USD");
+ const [offer,setOffer]=useState("consultoria-ia");
+ const [status,setStatus]=useState("");
+ const services=[
+  {id:"consultoria-ia",name:"Consultoría de inteligencia artificial",usd:150,eur:140},
+  {id:"diagnostico-digital",name:"Diagnóstico digital empresarial",usd:75,eur:70}
+ ];
+ const selected=services.find(s=>s.id===offer)!;
+ return <section className="panel" aria-label="Cobros PayPal">
+  <h2>PayPal · Cobros de la empresa</h2>
+  <p className="muted">Empresa activa: {tenantId}. Los pagos se vincularán a clientes, cotizaciones y facturas de esta empresa.</p>
+  <div className="notice">Módulo en preparación. Los cobros están deshabilitados hasta completar permisos, registro de transacciones y webhooks.</div>
+  <div className="form-grid">
+   <label>Servicio<select value={offer} onChange={e=>setOffer(e.target.value)}>{services.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+   <label>Moneda<select value={currency} onChange={e=>setCurrency(e.target.value as "USD"|"EUR")}><option>USD</option><option>EUR</option></select></label>
+  </div>
+  <h3>{currency==="USD"?"US$":"€"}{currency==="USD"?selected.usd:selected.eur}</h3>
+  <p className="muted">Tarifas de ejemplo pendientes de aprobación. No se generarán cargos reales.</p>
+  <button className="button" disabled>Crear enlace de cobro (pendiente)</button>
+  {status&&<p role="status">{status}</p>}
+ </section>;
 }
