@@ -6,6 +6,7 @@ export type FamilyPowerAccess={
 export function familyPowerMembership(memberships:readonly FamilyPowerAccess[]|null|undefined):FamilyPowerAccess|null{
   if(!Array.isArray(memberships))return null;
   return memberships.find(item=>item.tenant_slug===FAMILY_POWER_SLUG&&
+    item.is_active===true&&
     typeof item.tenant_id==="string"&&item.tenant_id.length>=32&&
     ["owner","admin","manager","agent","viewer"].includes(item.membership_role))??null;
 }
