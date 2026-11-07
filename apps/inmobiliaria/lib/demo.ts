@@ -1,0 +1,2 @@
+export const demoProperties = [{id:"demo-001",title:"Apartamento de demostración · Naco",area:"Distrito Nacional",price:6800000,kind:"Venta",beds:3},{id:"demo-002",title:"Casa de demostración · Arroyo Hondo",area:"Santo Domingo",price:45000,kind:"Alquiler mensual",beds:3},{id:"demo-003",title:"Apartamento de demostración · Gazcue",area:"Distrito Nacional",price:4950000,kind:"Venta",beds:2}];
+export const stages=["Propiedad","Publicación","Prospecto","Visita","Negociación","Cierre"] as const;
