@@ -10,10 +10,12 @@ test("Family Power sidebar, topbar and mobile menus exclude agency sales center 
  const sales=read("components/crm-sales-360.tsx");
  const contacts=read("components/crm-customers.tsx");
  const menu=read("components/family-power-menu.tsx");
- assert.match(ws,/const familyKeys=\["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings"\]/);
+ assert.match(ws,/const familyKeys=\["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings","web-analytics"\]/);
+ assert.match(ws,/familyEnabledModules\.umami_analytics===true/);
  assert.match(ws,/!isFamilyPower&&<Link className="button" href="\/revenue-command-center"/);
  assert.match(gate,/restrictedFamilySections=\["companies","sales"/);
- assert.match(mobile,/const familyKeys=\["inbox","products","quotations","arm","tasks","reports","settings"\]/);
+ assert.match(mobile,/const familyKeys=\["inbox","products","quotations","arm","tasks","reports","settings","web-analytics"\]/);
+ assert.match(mobile,/module_key==="umami_analytics"/);
  assert.match(sales,/<FamilyPowerMenu active="revenue" variant="sidebar"\/>/);
  assert.match(contacts,/<FamilyPowerMenu active=\{kind\} variant="sidebar"\/>/);
  assert.match(menu,/tenant_current_permissions/);
