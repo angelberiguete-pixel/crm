@@ -72,3 +72,40 @@ test("rejects invalid/oversized callbacks and skips unsupported events without t
   assert.deepEqual(parseMetaWebhookEvents(JSON.stringify({ object: "unknown", entry: [] })), []);
   assert.deepEqual(parseMetaWebhookEvents(JSON.stringify({ object: "page", entry: [{ id: "some-page", messaging: [{ message: { text: "no mid" } }] }] })), []);
 });
+
+
+test("normalizes Instagram post and Live comments without interpreting a comment as a DM opt-in", () => {
+  const body = {object:"instagram",entry:[{id:"ig-professional-123",changes:[
+    {field:"comments",value:{id:"comment-1",text:"PRECIO",from:{id:"user-1",username:"public_user"},media:{id:"reel-1"}}},
+    {field:"comments",value:{id:"comment-1",text:"PRECIO",from:{id:"user-1"},media:{id:"reel-1"}}},
+    {field:"live_comments",value:{id:"live-1",text:"Hola",from:{id:"user-2"},media:{id:"live-media"}}},
+    {field:"comments",value:{id:"comment-own",text:"Respuesta",from:{id:"ig-professional-123"}}},
+    {field:"comments",value:{text:"Sin id",from:{id:"user-3"}}}
+  ]}]};
+  const events=parseMetaWebhookEvents(JSON.stringify(body));
+  assert.equal(events.length,2);
+  assert.deepEqual(events.map(x=>x.kind),["comment","comment"]);
+  assert.deepEqual(events.map(x=>x.details.surface),["post","live"]);
+  assert.equal(events[0].externalId,"comment-1");
+  assert.equal(events[0].participantId,"user-1");
+  assert.equal(events[0].details.mediaId,"reel-1");
+  assert.equal(events[0].text,"PRECIO");
+  assert.equal(events[0].details.optedIn,undefined);
+  assert.equal(new Set(events.map(x=>x.idempotencyKey)).size,2);
+});
+
+test("only Facebook Page comment additions are public interactions, never arbitrary feed updates", () => {
+  const body={object:"page",entry:[{id:"page-123",changes:[
+    {field:"feed",value:{item:"comment",verb:"add",comment_id:"c.1",post_id:"p.1",message:"INFO",from:{id:"visitor-5"},created_time:1790000000}},
+    {field:"feed",value:{item:"comment",verb:"edited",comment_id:"c.1",post_id:"p.1",message:"modified"}},
+    {field:"feed",value:{item:"post",verb:"add",post_id:"p.2",message:"own post"}},
+    {field:"feed",value:{item:"comment",verb:"add",comment_id:"c.own",from:{id:"page-123"}}}
+  ]}]};
+  const events=parseMetaWebhookEvents(JSON.stringify(body));
+  assert.equal(events.length,1);
+  assert.equal(events[0].provider,"messenger");
+  assert.equal(events[0].kind,"comment");
+  assert.equal(events[0].details.mediaId,"p.1");
+  assert.equal(events[0].participantId,"visitor-5");
+  assert.equal(events[0].details.surface,"page_post");
+});

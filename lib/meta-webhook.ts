@@ -9,7 +9,7 @@
  */
 export type MetaInboundEvent = {
   provider: "whatsapp" | "instagram" | "messenger" | "facebook_lead_ads";
-  kind: "message" | "message_echo" | "delivery_status" | "leadgen";
+  kind: "message" | "message_echo" | "delivery_status" | "leadgen" | "comment";
   accountId: string;
   externalId: string;
   idempotencyKey: string;
@@ -127,11 +127,43 @@ export function parseMetaWebhookEvents(body: string | Uint8Array): MetaInboundEv
         asTimestamp(messaging?.timestamp), field(msg, "text") || null);
       if (ev) result.push(ev);
     }
-    if (object !== "page") continue;
+    // Instagram comments and Messenger/Page public comments are engagement
+    // events, NOT an opt-in, a private conversation, or permission to send DMs.
+    // Future ingestion must resolve entryId against a verified tenant-owned route
+    // before storing anything. Never construct a contact from the comment author.
     for (const rawChange of asArray(entry.changes).slice(0, 100)) {
       const change = asRecord(rawChange);
-      if (field(change, "field") !== "leadgen") continue;
-      const lead = asRecord(change?.value);
+      const changeField = field(change, "field");
+      const value = asRecord(change?.value);
+      if (object === "instagram" &&
+          (changeField === "comments" || changeField === "live_comments")) {
+        const authorId = field(asRecord(value?.from), "id");
+        if (authorId && authorId === entryId) continue; // own reply, no loop
+        const ev = makeEvent("instagram", "comment", entryId,
+          field(value, "id"), authorId || null,
+          asTimestamp(value?.timestamp ?? value?.created_time),
+          field(value, "text") || null,
+          { mediaId: field(asRecord(value?.media), "id"),
+            parentId: field(value, "parent_id"),
+            surface: changeField === "live_comments" ? "live" : "post" });
+        if (ev) result.push(ev);
+        continue;
+      }
+      if (object === "page" && changeField === "feed" &&
+          field(value, "item") === "comment" && field(value, "verb") === "add") {
+        const authorId = field(asRecord(value?.from), "id");
+        if (authorId && authorId === entryId) continue; // own Page reply
+        const ev = makeEvent("messenger", "comment", entryId,
+          field(value, "comment_id"), authorId || null,
+          asTimestamp(value?.created_time), field(value, "message") || null,
+          { mediaId: field(value, "post_id"),
+            parentId: field(value, "parent_id"),
+            surface: "page_post" });
+        if (ev) result.push(ev);
+        continue;
+      }
+      if (object !== "page" || changeField !== "leadgen") continue;
+      const lead = value;
       const ev = makeEvent("facebook_lead_ads", "leadgen", entryId,
         field(lead, "leadgen_id"), null, asTimestamp(lead?.created_time), null,
         { formId: field(lead, "form_id"), adId: field(lead, "ad_id") });
