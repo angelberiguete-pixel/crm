@@ -1,0 +1,24 @@
+name: Family Power client billing
+on:
+  pull_request:
+    paths:
+      - 'app/family-power/pagos/**'
+      - 'app/family-power/registro/**'
+      - 'app/crm/**'
+      - 'components/family-power-billing-*.tsx'
+      - 'components/platform-billing-reviews.tsx'
+      - 'components/platform-admin.tsx'
+      - 'components/tenant-permission-gate.tsx'
+      - 'supabase/migrations/20261107081500_family_power_billing_portal.sql'
+      - 'tests/family-power-billing.test.mjs'
+      - '.github/workflows/family-power-billing.yml'
+jobs:
+  check-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/family-power-billing.test.mjs
