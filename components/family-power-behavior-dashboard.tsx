@@ -66,7 +66,7 @@ export default function FamilyPowerBehaviorDashboard(){
     <div className={styles.period}>{([7,30,90] as const).map(d=><button key={d}
       className={d===days?styles.selected:""} onClick={()=>setDays(d)}
       type="button" aria-pressed={d===days}>{d} días</button>)}</div>
-    <a href="https://us.posthog.com/project/673237/dashboard/2228300" target="_blank" rel="noopener noreferrer" className={styles.refresh} title="Abrir el análisis avanzado de eventos">Detalles</a>
+    <a href="https://us.posthog.com/project/673237/dashboard/2317264" target="_blank" rel="noopener noreferrer" className={styles.refresh} title="Abrir el análisis avanzado de eventos">Detalles</a>
     <button type="button" className={styles.refresh} onClick={()=>setRevision(r=>r+1)}
       aria-label="Actualizar"><RefreshCw size={17}/></button>
    </div>
@@ -83,7 +83,7 @@ export default function FamilyPowerBehaviorDashboard(){
     <div className={styles.kpiLabel}><span>{label}</span><Icon size={18}/></div><strong>{value}</strong>
    </div>)}</div>
    {sessions===0&&<div className={styles.empty}><Activity size={23}/><strong>Sin visitas medidas todavía</strong>
-    <span>El sitio está registrado. Los gráficos recibirán datos cuando el seguimiento esté activo y el visitante lo autorice.</span></div>}
+    <span>Este panel de CRM aún no recibe eventos sincronizados. Para consultar los eventos consentidos cuando comiencen a llegar, abre Detalles (PostHog).</span></div>}
    <div className={styles.two}>
     <section className={styles.card}><div className={styles.title}><h2>Tráfico diario</h2><span>Sesiones</span></div>
      <div className={styles.chart}><ResponsiveContainer width="100%" height="100%">
