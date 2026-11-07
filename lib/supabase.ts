@@ -6,6 +6,9 @@ import { createClient, type Session } from "@supabase/supabase-js";
 const url = "https://ygipjqgyreeahslzorik.supabase.co";
 const key = "sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
 
+// Public project coordinates shared by browser and request-scoped server clients.
+export { url as CRM_SUPABASE_URL, key as CRM_SUPABASE_PUBLISHABLE_KEY };
+
 // Bump this marker whenever production data routing changes so Git/Vercel emits
 // a fresh production build instead of leaving an older frontend bundle live.
 export const CRM_DATASET_VERSION = "look-social-media-2026-10-11";
