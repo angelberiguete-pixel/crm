@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {BarChart3,Bot,ClipboardList,FileText,Gauge,Inbox,Package,Settings,Target,Users} from "lucide-react";
+import {BarChart3,Bot,ClipboardList,CreditCard,FileText,Gauge,Inbox,Package,Settings,Target,Users} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 
@@ -15,7 +15,8 @@ const modules=[
  ["tasks","Tareas","operations",ClipboardList],
  ["arm","Agentes","dashboard",Bot],
  ["reports","Reportes","dashboard",BarChart3],
- ["settings","Configuración","settings",Settings]
+ ["settings","Configuración","settings",Settings],
+ ["pagos","Pagos y suscripción","dashboard",CreditCard]
 ] as const;
 export default function FamilyPowerMenu({active,variant}:{active:string;variant:"sidebar"|"mobile"}){
  const tenant=useActiveTenant();
@@ -39,7 +40,7 @@ export default function FamilyPowerMenu({active,variant}:{active:string;variant:
  },[tenant?.tenant_id,tenant?.tenant_slug]);
  if(tenant?.tenant_slug!=="family-power")return null;
  const visible=modules.filter(([key,,permission])=>{
-  if(key==="settings"&&!["owner","admin"].includes(tenant.membership_role))return false;
+  if(["settings","pagos"].includes(key)&&!["owner","admin"].includes(tenant.membership_role))return false;
   return !!permissions&&(permissions.all===true||permissions[permission]===true)&&enabled[permission]!==false;
  });
  const shown=variant==="mobile"?visible.slice(0,5):visible;
