@@ -17,7 +17,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
  const [amount,setAmount]=useState("");
  const [activeInvoiceId,setActiveInvoiceId]=useState("");
  useEffect(()=>{
-   let live=true;setInvoices([]);setReports([]);setActiveInvoiceId("");setError("");setNotice("");
+   let live=true;setInvoices([]);setReports([]);setActiveInvoiceId("");setError("");
    void (async()=>{
      const [i,r]=await Promise.all([
        supabase.from("billing_invoices").select("id,invoice_number,status,amount_due_cents,total_cents,currency,metadata")
