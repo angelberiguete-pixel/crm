@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {BarChart3,Bot,ClipboardList,FileText,Gauge,Inbox,Package,Settings,Target,Users} from "lucide-react";
+import {BarChart3,BrainCircuit,Bot,ClipboardList,FileText,Gauge,Inbox,Package,Settings,Target,Users} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 
@@ -9,6 +9,7 @@ const modules=[
  ["","Inicio","dashboard",Gauge],
  ["contacts","Clientes","contacts",Users],
  ["revenue","Oportunidades","pipeline",Target],
+ ["ml","Inteligencia ML","pipeline",BrainCircuit],
  ["products","Productos","products",Package],
  ["quotations","Cotizaciones","quotations",FileText],
  ["inbox","Conversaciones","inbox",Inbox],
