@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, FileText, Gauge, Inbox, Package, Plus, RefreshCw, Search, Target, Users } from "lucide-react";
+import { BrainCircuit, Building2, CalendarDays, FileText, Gauge, Inbox, Package, Plus, RefreshCw, Search, Target, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import BrandLogo from "@/components/brand-logo";
@@ -24,7 +24,7 @@ type NewDeal = { title: string; value: string; companyId: string; contactId: str
 const blankDeal: NewDeal = { title: "", value: "", companyId: "", contactId: "", expectedClose: "", source: "" };
 const nav = [
   ["", "Inicio", Gauge], ["companies", "Empresas", Building2], ["contacts", "Contactos", Users],
-  ["revenue", "Oportunidades", Target], ["inbox", "Conversaciones", Inbox], ["products", "Productos", Package],
+  ["revenue", "Oportunidades", Target], ["ml", "Inteligencia ML", BrainCircuit], ["inbox", "Conversaciones", Inbox], ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText], ["calendar", "Calendario", CalendarDays]
 ] as const;
 const money = (value: number, currency = "DOP") => {
