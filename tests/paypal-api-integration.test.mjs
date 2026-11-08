@@ -30,7 +30,7 @@ test("on-demand sync verifies JWT and RLS invoice before calling PayPal",()=>{
 test("DB reconciliation requires service role and is idempotent",()=>{
  assert.match(sql,/grant execute on function public\.paypal_confirm_invoice_from_api\(text,bigint\)\s+to service_role/);
  assert.match(sql,/from public, anon, authenticated/);
- assert.match(sql,/status='already_paid'/);
+ assert.match(sql,/jsonb_build_object\('status','already_paid'/);
  assert.match(sql,/amount_paid_cents<>0/);
  assert.match(sql,/custom_monthly_price_cents=8000/);
 });
