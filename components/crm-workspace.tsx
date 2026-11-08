@@ -6,6 +6,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bot,
   BarChart3,
+  BrainCircuit,
   Building2,
   CalendarDays,
   FileText,
@@ -24,6 +25,7 @@ import { signOutOfTenant, tenantLogoutDestination } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
+import CrmMlHub from "@/components/crm-ml-hub";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
 import BrandLogo from "@/components/brand-logo";
@@ -61,6 +63,7 @@ const nav = [
   ["web-analytics", "Analítica web", BarChart3],
   ["contacts", "Contactos", Users],
   ["revenue", "Oportunidades", Target],
+  ["ml", "Inteligencia ML", BrainCircuit],
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["quotations", "Cotizaciones", FileText],
@@ -78,13 +81,13 @@ const nav = [
 ] as const;
 
 const familyLabels:Record<string,string>={
- "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",inbox:"Mensajes",
+ "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",ml:"Inteligencia ML",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
  automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web"
 };
 const permissionForSection:Record<string,string>={
- "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",inbox:"inbox",
+ "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings","web-analytics":"settings"
@@ -173,7 +176,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    const familyKeys=["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings","web-analytics"];
+    const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
@@ -218,6 +221,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "companies" && <Companies tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "contacts" && <Contacts tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
         {section === "revenue" && <Revenue tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
+        {section === "ml" && <CrmMlHub tenantId={tenantId} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
@@ -230,7 +234,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && (isFamilyPower ? <FamilyPowerClientSettings/> : <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />)}
       </main>
       <nav className="mobile-nav">
-        {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
+        {permittedNav.filter(([key])=>["","contacts","revenue","ml","inbox"].includes(key)).slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
       </nav>
     </div>
   );
@@ -293,6 +297,7 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
         <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
         <Link className="button" href="/crm/quotations"><FileText size={16}/> Cotizaciones</Link>
         <Link className="button" href="/crm/operations"><Workflow size={16}/> Operaciones</Link>
+        <Link className="button" href="/crm/ml"><BrainCircuit size={16}/> Inteligencia ML</Link>
       </div>
     </section>
     <section className="grid dashboard-kpis" aria-label="Indicadores de esta empresa">
