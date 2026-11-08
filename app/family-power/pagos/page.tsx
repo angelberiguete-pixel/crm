@@ -25,7 +25,7 @@ export default function FamilyPowerBillingStep(){
         <div className={styles.row}><span>Implementación de Solución Tecnológica e Inteligencia Artificial</span><strong>US$197.00</strong></div>
         <div className={styles.total}><span>Total inicial</span><strong>US$197.00 USD</strong></div>
         <a href={paypalInvoice} target="_blank" rel="noopener noreferrer" className={styles.pay}>Pagar US$197 con PayPal ↗</a>
-        <p className={styles.note}>La transacción se realiza en paypal.com. El pago no se confirma automáticamente en este portal; conservaremos el aviso hasta verificarlo.</p>
+        <p className={styles.note}>La transacción se realiza en paypal.com. PayPal notifica el pago al sistema cuando la conexión API está activa; hasta esa confirmación, el aviso permanecerá pendiente.</p>
         <Link className={styles.skip} href="/family-power/login">Pagar más tarde y continuar al portal</Link>
         <div className={styles.details}>
           <strong>¿Prefieres transferencia o efectivo?</strong>
