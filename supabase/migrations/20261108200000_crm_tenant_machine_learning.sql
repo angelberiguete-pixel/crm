@@ -91,7 +91,7 @@ begin
   where tenant_id=old.tenant_id and quotation_id=old.id;
  v_age_days:=greatest(0,extract(epoch from (now()-old.created_at))/86400.0);
  v_remaining:=case when old.valid_until is null then 0 else
-  greatest(0,extract(epoch from ((old.valid_until::timestamp)-now()))/86400.0) end;
+  greatest(0,extract(epoch from ((old.valid_until::timestamptz)-now()))/86400.0) end;
  insert into public.crm_ml_training_examples(tenant_id,capability,entity_id,features,positive)
  values (old.tenant_id,'quote_acceptance',old.id,
   jsonb_build_object(
