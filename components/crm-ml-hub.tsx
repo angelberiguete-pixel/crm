@@ -34,11 +34,11 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
   void(async()=>{
    try{
     const [o,s,q,i,t,e]=await Promise.all([
-     supabase.from("opportunities").select("id,pipeline_id,stage_id,status,created_at,owner_user_id,last_activity_at,next_action_at")
+     supabase.from("opportunities").select("id,title,pipeline_id,stage_id,status,created_at,owner_user_id,last_activity_at,next_action_at")
       .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000),
      supabase.from("pipeline_stages").select("id,pipeline_id,stage_type,position")
       .eq("tenant_id",tenantId).limit(500),
-     supabase.from("quotations").select("id,opportunity_id,status,created_at,valid_until")
+     supabase.from("quotations").select("id,quote_number,opportunity_id,status,created_at,valid_until")
       .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000),
      supabase.from("quotation_items").select("quotation_id")
       .eq("tenant_id",tenantId).limit(2500),
@@ -71,15 +71,15 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
  const salesModel=useMemo(()=>trainingAvailable?trainTenantModel("sales_win",data.examples):null,[data.examples,trainingAvailable]);
  const quoteModel=useMemo(()=>trainingAvailable?trainTenantModel("quote_acceptance",data.examples):null,[data.examples,trainingAvailable]);
  const sales=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>({
-   id:o.id,
+   id:o.id,title:o.title,
    result:scoreMl("sales_win",salesSignals(o,data.stages,data.quotes,data.tasks),salesModel),
    risk:followupRisk(o)
   })).sort((a,b)=>b.result.score-a.result.score),[data,salesModel]);
  const quotes=useMemo(()=>data.quotes.filter(q=>q.status==="sent"||q.status==="draft").map(q=>({
-   id:q.id,
+   id:q.id,quoteNumber:q.quote_number,
    result:scoreMl("quote_acceptance",quoteSignals(q,data.items),quoteModel)
   })).sort((a,b)=>b.result.score-a.result.score),[data,quoteModel]);
- const attention=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>({id:o.id,risk:followupRisk(o)}))
+ const attention=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>({id:o.id,title:o.title,risk:followupRisk(o)}))
   .sort((a,b)=>({alta:0,media:1,baja:2}[a.risk.level]-{alta:0,media:1,baja:2}[b.risk.level])),[data.opportunities]);
  const salesLabels=data.examples.filter(e=>e.capability==="sales_win").length;
  const quoteLabels=data.examples.filter(e=>e.capability==="quote_acceptance").length;
@@ -120,10 +120,10 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    {active==="ventas"&&<section className={styles.card}>
     <h3>Predicción de oportunidades</h3>
     <Summary model={salesModel} n={salesLabels} kind="cierre"/>
-    {sales.length===0?<p>Esta empresa no tiene oportunidades abiertas.</p>:sales.slice(0,15).map(({id,result,risk},index)=>
+    {sales.length===0?<p>Esta empresa no tiene oportunidades abiertas.</p>:sales.slice(0,15).map(({id,title,result,risk},index)=>
       <div className={styles.record} key={id}>
        <div className={styles.recordMain}>
-        <div><small>Oportunidad {index+1} · Ref. {id.slice(0,8)}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
+        <div><small>Prioridad {index+1} · {title}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
         <Score score={result.score} model={result.mode==="validated_ml"}/>
        </div>
        <p className={styles.hint}>Seguimiento: {risk.reason}. El índice ordena prioridades, no modifica la probabilidad comercial ingresada.</p>
@@ -132,10 +132,10 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    {active==="cotizaciones"&&<section className={styles.card}>
     <h3>Análisis de cotizaciones</h3>
     <Summary model={quoteModel} n={quoteLabels} kind="aceptación"/>
-    {quotes.length===0?<p>No hay cotizaciones abiertas para priorizar.</p>:quotes.slice(0,15).map(({id,result},index)=>
+    {quotes.length===0?<p>No hay cotizaciones abiertas para priorizar.</p>:quotes.slice(0,15).map(({id,quoteNumber,result},index)=>
       <div className={styles.record} key={id}>
        <div className={styles.recordMain}>
-        <div><small>Cotización {index+1} · Ref. {id.slice(0,8)}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
+        <div><small>Cotización {index+1} · {quoteNumber}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
         <Score score={result.score} model={result.mode==="validated_ml"}/>
        </div>
        <p className={styles.hint}>Solo análisis; precios, descuentos y aceptación siguen sujetos a aprobación humana.</p>
@@ -145,9 +145,9 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
     <h3>Riesgo de perder el seguimiento</h3>
     <p className={styles.intro}>Alertas verificables por vencimiento e inactividad. Son reglas operativas, no predicciones estadísticas.</p>
     <div className={styles.miniStats}><span>{urgent} vencidos</span><span>{next} sin actividad reciente</span></div>
-    {attention.length===0?<p>No hay oportunidades abiertas.</p>:attention.slice(0,15).map(({id,risk},index)=>
+    {attention.length===0?<p>No hay oportunidades abiertas.</p>:attention.slice(0,15).map(({id,title,risk},index)=>
       <div className={styles.record} key={id}>
-       <div className={styles.recordMain}><div><small>Oportunidad {index+1} · Ref. {id.slice(0,8)}</small><strong>{risk.reason}</strong></div>
+       <div className={styles.recordMain}><div><small>Seguimiento {index+1} · {title}</small><strong>{risk.reason}</strong></div>
         <span className={styles.risk}>{risk.level}</span></div>
       </div>)}
    </section>}
