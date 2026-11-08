@@ -234,7 +234,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "settings" && (isFamilyPower ? <FamilyPowerClientSettings/> : <SettingsPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />)}
       </main>
       <nav className="mobile-nav">
-        {permittedNav.slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
+        {permittedNav.filter(([key])=>["","contacts","revenue","ml","inbox"].includes(key)).slice(0, 5).map(([key, label, Icon]) => <Link key={key} aria-current={section===key?"page":undefined} className={section===key?"active":""} href={`/crm${key ? `/${key}` : ""}`}><Icon size={19} /><span>{isFamilyPower?familyLabels[key]??label:label}</span></Link>)}
       </nav>
     </div>
   );
@@ -297,6 +297,7 @@ function Dashboard({ tenantId, tenantName, reloadKey, notice }: { tenantId: stri
         <Link className="button" href="/crm/contacts?new=1"><Users size={16}/> Nuevo contacto</Link>
         <Link className="button" href="/crm/quotations"><FileText size={16}/> Cotizaciones</Link>
         <Link className="button" href="/crm/operations"><Workflow size={16}/> Operaciones</Link>
+        <Link className="button" href="/crm/ml"><BrainCircuit size={16}/> Inteligencia ML</Link>
       </div>
     </section>
     <section className="grid dashboard-kpis" aria-label="Indicadores de esta empresa">
