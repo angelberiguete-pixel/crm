@@ -6,11 +6,11 @@ export type MlTrainingExample={capability:MlCapability;features:MlFeatureMap;pos
 export type MlResult={mode:"heuristic"|"validated_ml";score:number;reasons:string[]};
 export type MlModel={capability:MlCapability;weights:number[];samples:number;auc:number;brier:number};
 export type MlOpportunity={
- id:string; pipeline_id:string; stage_id:string; status:string; created_at:string;
+ id:string; title:string; pipeline_id:string; stage_id:string; status:string; created_at:string;
  owner_user_id:string|null; last_activity_at:string|null; next_action_at:string|null;
 };
 export type MlStage={id:string;pipeline_id:string;stage_type:string;position:number};
-export type MlQuote={id:string;opportunity_id:string|null;status:string;created_at:string;valid_until:string|null};
+export type MlQuote={id:string;quote_number:string;opportunity_id:string|null;status:string;created_at:string;valid_until:string|null};
 export type MlTask={opportunity_id:string|null;status:string;due_at:string|null};
 export type MlQuoteItem={quotation_id:string};
 
