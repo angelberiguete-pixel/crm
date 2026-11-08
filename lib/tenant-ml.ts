@@ -30,8 +30,8 @@ function sortedExamples(c:MlCapability,examples:MlTrainingExample[]){
 export function salesSignals(o:MlOpportunity,stages:MlStage[],quotes:MlQuote[],tasks:MlTask[],now=Date.now()):MlFeatureMap{
  const current=stages.find(s=>s.id===o.stage_id&&s.pipeline_id===o.pipeline_id);
  const open=stages.filter(s=>s.pipeline_id===o.pipeline_id&&s.stage_type==="open");
- const lower=Math.min(...open.map(s=>s.position),0);
- const upper=Math.max(...open.map(s=>s.position),1);
+ const lower=open.length?Math.min(...open.map(s=>s.position)):0;
+ const upper=open.length?Math.max(...open.map(s=>s.position)):1;
  const ts=tasks.filter(t=>t.opportunity_id===o.id);
  const isActive=(t:MlTask)=>!["completed","done","cancelled","canceled"].includes(t.status);
  return {
