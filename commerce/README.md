@@ -39,3 +39,7 @@ npm test
 npm run build
 npm run dev
 ```
+
+
+### Imágenes comerciales IA autohospedadas (2026-11-08)
+El hero utiliza `public/art/ai-hero.webp` y las tarjetas de catálogo, página web, reels, cobros y contenido mensual utilizan cinco imágenes `ai-*.webp`. Son originales, convertidas a WebP en GitHub Actions, guardadas dentro del repositorio y no dependen de URL externas. El resto de tarjetas conservan ilustraciones SVG locales. Las escenas de personas y negocios son generadas mediante IA y no representan clientes ni resultados verificados.

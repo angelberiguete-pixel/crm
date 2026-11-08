@@ -22,7 +22,7 @@ function money(cents,currency="USD"){
  const fractions=Number(cents)%100===0?0:2;
  return new Intl.NumberFormat("en-US",{style:"currency",currency,minimumFractionDigits:fractions,maximumFractionDigits:2}).format(amount);
 }
-function artFor(p){return "/art/"+(p.art||SLUG_ART[p.slug]||FALLBACK_ART[p.category]||"catalogo")+".svg";}
+function artFor(p){const art=p.art||SLUG_ART[p.slug]||FALLBACK_ART[p.category]||"catalogo";return ["catalogo","web","reels","pagos","contenido"].includes(art)?"/art/ai-"+art+".webp":"/art/"+art+".svg";}
 function checkoutReady(ready,p){return Boolean(ready&&p?.published&&p?.category!=="membresia"&&p?.category!=="fisico");}
 function isPrepared(p){return !p.published&&(p.category==="digital"||p.category==="curso");}
 function emailHref(p,name="",email=""){
@@ -117,7 +117,7 @@ export default function Home(){
     </div>
     <div className="hero-visual" aria-label="Vista ilustrada de la colección digital">
      <div className="hero-orbit orbit-one"/><div className="hero-orbit orbit-two"/>
-     <div className="hero-visual-frame"><img src="/art/hero-commerce.svg" width="920" height="870" alt="Composición ilustrada de una tienda digital con catálogo, currículum y recursos" fetchPriority="high"/></div>
+     <div className="hero-visual-frame"><img src="/art/ai-hero.webp" width="1500" height="844" alt="Escena creativa generada con IA: emprendedor, laptop y catálogo digital" fetchPriority="high"/></div>
      <div className="float-chip chip-one"><span className="chip-emoji">✦</span><div><strong>Diseño que inspira</strong><small>Recursos útiles, sin complicaciones</small></div></div>
      <div className="float-chip chip-two"><span className="chip-heart">♥</span><div><strong>US$4.90</strong><small>CV Express</small></div></div>
     </div>

@@ -363,3 +363,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
  .purchase-dialog h2{font-size:25px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Six original AI campaign images, optimized as self-hosted WebP assets. */
+.hero-visual-frame{width:100%;max-width:680px;overflow:hidden;border-radius:28px;transform:rotate(0deg);background:#17222e;box-shadow:0 28px 65px rgba(28,36,46,.2);filter:none}
+.hero-visual-frame img{width:100%;aspect-ratio:1.6;object-fit:cover;object-position:center}
+@media(max-width:680px){.hero-visual-frame{width:100%;border-radius:18px}.hero-visual-frame img{aspect-ratio:1.43;object-position:center}}
