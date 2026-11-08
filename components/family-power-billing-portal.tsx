@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 
 type Invoice = {
-  id:string; status:string; currency:string; total_cents:number; amount_due_cents:number;
+  id:string; provider:string; status:string; currency:string; total_cents:number; amount_due_cents:number;
   amount_paid_cents:number; hosted_invoice_url:string|null; invoice_number:string|null;
   metadata:Record<string,unknown>|null; period_start:string|null; period_end:string|null;
 };
@@ -24,6 +24,7 @@ export default function FamilyPowerBillingPortal(){
   const [subscription,setSubscription]=useState<Subscription|null>(null);
   const [reports,setReports]=useState<Report[]>([]);
   const [busy,setBusy]=useState(false);
+  const [syncing,setSyncing]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
@@ -36,7 +37,7 @@ export default function FamilyPowerBillingPortal(){
     if(!tenantId||!allowed){setLoading(false);return;}
     const [inv,sub,report]=await Promise.all([
       supabase.from("billing_invoices")
-        .select("id,status,currency,total_cents,amount_due_cents,amount_paid_cents,hosted_invoice_url,invoice_number,metadata,period_start,period_end")
+        .select("id,provider,status,currency,total_cents,amount_due_cents,amount_paid_cents,hosted_invoice_url,invoice_number,metadata,period_start,period_end")
         .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(50),
       supabase.from("tenant_subscriptions")
         .select("custom_monthly_price_cents,current_period_start,current_period_end,provider,provider_subscription_id")
@@ -74,6 +75,28 @@ export default function FamilyPowerBillingPortal(){
     }catch(e){setError(e instanceof Error?e.message:"No se pudo enviar el reporte.");}
     finally{setBusy(false);}
   }
+  async function syncPayPal(){
+    if(!due||due.provider!=="paypal"||syncing)return;
+    setSyncing(true);setError("");setNotice("");
+    try{
+      const {data,error:apiError}=await supabase.functions.invoke("paypal-billing",{
+        body:{action:"sync",invoice_id:due.id}
+      });
+      if(apiError||!data?.ok){
+        setError("No se pudo verificar PayPal en este momento. Si la integración aún no tiene credenciales, el administrador debe configurarlas.");
+        return;
+      }
+      if(["paid","already_paid"].includes(String(data.status)))
+        setNotice("PayPal confirmó el pago y la factura fue conciliada.");
+      else if(data.status==="manual_review")
+        setNotice("Hay un pago parcial o manual; administración debe conciliarlo antes de cerrar la factura.");
+      else
+        setNotice("PayPal todavía no confirma esta factura como pagada.");
+      await load();
+    }catch{
+      setError("No se pudo contactar al verificador PayPal.");
+    }finally{setSyncing(false);}
+  }
   if(!allowed)return <div className="notice" role="alert">Pagos de Family Power: solo propietario o administración autorizada.</div>;
   return <div className="content" style={{maxWidth:1000,margin:"0 auto"}}>
     <header className="topbar"><div><div className="eyebrow">Family Power · Cuenta comercial</div>
@@ -90,6 +113,9 @@ export default function FamilyPowerBillingPortal(){
           <p className="muted">{!initial?"La factura todavía no está registrada en el CRM.":initial.amount_due_cents>0?"Saldo pendiente de confirmación: "+usd(initial.amount_due_cents):"Pago inicial confirmado."}</p>
           {initial&&<div className="pill">{initial.status==="paid"?"Pagado":initial.status==="open"?"Pendiente":"En revisión"}</div>}
           {initial?.status==="open"&&initial.hosted_invoice_url&&<a className="button primary" style={{display:"flex",marginTop:15}} href={initial.hosted_invoice_url} target="_blank" rel="noopener noreferrer"><CreditCard size={16}/> Pagar factura en PayPal</a>}
+          {due?.provider==="paypal"&&<button type="button" className="button" disabled={syncing} style={{display:"flex",marginTop:10}} onClick={()=>void syncPayPal()}>
+            <RefreshCw size={16}/>{syncing?"Consultando PayPal…":"Comprobar pago en PayPal"}
+          </button>}
         </article>
         <article className="card">
           <div className="eyebrow">Plan mensual acordado</div>
