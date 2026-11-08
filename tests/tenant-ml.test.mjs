@@ -6,14 +6,14 @@ import {
 } from "../lib/tenant-ml.ts";
 
 const fixtures={
- opp:{id:"opp-a",pipeline_id:"p1",stage_id:"s2",status:"open",created_at:"2026-10-01T00:00:00Z",
+ opp:{id:"opp-a",title:"Venta de equipo",pipeline_id:"p1",stage_id:"s2",status:"open",created_at:"2026-10-01T00:00:00Z",
  owner_user_id:"seller-a",last_activity_at:"2026-11-07T00:00:00Z",next_action_at:"2026-11-01T00:00:00Z"},
  stages:[
  {id:"s1",pipeline_id:"p1",stage_type:"open",position:10},
  {id:"s2",pipeline_id:"p1",stage_type:"open",position:80},
  {id:"s3",pipeline_id:"p1",stage_type:"won",position:90}
  ],
- quote:{id:"q1",opportunity_id:"opp-a",created_at:"2026-10-20T00:00:00Z",status:"sent",valid_until:"2026-11-30"}
+ quote:{id:"q1",quote_number:"FP-001",opportunity_id:"opp-a",created_at:"2026-10-20T00:00:00Z",status:"sent",valid_until:"2026-11-30"}
 };
 const now=Date.parse("2026-11-08T12:00:00Z");
 test("sales features refer only to the chosen opportunity and current pipeline",()=>{
