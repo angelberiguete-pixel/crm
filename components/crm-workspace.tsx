@@ -9,6 +9,7 @@ import {
   BrainCircuit,
   Building2,
   CalendarDays,
+  CreditCard,
   FileText,
   Gauge,
   Inbox,
@@ -74,6 +75,7 @@ const nav = [
   ["tasks", "Tareas", CalendarDays],
   ["reports", "Reportes", BarChart3],
   ["files", "Archivos", FileText],
+  ["pagos", "Pagos y suscripción", CreditCard],
   ["channels", "Canales", Inbox],
   ["integrations", "Integraciones", Settings],
   ["sessions", "Sesiones del equipo", Users],
@@ -84,13 +86,13 @@ const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",ml:"Inteligencia ML",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
  automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
- integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web"
+ integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web",pagos:"Pagos y suscripción"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
- integrations:"settings",sessions:"settings",settings:"settings","web-analytics":"settings"
+ integrations:"settings",sessions:"settings",settings:"settings","web-analytics":"settings",pagos:"dashboard"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);
@@ -176,7 +178,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics"];
+    const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
@@ -184,6 +186,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       &&(familyMenuPermissions.all===true||familyMenuPermissions.settings===true)
       &&familyEnabledModules.settings!==false
       &&familyEnabledModules.umami_analytics===true;
+    if(key==="pagos"&&!["owner","admin"].includes(member.role))return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
