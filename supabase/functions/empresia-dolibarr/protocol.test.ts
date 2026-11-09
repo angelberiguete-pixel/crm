@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 import {
   dolibarrBaseUrl, isUuid, publicProduct, listDolibarrProducts
-} from "../_shared/dolibarr-protocol.ts";
+} from "./dolibarr-protocol.ts";
 
 Deno.test("only server-owned secure Dolibarr API URLs are eligible", () => {
   const ok="https://erp.empresia.example.com/api/index.php";
