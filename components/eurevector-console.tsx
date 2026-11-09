@@ -101,7 +101,7 @@ export default function EurevectorConsole(){
  <aside className={`sidebar ${styles.platformSidebar} ${menuOpen?styles.isOpen:""}`} id="empresia-platform-navigation" aria-label="Navegación de Empresia">
    <div className={styles.sidebarHead}><Image src="/empresia-logo-light.svg" alt="Empresia" width={174} height={44} priority/><span>PLATAFORMA DE ADMINISTRACIÓN</span></div>
    <div className={styles.sidebarCaption}>Panel principal</div>
-   <nav className={`nav ${styles.platformNav}`} onClick={()=>setMenuOpen(false)}>
+   <nav className={`nav ${styles.platformNav}`} aria-label="Navegación de Empresia" onClick={()=>setMenuOpen(false)}>
      <a className="active" href="#inicio"><Home size={17}/> Resumen</a>
      <a href="#clientes"><Building2 size={17}/> Empresas cliente</a>
      <a href="#nuevo-cliente"><Plus size={17}/> Nueva empresa</a>
