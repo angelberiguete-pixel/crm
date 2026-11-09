@@ -22,6 +22,8 @@ jobs:
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
       - name: Look owner global entry and customer logout routing contracts
         run: node --experimental-strip-types --test tests/look-owner-entry.test.mjs
+      - name: Empresia platform dashboard responsive and owner routing contracts
+        run: node --test tests/empresia-platform-responsive.test.mjs
       - name: Automation execution regression tests
         run: node --experimental-strip-types --test tests/automation-worker.test.mjs
       - name: CRM frontend secrets, tenant isolation and webhook safety regressions
