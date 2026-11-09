@@ -99,6 +99,7 @@ export default function EurevectorConsole(){
  return <div className={`shell ${styles.platformShell}`}>
  {menuOpen&&<button className={styles.scrim} type="button" aria-label="Cerrar navegación" onClick={()=>setMenuOpen(false)}/>}
  <aside className={`sidebar ${styles.platformSidebar} ${menuOpen?styles.isOpen:""}`} id="empresia-platform-navigation" aria-label="Navegación de Empresia">
+   <button type="button" className={styles.drawerClose} aria-label="Cerrar menú de Empresia" onClick={()=>setMenuOpen(false)}><X size={20}/></button>
    <div className={styles.sidebarHead}><Image src="/empresia-logo-light.svg" alt="Empresia" width={174} height={44} priority/><span>PLATAFORMA DE ADMINISTRACIÓN</span></div>
    <div className={styles.sidebarCaption}>Panel principal</div>
    <nav className={`nav ${styles.platformNav}`} aria-label="Navegación de Empresia" onClick={()=>setMenuOpen(false)}>
