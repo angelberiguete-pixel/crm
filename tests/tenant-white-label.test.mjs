@@ -2,14 +2,15 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {resolveTenantBrand,safeTenantAsset,safeHex,tenantBrandStyle} from "../lib/tenant-brand.ts";
-const a={tenant_id:"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",tenant_slug:"eurevector",tenant_name:"Look Social Media"};
+const a={tenant_id:"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",tenant_slug:"eurevector",tenant_name:"Empresia"};
 const b={tenant_id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",tenant_slug:"sublimaciones-lazala",tenant_name:"Sublimaciones Lazala"};
 
-test("Look official identity is preserved, other businesses never inherit its logo/color",()=>{
+test("Empresia platform identity is preserved, other businesses never inherit its logo/color",()=>{
  const look=resolveTenantBrand(a);
  const client=resolveTenantBrand(b,{brand_name:"Lazala Studio",primary_color:"#0f766e",secondary_color:"#14532d",accent_color:"#d97706"});
  assert.equal(look.officialLookBrand,true);
- assert.equal(look.primaryColor,"#2563EB");
+ assert.equal(look.name,"Empresia");
+ assert.equal(look.primaryColor,"#102938");
  assert.equal(client.officialLookBrand,false);
  assert.equal(client.name,"Lazala Studio");
  assert.equal(client.primaryColor,"#0F766E");
