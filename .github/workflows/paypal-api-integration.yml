@@ -1,0 +1,30 @@
+name: PayPal invoice API integration
+on:
+  push:
+    branches:
+      - 'feat/family-power-billing-post-signup-20261107'
+    paths:
+      - 'supabase/functions/paypal-billing/**'
+      - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
+      - 'components/family-power-billing-portal.tsx'
+      - 'tests/paypal-api-integration.test.mjs'
+      - '.github/workflows/paypal-api-integration.yml'
+  pull_request:
+    paths:
+      - 'supabase/functions/paypal-billing/**'
+      - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
+      - 'components/family-power-billing-portal.tsx'
+      - 'tests/paypal-api-integration.test.mjs'
+      - '.github/workflows/paypal-api-integration.yml'
+jobs:
+  billing-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs
+      - run: npm ci
+      - run: npm run typecheck
