@@ -20,7 +20,7 @@ try{
   const A="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", B="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   let activeId=A;
   const rows=new Map([
-    [A,{tenant_id:A,brand_name:"Empresia",primary_color:"#102938",secondary_color:"#117D82",accent_color:"#22D3BE",logo_url:null,favicon_url:null}],
+    [A,{tenant_id:A,brand_name:"Empresia",primary_color:"#315bff",secondary_color:"#117D82",accent_color:"#22D3BE",logo_url:null,favicon_url:null}],
     [B,{tenant_id:B,brand_name:"Sublimaciones Lazala",primary_color:"#0f766e",secondary_color:"#14532d",accent_color:"#f59e0b",logo_url:null,favicon_url:null}],
   ]);
   const reads=[];
