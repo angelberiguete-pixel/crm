@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {useCallback,useEffect,useRef,useState} from "react";
 import {supabase} from "@/lib/supabase";
 
@@ -104,7 +105,7 @@ export default function EmpresiaCheckout(){
  const success=status==="paid"||status==="active";
  return <main className="content" style={{maxWidth:760,minHeight:"100vh",margin:"0 auto"}}>
   <header className="topbar">
-   <div><div className="eyebrow">EMPRESIA · CHECKOUT SEGURO</div>
+   <div><Link href="/empresia" aria-label="Empresia, inicio"><Image src="/empresia-logo.svg" width={145} height={41} alt="Empresia" unoptimized/></Link><div className="eyebrow">EMPRESIA · CHECKOUT SEGURO</div>
     <h1>{order?"Estado de tu compra":"Confirmar contratación"}</h1>
     <p className="muted">Pago procesado por PayPal, con confirmación verificada desde el servidor.</p>
    </div>
