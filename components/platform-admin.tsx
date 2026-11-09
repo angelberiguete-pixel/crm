@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import PlatformBillingReviews from "@/components/platform-billing-reviews";
 import BillingFinancialDashboard from "@/components/billing-financial-dashboard";
+import PlatformPayPalSubscriptionPlan from "@/components/platform-paypal-subscription-plan";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
 type Access = { is_platform_admin?: boolean; is_platform_user?: boolean; role?: string | null };
@@ -383,6 +384,7 @@ export default function PlatformAdmin() {
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
       {access.role==="platform_owner"&&<BillingFinancialDashboard />}
+      {access.role==="platform_owner"&&<PlatformPayPalSubscriptionPlan />}
       {selectedId&&access.role==="platform_owner"&&<PlatformBillingReviews tenantId={selectedId}/>}
       <section className="grid metrics" style={{ marginBottom: 16 }}>
         <div className="metric"><div className="metric-label">Empresas</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Espacios creados, no clientes de pago</div></div>
