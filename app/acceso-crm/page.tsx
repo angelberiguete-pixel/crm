@@ -32,7 +32,7 @@ export default function AccesoCrmPage(){
           return;
         }
         const isPlatformAdmin=(access.data as {is_platform_admin?:boolean}|null)?.is_platform_admin===true;
-        router.replace(isPlatformAdmin?"/mis-empresas":"/crm");
+        router.replace(isPlatformAdmin?"/platform-admin":"/crm");
       }catch{
         if(alive)setError("No se pudo verificar el acceso. Comprueba tu conexión e intenta nuevamente.");
       }
