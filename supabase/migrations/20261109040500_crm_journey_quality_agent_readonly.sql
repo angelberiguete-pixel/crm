@@ -97,6 +97,23 @@ create trigger crm_opportunity_journey_update
  after update of stage_id,pipeline_id,status on public.opportunities
  for each row execute function private.record_crm_opportunity_journey();
 
+-- A CRM record cannot be reassigned between tenants without destroying history provenance.
+create or replace function private.crm_prevent_opportunity_tenant_reassignment()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+begin
+ if new.tenant_id is distinct from old.tenant_id then
+  raise exception 'Opportunity cannot be reassigned to another tenant';
+ end if;
+ return new;
+end;
+$function$;
+revoke all on function private.crm_prevent_opportunity_tenant_reassignment() from public,anon,authenticated;
+drop trigger if exists crm_opportunity_prevent_tenant_reassignment on public.opportunities;
+create trigger crm_opportunity_prevent_tenant_reassignment
+ before update of tenant_id on public.opportunities
+ for each row execute function private.crm_prevent_opportunity_tenant_reassignment();
+
 -- Baseline is a current observation at migration time, never a fabricated history.
 insert into public.crm_opportunity_journey(
  tenant_id,opportunity_id,event_type,to_pipeline_id,to_stage_id,
