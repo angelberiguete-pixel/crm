@@ -85,3 +85,12 @@ test("recurring activation alone cannot unlock a digital product without a verif
  assert.match(paid,/fulfillment='entitlement' then 'active'/);
  assert.match(paid,/from public\.empresia_offers f/);
 });
+
+test("Buyer may cancel only their own active recurring agreement with provider confirmation",()=>{
+ assert.match(edge,/action==="cancel_subscription"/);
+ assert.match(edge,/\.eq\("buyer_id",buyer\.id\)/);
+ assert.match(edge,/\/cancel","POST"/);
+ assert.match(edge,/empresia_confirm_subscription_state/);
+ assert.match(purchases,/Cancelar renovación/);
+ assert.match(purchases,/window\.confirm/);
+});
