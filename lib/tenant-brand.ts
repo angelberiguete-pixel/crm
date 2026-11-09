@@ -11,7 +11,7 @@ export type TenantBrand = {
   primaryColor:string;secondaryColor:string;accentColor:string;
   initials:string;officialLookBrand:boolean;
 };
-export const DEFAULT_LOOK_COLORS={primary:"#102938",secondary:"#117D82",accent:"#22D3BE"};
+export const DEFAULT_LOOK_COLORS={primary:"#315BFF",secondary:"#101828",accent:"#35D9B7"};
 const COLOR=/^#[0-9a-fA-F]{6}$/;
 export function safeHex(input:unknown,fallback:string):string{
   return typeof input==="string"&&COLOR.test(input)?input.toUpperCase():fallback;
