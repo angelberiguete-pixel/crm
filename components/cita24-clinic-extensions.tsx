@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 type Config={
  tenant_id:string;slug:string;clinic_name:string;services:string[];
  enabled:boolean;ai_enabled:boolean;whatsapp_reminders_enabled:boolean;
+ privacy_url:string|null;reminder_template_name:string|null;reminder_template_language:string;
 };
 type VisitRequest={
  id:string;full_name:string;phone:string;email:string|null;
@@ -42,7 +43,7 @@ export default function Cita24ClinicExtensions({
   void (async()=>{
    const [c,r]=await Promise.all([
     supabase.from("cita24_portal_configs")
-      .select("tenant_id,slug,clinic_name,services,enabled,ai_enabled,whatsapp_reminders_enabled")
+      .select("tenant_id,slug,clinic_name,services,enabled,ai_enabled,whatsapp_reminders_enabled,privacy_url,reminder_template_name,reminder_template_language")
       .eq("tenant_id",tenantId).maybeSingle(),
     supabase.from("cita24_visit_requests")
       .select("id,full_name,phone,email,service,preferred_day,preferred_window,status,whatsapp_opt_in,created_at")
@@ -53,7 +54,9 @@ export default function Cita24ClinicExtensions({
    const cfg=(c.data??null) as Config|null;
    setConfig(cfg);setRequests((r.data??[]) as VisitRequest[]);
    if(cfg){setSlug(cfg.slug);setClinicName(cfg.clinic_name);
-    setServicesText(cfg.services.join("\n"));setPortalEnabled(cfg.enabled);setAiEnabled(cfg.ai_enabled);}
+    setServicesText(cfg.services.join("\n"));setPortalEnabled(cfg.enabled);setAiEnabled(cfg.ai_enabled);
+    setPrivacyUrl(cfg.privacy_url??"");setRemindersEnabled(cfg.whatsapp_reminders_enabled);
+    setTemplateName(cfg.reminder_template_name??"");}
    if(canConfigure){
     const result=await supabase.rpc("tenant_ycloud_connection_status",{p_tenant_id:tenantId});
     if(alive&&result.data&&!result.error)setWhatsApp(result.data as WhatsAppState);
@@ -67,14 +70,19 @@ export default function Cita24ClinicExtensions({
   const services=servicesText.split("\n").map(x=>x.trim()).filter(Boolean);
   if(!/^[a-z0-9][a-z0-9-]{2,55}$/.test(slug)||
      clinicName.trim().length<3||clinicName.trim().length>100||
-     services.length<1||services.length>12||services.some(x=>x.length<2||x.length>80||/[<>]/.test(x))){
+     services.length<1||services.length>12||services.some(x=>x.length<2||x.length>80||/[<>]/.test(x))||
+     (portalEnabled&&!/^https:\/\/[^\s<>]{6,300}$/.test(privacyUrl.trim()))||
+     (templateName!==""&&!/^[a-z0-9_]{1,120}$/.test(templateName))){
     setNotice("Valida identificador, nombre de la clínica y entre 1 y 12 servicios administrativos.");return;
   }
   setBusy(true);setNotice("");
   try{
    const values={
     tenant_id:tenantId,slug,clinic_name:clinicName.trim(),services,
-    enabled:portalEnabled,ai_enabled:aiEnabled,whatsapp_reminders_enabled:config?.whatsapp_reminders_enabled??false,
+    enabled:portalEnabled,ai_enabled:aiEnabled,
+    privacy_url:privacyUrl.trim()||null,reminder_template_name:templateName.trim()||null,
+    reminder_template_language:"es",
+    whatsapp_reminders_enabled:remindersEnabled&&Boolean(templateName)&&whatsApp?.provider_ready===true,
     updated_at:new Date().toISOString(),
    };
    const result=config
@@ -195,12 +203,25 @@ export default function Cita24ClinicExtensions({
        value={clinicName} onChange={e=>setClinicName(e.target.value)}/></label>
     <label>Opciones de consulta, una por línea<textarea style={{width:"100%",minHeight:90,padding:10}}
        value={servicesText} onChange={e=>setServicesText(e.target.value)}/></label>
+    <label>Aviso público de privacidad de la clínica (HTTPS)<input type="url" style={field}
+       value={privacyUrl} onChange={e=>setPrivacyUrl(e.target.value)} placeholder="https://clinicadental.do/privacidad"
+       required={portalEnabled}/></label>
     <label><input type="checkbox" checked={portalEnabled} onChange={e=>setPortalEnabled(e.target.checked)}/>
       Habilitar portal de solicitudes (requiere verificación antiabuso configurada en servidor).</label>
     <label><input type="checkbox" checked={aiEnabled} onChange={e=>setAiEnabled(e.target.checked)}/>
       Permitir pruebas de borradores IA (requiere proveedor y límite de gasto configurados).</label>
+    <label>Plantilla de recordatorio aprobada en Meta/YCloud (sin variables)<input
+       style={field} value={templateName} onChange={e=>setTemplateName(e.target.value)}
+       placeholder="cita_recordatorio" pattern="[a-z0-9_]+" /></label>
+    <label><input type="checkbox" checked={remindersEnabled}
+       disabled={!templateName||whatsApp?.provider_ready!==true}
+       onChange={e=>setRemindersEnabled(e.target.checked)}/>
+       Habilitar cola de recordatorios de WhatsApp, solo con opt-in y cuenta verificada.
+    </label>
+    <p className="muted">La habilitación no envía mensajes por sí sola: el servicio de despacho,
+      la plantilla verificada y la programación del envío se activan aparte.</p>
     <button className="button primary" type="submit" disabled={busy}>Guardar configuración</button>
-    {config&&<div className="muted">Ruta pública prevista: <code>/cita24/{config.slug}</code> ·
+    {config&&<div className="muted">Ruta pública: <Link href={"/cita24/"+config.slug} target="_blank">Abrir portal</Link> ·
       El paciente no reserva hasta que recepción confirme personalmente.</div>}
   </form>}
  </div>;
