@@ -32,9 +32,9 @@ export default function FamilyPowerRegistration(){
       if(result.error){
         setError("No pudimos registrar la solicitud. Verifica los datos o utiliza otro correo.");return;
       }
-      // Database trigger queues an access request; neither signup nor metadata confers a tenant role.
+      // Access approval remains separate. Payment may be skipped without granting a tenant role.
       setDone(true);setPassword("");
-      if(result.data.session)window.location.assign("/family-power/login");
+      window.location.assign("/family-power/pagos");
     }catch{setError("No se pudo completar el registro. Inténtalo nuevamente.");}
     finally{setBusy(false);}
   }
@@ -59,7 +59,7 @@ export default function FamilyPowerRegistration(){
         {done?<div role="status">
           <h2>Solicitud recibida</h2>
           <p>Si se requiere confirmar tu correo, revisa tu bandeja de entrada. Tu acceso a Family Power permanecerá pendiente hasta que la administración central lo apruebe.</p>
-          <Link className={styles.submit} href="/family-power/login">Ir a iniciar sesión</Link>
+          <Link className={styles.submit} href="/family-power/pagos">Continuar al paso de pago (opcional)</Link>
         </div>:<>
           <h2>Crea tu cuenta</h2>
           <p>Usarás este correo y esta contraseña para entrar cada vez que tu acceso esté autorizado.</p>
