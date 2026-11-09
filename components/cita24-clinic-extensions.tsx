@@ -14,6 +14,7 @@ type VisitRequest={
  status:"pending"|"contacted"|"scheduled"|"declined";
  whatsapp_opt_in:boolean;created_at:string;
 };
+type ReminderJob={id:string;status:string;due_at:string;provider_error:string|null};
 type WhatsAppState={provider_ready?:boolean;outbound_send_tested?:boolean;routes?:Array<{is_enabled?:boolean;channel_status?:string;verified_at?:string|null}>};
 const windows:Record<string,string>={morning:"Mañana",afternoon:"Tarde",evening:"Noche"};
 const safeMessage=(err:unknown)=>err instanceof Error?err.message:"Operación no disponible.";
@@ -24,6 +25,7 @@ export default function Cita24ClinicExtensions({
  const [config,setConfig]=useState<Config|null>(null);
  const [requests,setRequests]=useState<VisitRequest[]>([]);
  const [whatsApp,setWhatsApp]=useState<WhatsAppState|null>(null);
+ const [reminderJobs,setReminderJobs]=useState<ReminderJob[]>([]);
  const [fetching,setFetching]=useState(true);
  const [busy,setBusy]=useState(false);
  const [notice,setNotice]=useState("");
@@ -39,20 +41,23 @@ export default function Cita24ClinicExtensions({
  const refresh=useCallback(()=>setReload(v=>v+1),[]);
  useEffect(()=>{
   let alive=true;
-  setFetching(true);setConfig(null);setRequests([]);setWhatsApp(null);
+  setFetching(true);setConfig(null);setRequests([]);setWhatsApp(null);setReminderJobs([]);
   void (async()=>{
-   const [c,r]=await Promise.all([
+   const [c,r,j]=await Promise.all([
     supabase.from("cita24_portal_configs")
       .select("tenant_id,slug,clinic_name,services,enabled,ai_enabled,whatsapp_reminders_enabled,privacy_url,reminder_template_name,reminder_template_language")
       .eq("tenant_id",tenantId).maybeSingle(),
     supabase.from("cita24_visit_requests")
       .select("id,full_name,phone,email,service,preferred_day,preferred_window,status,whatsapp_opt_in,created_at")
       .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(100),
+    supabase.from("cita24_reminder_outbox").select("id,status,due_at,provider_error")
+      .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(100),
    ]);
    if(!alive)return;
-   if(c.error||r.error)throw c.error??r.error;
+   if(c.error||r.error||j.error)throw c.error??r.error??j.error;
    const cfg=(c.data??null) as Config|null;
    setConfig(cfg);setRequests((r.data??[]) as VisitRequest[]);
+   setReminderJobs((j.data??[]) as ReminderJob[]);
    if(cfg){setSlug(cfg.slug);setClinicName(cfg.clinic_name);
     setServicesText(cfg.services.join("\n"));setPortalEnabled(cfg.enabled);setAiEnabled(cfg.ai_enabled);
     setPrivacyUrl(cfg.privacy_url??"");setRemindersEnabled(cfg.whatsapp_reminders_enabled);
@@ -179,6 +184,7 @@ export default function Cita24ClinicExtensions({
    <h2>WhatsApp oficial de la clínica</h2>
    <p>{whatsApp?.provider_ready===true?"Ruta YCloud registrada y habilitada.":"No se ha confirmado una ruta YCloud habilitada para esta clínica."}</p>
    <p className="muted">Las solicitudes y citas no disparan mensajes sin canal empresarial verificado, consentimiento, plantilla aprobada y autorización de envío. El envío manual existente sigue separado.</p>
+   <div className="muted">Recordatorios: {reminderJobs.filter(x=>x.status==="queued").length} en cola, {reminderJobs.filter(x=>x.status==="submitted").length} aceptados por proveedor, {reminderJobs.filter(x=>["failed","uncertain"].includes(x.status)).length} requieren revisión. Aceptado por proveedor no significa entregado.</div>
    <Link className="button" href="/crm/channels">Configurar canales en Empresia</Link>
   </section>
   <section className="card">
