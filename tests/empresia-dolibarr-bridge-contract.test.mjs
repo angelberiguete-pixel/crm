@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const bridge=read("supabase/functions/empresia-dolibarr/index.ts");
-const protocol=read("supabase/functions/_shared/dolibarr-protocol.ts");
+const protocol=read("supabase/functions/empresia-dolibarr/dolibarr-protocol.ts");
 const panel=read("components/empresia-erp-overview.tsx");
 const migration=read("supabase/migrations/20261109112351_empresia_dolibarr_erp_provider_readonly_v1.sql");
 
