@@ -130,6 +130,96 @@ async function verifyPaypalWebhook(event: unknown, headers: Headers, token: stri
   return (await response.json()).verification_status === "SUCCESS";
 }
 
+const isPaypalSubscriptionId = (v:unknown):v is string =>
+  typeof v==="string" && /^I-[A-Z0-9]{6,100}$/.test(v);
+const safeEventId = (v:unknown):v is string =>
+  typeof v==="string" && v.length>=5 && v.length<=190;
+const safeObject = (v:unknown):Record<string,unknown> =>
+  v!==null && typeof v==="object" && !Array.isArray(v) ? v as Record<string,unknown> : {};
+
+async function paypalSubscription(id:string,token:string){
+  const r=await fetch(paypalApi()+"/v1/billing/subscriptions/"+encodeURIComponent(id),{
+    headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+    signal:AbortSignal.timeout(12000)
+  });
+  if(!r.ok)throw Error("paypal_subscription_lookup_failed");
+  const body=await r.json();
+  if(body.id!==id)throw Error("paypal_subscription_id_mismatch");
+  return body;
+}
+
+async function subscriptionEvent(event:Record<string,unknown>,token:string){
+  const name=event.event_type;
+  const eventId=event.id;
+  const resource=safeObject(event.resource);
+  const subscriptionId=resource.id;
+  const accepted=[
+    "BILLING.SUBSCRIPTION.ACTIVATED","BILLING.SUBSCRIPTION.CANCELLED",
+    "BILLING.SUBSCRIPTION.EXPIRED","BILLING.SUBSCRIPTION.SUSPENDED",
+    "BILLING.SUBSCRIPTION.PAYMENT.FAILED"
+  ];
+  if(!accepted.includes(String(name))||!safeEventId(eventId)||!isPaypalSubscriptionId(subscriptionId))
+    return {status:"ignored"};
+  const pp=await paypalSubscription(subscriptionId,token);
+  const expected:Record<string,string>={
+    "BILLING.SUBSCRIPTION.ACTIVATED":"ACTIVE",
+    "BILLING.SUBSCRIPTION.CANCELLED":"CANCELLED",
+    "BILLING.SUBSCRIPTION.EXPIRED":"EXPIRED",
+    "BILLING.SUBSCRIPTION.SUSPENDED":"SUSPENDED"
+  };
+  if(expected[String(name)] && pp.status!==expected[String(name)])
+    return {status:"stale_or_unverified"};
+  const {data,error}=await admin.rpc("crm_record_verified_billing_event",{
+    p_event_id:eventId,
+    p_event_type:name,
+    p_provider_subscription_id:subscriptionId,
+    p_occurred_at:typeof event.create_time==="string" ? event.create_time:null
+  });
+  if(error)throw Error("subscription_event_storage_failed");
+  return data;
+}
+
+async function subscriptionSale(event:Record<string,unknown>,token:string){
+  const resource=safeObject(event.resource),eventId=event.id,saleId=resource.id;
+  const subscriptionId=resource.billing_agreement_id;
+  if(!safeEventId(eventId)||typeof saleId!=="string"||saleId.length<5
+     ||!isPaypalSubscriptionId(subscriptionId))
+    return {status:"ignored"};
+  const saleResponse=await fetch(paypalApi()+"/v1/payments/sale/"+encodeURIComponent(saleId),{
+    headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+    signal:AbortSignal.timeout(12000)
+  });
+  if(!saleResponse.ok)throw Error("paypal_sale_lookup_failed");
+  const sale=await saleResponse.json();
+  const amount=safeObject(sale.amount);
+  const centsValue=cents(amount.total);
+  if(sale.id!==saleId || sale.billing_agreement_id!==subscriptionId
+     ||String(sale.state??"").toLowerCase()!=="completed"
+     ||amount.currency!=="USD"||!Number.isSafeInteger(centsValue)||centsValue<=0)
+    throw Error("paypal_sale_invalid");
+  const pp=await paypalSubscription(subscriptionId,token);
+  if(pp.status!=="ACTIVE")return {status:"manual_review"};
+  // Reconcile from PayPal itself even when the activation event arrived late.
+  const {error:activationError}=await admin.rpc("crm_record_verified_billing_event",{
+    p_event_id:"verified-"+subscriptionId+"-ACTIVE",
+    p_event_type:"BILLING.SUBSCRIPTION.ACTIVATED",
+    p_provider_subscription_id:subscriptionId
+  });
+  if(activationError)throw Error("subscription_activation_storage_failed");
+  const next=safeObject(pp.billing_info).next_billing_time;
+  const {data,error}=await admin.rpc("crm_record_verified_subscription_sale",{
+    p_event_id:eventId,
+    p_sale_id:saleId,
+    p_provider_subscription_id:subscriptionId,
+    p_amount_cents:centsValue,
+    p_currency:"USD",
+    p_payment_time:typeof sale.update_time==="string"?sale.update_time:null,
+    p_next_billing_time:typeof next==="string"?next:null
+  });
+  if(error)throw Error("subscription_sale_storage_failed");
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -150,12 +240,21 @@ Deno.serve(async (req: Request) => {
       const token = await paypalToken();
       if (!await verifyPaypalWebhook(payload, req.headers, token))
         return json({ error: "invalid_signature" }, 401);
-      if (payload.event_type !== "INVOICING.INVOICE.PAID") return json({ ok: true, ignored: true });
-      const resource = payload.resource as Record<string, unknown> | undefined;
-      const invoiceId = resource?.id;
-      if (!isPaypalInvoiceId(invoiceId)) return json({ ok: true, ignored: true });
-      const result = await reconcile(invoiceId, token);
-      return json({ ok: true, status: result?.status ?? "unknown" });
+      if (payload.event_type === "INVOICING.INVOICE.PAID") {
+        const invoiceId = safeObject(payload.resource).id;
+        if (!isPaypalInvoiceId(invoiceId)) return json({ ok: true, ignored: true });
+        const reconciled = await reconcile(invoiceId, token);
+        return json({ ok: true, status: reconciled?.status ?? "unknown" });
+      }
+      if (payload.event_type === "PAYMENT.SALE.COMPLETED") {
+        const settled=await subscriptionSale(payload,token);
+        return json({ ok:true,status:settled?.status??"ignored" });
+      }
+      if (typeof payload.event_type==="string" && payload.event_type.startsWith("BILLING.SUBSCRIPTION.")) {
+        const subscription=await subscriptionEvent(payload,token);
+        return json({ok:true,status:subscription?.status??"ignored"});
+      }
+      return json({ok:true,ignored:true});
     }
 
     // Optional user-driven reconciliation if a PayPal event is delayed.
