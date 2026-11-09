@@ -86,6 +86,8 @@ jobs:
         run: node --test tests/family-power-behavior-analytics.test.mjs
       - name: Cita-24 clinic workflow, Dominican timezone and tenant contract tests
         run: node --experimental-strip-types --test tests/cita24-clinic-contract.test.mjs
+      - name: Cita-24 patient portal, AI and guarded WhatsApp contracts
+        run: node --test tests/cita24-portal-ai-whatsapp-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Production build
