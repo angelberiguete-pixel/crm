@@ -4,15 +4,16 @@ import {readFileSync} from "node:fs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("Look landing CRM links never enter the currently selected client",()=>{
+test("Empresia landing CRM links never enter the currently selected client",()=>{
   const sales=read("app/aurevector/sales-page.tsx");
   assert.equal((sales.match(/href="\/acceso-crm"/g)||[]).length,2,
-    "both primary and footer Look CRM links use the owner-aware entry");
+    "both primary and footer Empresia CRM links use the owner-aware entry");
   assert.doesNotMatch(sales,/href="\/crm"/);
-  assert.match(read("app/look-social-media/page.tsx"),/AurevectorSalesPage/);
+  assert.match(read("app/empresia/page.tsx"),/AurevectorSalesPage/);
+  assert.match(read("app/look-social-media/page.tsx"),/redirect\("\/empresia"\)/);
 });
 
-test("Look entry checks authenticated platform role and never sets the active tenant",()=>{
+test("Empresia entry checks authenticated platform role and never sets the active tenant",()=>{
   const entry=read("app/acceso-crm/page.tsx");
   assert.match(entry,/supabase\.auth\.getSession\(\)/);
   assert.match(entry,/supabase\.rpc\("platform_current_access"\)/);
@@ -22,18 +23,18 @@ test("Look entry checks authenticated platform role and never sets the active te
   assert.doesNotMatch(entry,/set_active_tenant|platform_join_tenant_as_admin|supabase\.auth\.signOut/);
 });
 
-test("Look login sends platform administrators to their company portfolio",()=>{
+test("Empresia login sends platform administrators to their company portfolio",()=>{
   const login=read("app/login/page.tsx");
   assert.match(login,/value\.is_platform_admin \? "\/mis-empresas" : "\/crm"/);
   assert.doesNotMatch(login,/value\.is_platform_admin \? "\/platform-admin"/);
 });
 
-test("portfolio offers Look first and client entry only after explicit owner selection",()=>{
+test("portfolio offers Empresia first and client entry only after explicit owner selection",()=>{
   const panel=read("components/platform-company-portfolio.tsx");
   assert.match(panel,/Number\(b\.tenant_slug==="eurevector"\)-Number\(a\.tenant_slug==="eurevector"\)/);
   assert.match(panel,/platform_join_tenant_as_admin/);
   assert.match(panel,/window\.location\.assign\("\/crm"\)/);
-  assert.match(panel,/Sitio de Look Social Media/);
+  assert.match(panel,/Sitio de Empresia/);
   assert.doesNotMatch(panel,/href="\/crm">Volver al CRM/);
 });
 
