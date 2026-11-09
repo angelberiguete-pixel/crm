@@ -220,6 +220,108 @@ async function subscriptionSale(event:Record<string,unknown>,token:string){
   return data;
 }
 
+// Empresia commerce: all webhook inputs are rechecked using PayPal's API.
+async function empresiaCapture(event:Record<string,unknown>,token:string) {
+  const resource=safeObject(event.resource);
+  const related=safeObject(safeObject(resource.supplementary_data).related_ids);
+  const providerOrder=related.order_id;
+  const captureId=resource.id;
+  if(typeof providerOrder!=="string"||typeof captureId!=="string")return {status:"ignored"};
+  const {data:tracked}=await admin.from("empresia_checkout_orders")
+    .select("id,amount_cents,paypal_order_id")
+    .eq("paypal_order_id",providerOrder).eq("kind","one_time").maybeSingle();
+  if(!tracked)return {status:"not_tracked"};
+  const response=await fetch(paypalApi()+"/v2/checkout/orders/"+encodeURIComponent(providerOrder),{
+    headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+    signal:AbortSignal.timeout(12000)
+  });
+  if(!response.ok)throw Error("empresia_order_lookup_failed");
+  const order=await response.json();
+  const unit=order.purchase_units?.[0];
+  const matching=unit?.payments?.captures?.find((p:{id:string;status:string})=>p.id===captureId&&p.status==="COMPLETED");
+  const amount=cents(unit?.amount?.value);
+  if(order.id!==providerOrder||order.status!=="COMPLETED"
+    ||unit?.reference_id!==tracked.id||unit?.amount?.currency_code!=="USD"
+    ||amount!==tracked.amount_cents||matching?.amount?.currency_code!=="USD"
+    ||cents(matching?.amount?.value)!==tracked.amount_cents){
+    throw Error("empresia_order_mismatch");
+  }
+  const {data,error}=await admin.rpc("empresia_confirm_checkout_capture",{
+    p_order_id:tracked.id,p_paypal_order_id:providerOrder,
+    p_capture_id:captureId,p_cents:tracked.amount_cents
+  });
+  if(error)throw Error("empresia_capture_storage_failed");
+  return data;
+}
+async function empresiaSubscriptionEvent(event:Record<string,unknown>,token:string){
+  const subscriptionId=safeObject(event.resource).id;
+  if(!isPaypalSubscriptionId(subscriptionId))return {status:"ignored"};
+  const {data:tracked}=await admin.from("empresia_checkout_orders")
+    .select("id,offer_id,seller_tenant_id").eq("paypal_subscription_id",subscriptionId)
+    .eq("kind","monthly").maybeSingle();
+  if(!tracked)return {status:"not_tracked"};
+  const paypalData=await paypalSubscription(subscriptionId,token);
+  const {data:offer}=await admin.from("empresia_offers")
+    .select("paypal_plan_id").eq("id",tracked.offer_id).single();
+  if(paypalData.custom_id!==tracked.id||paypalData.plan_id!==offer?.paypal_plan_id)
+    throw Error("empresia_subscription_mismatch");
+  if(event.event_type==="BILLING.SUBSCRIPTION.PAYMENT.FAILED"){
+    const id=event.id;
+    if(typeof id==="string"&&id.length>5){
+      const {error}=await admin.from("billing_provider_events").upsert({
+        tenant_id:tracked.seller_tenant_id,provider_event_id:id,
+        provider_subscription_id:subscriptionId,
+        event_type:"BILLING.SUBSCRIPTION.PAYMENT.FAILED",
+        provider:"paypal",occurred_at:typeof event.create_time==="string"?event.create_time:null
+      },{onConflict:"provider_event_id",ignoreDuplicates:true});
+      if(error)throw Error("empresia_failure_event_storage_failed");
+    }
+    return {status:"payment_failed_logged"};
+  }
+  if(!["ACTIVE","CANCELLED","SUSPENDED","EXPIRED","APPROVAL_PENDING"].includes(paypalData.status))
+    return {status:"manual_review"};
+  const {data,error}=await admin.rpc("empresia_confirm_subscription_state",{
+    p_subscription_id:subscriptionId,p_paypal_state:paypalData.status
+  });
+  if(error)throw Error("empresia_subscription_state_failed");
+  return data;
+}
+async function empresiaRecurringSale(event:Record<string,unknown>,token:string){
+  const resource=safeObject(event.resource),saleId=resource.id,subscriptionId=resource.billing_agreement_id;
+  if(typeof saleId!=="string"||!isPaypalSubscriptionId(subscriptionId))
+    return {status:"ignored"};
+  const {data:tracked}=await admin.from("empresia_checkout_orders")
+    .select("id,offer_id,amount_cents").eq("paypal_subscription_id",subscriptionId)
+    .eq("kind","monthly").maybeSingle();
+  if(!tracked)return {status:"not_tracked"};
+  const [saleResponse,pp]=await Promise.all([
+    fetch(paypalApi()+"/v1/payments/sale/"+encodeURIComponent(saleId),{
+      headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+      signal:AbortSignal.timeout(12000)
+    }),
+    paypalSubscription(subscriptionId,token)
+  ]);
+  if(!saleResponse.ok)throw Error("empresia_sale_lookup_failed");
+  const sale=await saleResponse.json();
+  const amount=safeObject(sale.amount);
+  const {data:offer}=await admin.from("empresia_offers").select("paypal_plan_id")
+    .eq("id",tracked.offer_id).single();
+  if(sale.id!==saleId||sale.billing_agreement_id!==subscriptionId
+    ||String(sale.state).toLowerCase()!=="completed"
+    ||amount.currency!=="USD"||cents(amount.total)!==tracked.amount_cents
+    ||pp.custom_id!==tracked.id||pp.plan_id!==offer?.paypal_plan_id
+    ||pp.status!=="ACTIVE")throw Error("empresia_sale_mismatch");
+  const {error:stateError}=await admin.rpc("empresia_confirm_subscription_state",{
+    p_subscription_id:subscriptionId,p_paypal_state:"ACTIVE"
+  });
+  if(stateError)throw Error("empresia_subscription_state_failed");
+  const {data,error}=await admin.rpc("empresia_confirm_subscription_sale",{
+    p_subscription_id:subscriptionId,p_sale_id:saleId,p_cents:tracked.amount_cents
+  });
+  if(error)throw Error("empresia_sale_storage_failed");
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -246,13 +348,19 @@ Deno.serve(async (req: Request) => {
         const reconciled = await reconcile(invoiceId, token);
         return json({ ok: true, status: reconciled?.status ?? "unknown" });
       }
+      if (payload.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+        const result=await empresiaCapture(payload,token);
+        return json({ok:true,status:result?.status??"not_tracked"});
+      }
       if (payload.event_type === "PAYMENT.SALE.COMPLETED") {
-        const settled=await subscriptionSale(payload,token);
-        return json({ ok:true,status:settled?.status??"ignored" });
+        const family=await subscriptionSale(payload,token);
+        const shared=await empresiaRecurringSale(payload,token);
+        return json({ok:true,family_status:family?.status??"not_tracked",empresia_status:shared?.status??"not_tracked"});
       }
       if (typeof payload.event_type==="string" && payload.event_type.startsWith("BILLING.SUBSCRIPTION.")) {
-        const subscription=await subscriptionEvent(payload,token);
-        return json({ok:true,status:subscription?.status??"ignored"});
+        const family=await subscriptionEvent(payload,token);
+        const shared=await empresiaSubscriptionEvent(payload,token);
+        return json({ok:true,family_status:family?.status??"not_tracked",empresia_status:shared?.status??"not_tracked"});
       }
       return json({ok:true,ignored:true});
     }
