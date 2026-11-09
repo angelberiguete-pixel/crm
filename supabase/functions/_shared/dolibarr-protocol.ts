@@ -12,7 +12,7 @@ export function isUuid(value: unknown): value is string {
 }
 
 export function dolibarrBaseUrl(raw: string): string | null {
-  if (raw.length > 500 || !raw) return null;
+  if (raw.length > 500 || !raw || raw.includes("..") || raw.includes("%")) return null;
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" || url.username || url.password || url.search ||
