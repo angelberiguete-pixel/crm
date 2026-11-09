@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import Cita24ClinicExtensions from "@/components/cita24-clinic-extensions";
 import { CITA24_TIMEZONE, normalizeContactPhone, parseClinicLocalDateTime } from "@/lib/cita24-contract";
 
 type Contact = {
@@ -373,7 +374,8 @@ export default function Cita24ClinicWorkspace() {
               <button className="button small" disabled={busy} onClick={() => void completeTask(task)}>Completar</button>
             </div>)}</div>}
       </section>
-      <p className="muted" style={{ marginTop: 16 }}>Piloto administrativo: sin datos médicos, sin diagnóstico automático, sin envíos externos y sin promesa de disponibilidad simultánea multioperador. Las citas y tareas se guardan en las tablas existentes del CRM, con políticas RLS por empresa.</p>
+      <Cita24ClinicExtensions tenantId={tenantId} tenantName={clinicName} tenantSlug={tenant.tenant_slug} role={tenant.membership_role} />
+      <p className="muted" style={{ marginTop: 16 }}>Piloto administrativo: sin datos médicos, sin diagnóstico automático ni envíos externos automáticos hasta verificar integraciones. Las citas y tareas se guardan en las tablas existentes del CRM, con políticas RLS por empresa.</p>
     </main>
   </div>;
 }
