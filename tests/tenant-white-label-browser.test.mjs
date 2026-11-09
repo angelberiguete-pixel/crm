@@ -20,7 +20,7 @@ try{
   const A="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", B="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   let activeId=A;
   const rows=new Map([
-    [A,{tenant_id:A,brand_name:"Empresia",primary_color:"#315bff",secondary_color:"#117D82",accent_color:"#22D3BE",logo_url:null,favicon_url:null}],
+    [A,{tenant_id:A,brand_name:"Empresia",primary_color:"#102938",secondary_color:"#117D82",accent_color:"#22D3BE",logo_url:null,favicon_url:null}],
     [B,{tenant_id:B,brand_name:"Sublimaciones Lazala",primary_color:"#0f766e",secondary_color:"#14532d",accent_color:"#f59e0b",logo_url:null,favicon_url:null}],
   ]);
   const reads=[];
@@ -63,7 +63,7 @@ try{
   await page.getByRole("heading",{name:"Portal de Empresia"}).waitFor();
   assert.ok(await page.getByRole("img",{name:"Empresia"}).isVisible(),"official logo stays on its own tenant");
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"eurevector");
-  assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#102938");
+  assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#315bff");
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0,"other brand must not leak");
   await page.getByLabel("Empresa activa").selectOption(B);
   await page.getByRole("heading",{name:"Portal de Sublimaciones Lazala"}).waitFor();
