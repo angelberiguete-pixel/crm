@@ -36,6 +36,15 @@ test("branding is shown on sign-in, owner control center, member portals and loa
   assert.match(read("app/globals.css"),/\.loading::before/);
 });
 
+test("password recovery follows the active Empresia domain and brand",()=>{
+  const login=read("app/login/page.tsx");
+  const recovery=read("app/reset-password/page.tsx");
+  assert.match(login,/new URL\("\/reset-password", window\.location\.origin\)/);
+  assert.doesNotMatch(login,/crm-revenue-os\.vercel\.app\/reset-password/);
+  assert.match(recovery,/EMPRESIA · ACCESO SEGURO/);
+  assert.doesNotMatch(recovery,/LOOK SOCIAL MEDIA CRM/);
+});
+
 test("owner panel hides only QA/demo by default and can inspect them if explicitly requested",()=>{
   const source=read("components/eurevector-console.tsx");
   assert.match(source,/visibleTenants=showTechnical\?tenants:commercialTenants/);
