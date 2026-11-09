@@ -176,8 +176,9 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const permittedNav=nav.filter(([key])=>{
     const familyKeys=["","contacts","revenue","products","quotations","inbox","tasks","arm","reports","settings","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
-    if(!isFamilyPower&&["arm","tasks","reports","pagos"].includes(key))return false;
-    if(isFamilyPower&&["settings","pagos"].includes(key)&&!["owner","admin"].includes(member.role))return false;
+    if(!isFamilyPower&&["arm","tasks","reports"].includes(key))return false;
+    if(key==="pagos"&& !["owner","admin"].includes(member.role))return false;
+    if(isFamilyPower&&key==="settings"&& !["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
     if(!familyMenuPermissions)return false; // fail closed while waiting
