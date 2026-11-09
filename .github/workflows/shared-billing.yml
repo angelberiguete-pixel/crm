@@ -1,0 +1,41 @@
+name: CRM ARM shared billing validations
+on:
+  push:
+    branches:
+      - 'feat/family-power-billing-post-signup-20261107'
+    paths:
+      - 'components/billing-financial-dashboard.tsx'
+      - 'components/family-power-billing-portal.tsx'
+      - 'components/platform-admin.tsx'
+      - 'components/platform-paypal-subscription-plan.tsx'
+      - 'components/crm-workspace.tsx'
+      - 'components/tenant-permission-gate.tsx'
+      - 'supabase/migrations/20261108090000_shared_billing_finance.sql'
+      - 'supabase/migrations/20261108101500_verified_monthly_paypal_sales.sql'
+      - 'supabase/functions/paypal-subscriptions/**'
+      - 'supabase/functions/paypal-billing/**'
+      - 'tests/shared-billing.test.mjs'
+      - '.github/workflows/shared-billing.yml'
+  pull_request:
+    paths:
+      - 'components/billing-financial-dashboard.tsx'
+      - 'components/family-power-billing-portal.tsx'
+      - 'supabase/migrations/**'
+      - 'supabase/functions/paypal-subscriptions/**'
+      - 'supabase/functions/paypal-billing/**'
+      - 'tests/shared-billing.test.mjs'
+      - '.github/workflows/shared-billing.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/shared-billing.test.mjs tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs
+      - run: npm run build
