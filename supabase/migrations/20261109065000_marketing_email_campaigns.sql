@@ -155,3 +155,6 @@ end;
 $$;
 revoke all on function public.marketing_email_overview(uuid) from public,anon,authenticated;
 grant execute on function public.marketing_email_overview(uuid) to authenticated;
+
+revoke all on function private.crm_email_keep_campaign_identity() from public,anon,authenticated;
+revoke all on function private.crm_email_validate_consent_contact() from public,anon,authenticated;
