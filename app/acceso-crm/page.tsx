@@ -3,7 +3,7 @@
 import {useEffect,useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import BrandLogo from "@/components/brand-logo";
+import Image from "next/image";
 import {supabase} from "@/lib/supabase";
 
 /**
@@ -42,7 +42,7 @@ export default function AccesoCrmPage(){
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <BrandLogo size="login"/>
+      <span className="look-brand-logo look-brand-logo--login"><Image src="/empresia-logo.svg" alt="Empresia" width={220} height={55} priority unoptimized/></span>
       <div className="eyebrow">Empresia · Acceso seguro</div>
       <h1>Entrar al CRM</h1>
       {error?<><p role="alert" className="notice">{error}</p>
