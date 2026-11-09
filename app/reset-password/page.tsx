@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
     finally{setBusy(false);}
   }
   return <main className="auth-shell"><section className="auth-panel">
-    <div className="eyebrow">LOOK SOCIAL MEDIA CRM</div><h1>Crear nueva contraseña</h1>
+    <div className="eyebrow">EMPRESIA · ACCESO SEGURO</div><h1>Crear nueva contraseña</h1>
     <p className="muted">Valida el enlace de recuperación para actualizar tu contraseña y cerrar las sesiones anteriores.</p>
     <form onSubmit={submit} className="stack gap-16">
       {!changed&&<><label>Nueva contraseña<input type="password" minLength={8} value={password} onChange={event=>setPassword(event.target.value)} required autoComplete="new-password" disabled={!ready||busy}/></label>
