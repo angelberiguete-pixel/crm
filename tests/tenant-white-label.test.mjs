@@ -10,7 +10,9 @@ test("Empresia platform identity is preserved, other businesses never inherit it
  const client=resolveTenantBrand(b,{brand_name:"Lazala Studio",primary_color:"#0f766e",secondary_color:"#14532d",accent_color:"#d97706"});
  assert.equal(look.officialLookBrand,true);
  assert.equal(look.name,"Empresia");
- assert.equal(look.primaryColor,"#102938");
+ assert.equal(look.primaryColor,"#315BFF");
+ assert.equal(look.secondaryColor,"#101828");
+ assert.equal(look.accentColor,"#35D9B7");
  assert.equal(client.officialLookBrand,false);
  assert.equal(client.name,"Lazala Studio");
  assert.equal(client.primaryColor,"#0F766E");
