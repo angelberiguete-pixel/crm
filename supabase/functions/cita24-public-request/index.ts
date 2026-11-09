@@ -74,7 +74,7 @@ Deno.serve(async request=>{
     :payload.clinic;
   if(typeof slug!=="string"||!domain.test(slug))return error(origin,"unknown_clinic",404);
   const {data:clinic,error:configError}=await db.from("cita24_portal_configs")
-    .select("tenant_id,clinic_name,services,enabled")
+    .select("tenant_id,clinic_name,services,enabled,privacy_url")
     .eq("slug",slug).eq("enabled",true).maybeSingle();
   if(configError)return error(origin,"configuration_unavailable",503);
   if(!clinic)return error(origin,"unknown_clinic",404);
@@ -84,7 +84,7 @@ Deno.serve(async request=>{
     return error(origin,"clinic_unavailable",404);
   if(request.method==="GET")
     return respond(origin,{ok:true,clinic_name:clinic.clinic_name,
-      services:clinic.services,timezone:"America/Santo_Domingo",
+      services:clinic.services,privacy_url:clinic.privacy_url,timezone:"America/Santo_Domingo",
       note:"Solicitudes sujetas a confirmación humana; no son citas reservadas."});
 
   const name=typeof payload.name==="string"?payload.name.trim():"";
