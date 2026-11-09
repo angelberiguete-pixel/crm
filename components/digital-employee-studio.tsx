@@ -11,6 +11,11 @@ import DigitalEmployeeChannelBinding from "@/components/digital-employee-channel
 import { EMPLOYEE_ROLES, normalizeEmployeeKnowledge, validateEmployeeKnowledge,
   type EmployeeRole, type EmployeeKnowledge } from "@/lib/digital-employee";
 
+type AiReadiness = {
+  ok:true;agent_safe_draft:boolean;verified_knowledge_present:boolean;
+  supabase_edge_openai_key_present:boolean;model_configured:boolean;
+  budget_configured:boolean;ready_for_trial:boolean;note:string;
+};
 type AgentRow = {
   id:string; name:string; purpose:string|null; status:string;
   approval_mode:string; settings:Record<string,unknown>; created_at:string;
@@ -43,11 +48,13 @@ export default function DigitalEmployeeStudio(){
   const [busy,setBusy]=useState(false),[testing,setTesting]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(""),[notice,setNotice]=useState("");
   const [reload,setReload]=useState(0);
+  const [readiness,setReadiness]=useState<AiReadiness|null>(null);
+  const [checkingReadiness,setCheckingReadiness]=useState(false);
   const active=useMemo(()=>agents.find(x=>x.id===selectedId)??null,[selectedId,agents]);
 
   useEffect(()=>{
     setAgents([]);setSelectedId(null);setRole("recepcionista");setKnowledge(fresh());
-    setName("Recepcionista IA");setDraft("");setInsight(null);setError("");setNotice("");
+    setName("Recepcionista IA");setDraft("");setInsight(null);setReadiness(null);setError("");setNotice("");
   },[tenantId]);
   useEffect(()=>{
     if(!tenantId||!permitted){setLoading(false);return;}
@@ -74,11 +81,11 @@ export default function DigitalEmployeeStudio(){
     setRole(kind==="vendedor"||kind==="secretaria"||kind==="cobros"?kind:"recepcionista");
     setName(agent.name);
     setKnowledge(normalizeEmployeeKnowledge(settings.knowledge));
-    setDraft("");setInsight(null);setError("");setNotice("");
+    setDraft("");setInsight(null);setReadiness(null);setError("");setNotice("");
   }
   function newAgent(){
     setSelectedId(null);setName("Recepcionista IA");setRole("recepcionista");
-    setKnowledge(fresh());setDraft("");setInsight(null);setError("");setNotice("");
+    setKnowledge(fresh());setDraft("");setInsight(null);setReadiness(null);setError("");setNotice("");
   }
   const updateKnowledge=(key:keyof EmployeeKnowledge,value:string)=>
     setKnowledge(prev=>({...prev,[key]:value}));
@@ -108,7 +115,7 @@ export default function DigitalEmployeeStudio(){
       if(result.error)throw result.error;
       if(currentTenant.current!==originalTenant)return;
       if(!result.data?.id)throw new Error("No se confirmó el guardado.");
-      setSelectedId(result.data.id);setNotice("Configuración guardada. El empleado sigue en borrador y no envía mensajes.");
+      setSelectedId(result.data.id);setReadiness(null);setNotice("Configuración guardada. El empleado sigue en borrador y no envía mensajes.");
       setReload(v=>v+1);
     }catch(e){if(currentTenant.current===originalTenant)setError("Error al guardar: "+(e instanceof Error?e.message:"Intenta nuevamente."));}
     finally{if(currentTenant.current===originalTenant)setBusy(false);}
@@ -116,6 +123,9 @@ export default function DigitalEmployeeStudio(){
   async function generate(e:FormEvent){
     e.preventDefault();
     if(!tenantId||!permitted||!selectedId||testing)return;
+    if(tenant?.tenant_slug==="family-power"&&!readiness?.ready_for_trial){
+      setError("Comprueba primero la preparación del proveedor OpenAI. La comprobación no consume créditos.");return;
+    }
     const originalTenant=tenantId;
     setTesting(true);setDraft("");setInsight(null);setError("");setNotice("");
     try{
@@ -135,6 +145,23 @@ export default function DigitalEmployeeStudio(){
       setNotice("Borrador generado por IA y registrado para revisión. No se envió ningún mensaje.");
     }catch(e){if(currentTenant.current===originalTenant)setError("No se pudo generar el borrador: "+(e instanceof Error?e.message:"Intenta más tarde."));}
     finally{if(currentTenant.current===originalTenant)setTesting(false);}
+  }
+
+  async function checkAiReadiness(){
+    if(!tenantId||!permitted||!selectedId||checkingReadiness)return;
+    const forTenant=tenantId;
+    setReadiness(null);setCheckingReadiness(true);setError("");
+    try{
+      const response=await supabase.functions.invoke("ai-employee-readiness",{
+        body:{tenant_id:tenantId,agent_id:selectedId}
+      });
+      if(currentTenant.current!==forTenant)return;
+      if(response.error||response.data?.ok!==true)
+        throw new Error(String(response.data?.error??"No se pudo comprobar el servidor."));
+      setReadiness(response.data as AiReadiness);
+    }catch(e){
+      if(currentTenant.current===forTenant)setError("Comprobación del proveedor: "+(e instanceof Error?e.message:"No disponible."));
+    }finally{if(currentTenant.current===forTenant)setCheckingReadiness(false);}
   }
 
   if(!tenant)return <main className="content"><p>Selecciona una empresa antes de configurar empleados digitales.</p></main>;
@@ -202,13 +229,27 @@ export default function DigitalEmployeeStudio(){
         <p className="muted">Primero guarda los servicios reales y verificados del negocio. La cuenta debe ser propietaria o administradora. No introduzcas información personal de clientes.</p>
         {validateEmployeeKnowledge(active.settings?.knowledge)&&
           <div className="notice" role="status">Para habilitar la prueba, completa el nombre de Family Power y los servicios verificados, luego pulsa «Guardar borrador».</div>}
+        <div className="stack gap-12" style={{marginBottom:16}}>
+          <button type="button" className="button" onClick={()=>void checkAiReadiness()} disabled={checkingReadiness||busy}>
+            <ShieldCheck size={16}/> {checkingReadiness?"Verificando configuración…":"Comprobar preparación sin consumo"}
+          </button>
+          {readiness&&<div className="notice" role="status">
+            <strong>{readiness.ready_for_trial?"Preparado para solicitar una prueba supervisada":"Faltan requisitos para el ensayo"}</strong>
+            {!readiness.verified_knowledge_present&&<p>Guarda el nombre del negocio y los servicios reales verificados.</p>}
+            {!readiness.agent_safe_draft&&<p>El agente debe estar en borrador OpenAI, con aprobación humana y sin herramientas.</p>}
+            {!readiness.supabase_edge_openai_key_present&&<p>Falta la clave del proveedor en Supabase Edge Functions → Secrets. La clave de Vercel no se comparte automáticamente.</p>}
+            {!readiness.model_configured&&<p>El modelo configurado no coincide con el modelo aprobado para este piloto.</p>}
+            {!readiness.budget_configured&&<p>Revisa los límites de gasto del piloto en el servidor.</p>}
+            <small>{readiness.note}</small>
+          </div>}
+        </div>
         <form className="stack gap-12" onSubmit={generate}>
           <label>Consulta ficticia de prueba
             <textarea value={sample} minLength={3} maxLength={1200} required rows={3}
               onChange={e=>setSample(e.target.value)}/>
           </label>
           <button type="submit" className="button primary"
-            disabled={testing||busy||!!validateEmployeeKnowledge(active.settings?.knowledge)||sample.trim().length<3}>
+            disabled={testing||busy||!readiness?.ready_for_trial||!!validateEmployeeKnowledge(active.settings?.knowledge)||sample.trim().length<3}>
             <Sparkles size={16}/> {testing?"Consultando OpenAI…":"Generar borrador para aprobación"}
           </button>
         </form>
