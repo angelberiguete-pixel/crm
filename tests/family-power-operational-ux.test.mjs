@@ -10,7 +10,7 @@ test("Family Power sidebar, topbar and mobile menus exclude agency sales center 
  const sales=read("components/crm-sales-360.tsx");
  const contacts=read("components/crm-customers.tsx");
  const menu=read("components/family-power-menu.tsx");
- assert.match(ws,/const familyKeys=\["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics"\]/);
+ assert.match(ws,/const familyKeys=\["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics","pagos"\]/);
  assert.match(ws,/familyEnabledModules\.umami_analytics===true/);
  assert.match(ws,/!isFamilyPower&&<Link className="button" href="\/revenue-command-center"/);
  assert.match(gate,/restrictedFamilySections=\["companies","sales"/);
