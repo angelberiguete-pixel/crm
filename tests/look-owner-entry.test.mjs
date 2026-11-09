@@ -17,16 +17,16 @@ test("Empresia entry checks authenticated platform role and never sets the activ
   const entry=read("app/acceso-crm/page.tsx");
   assert.match(entry,/supabase\.auth\.getSession\(\)/);
   assert.match(entry,/supabase\.rpc\("platform_current_access"\)/);
-  assert.match(entry,/router\.replace\(isPlatformAdmin\?"\/mis-empresas":"\/crm"\)/);
+  assert.match(entry,/router\.replace\(isPlatformAdmin\?"\/platform-admin":"\/crm"\)/);
   assert.match(entry,/router\.replace\("\/login"\)/);
   assert.match(entry,/sessionStorage\.removeItem\("crm:login-intent"\)/);
   assert.doesNotMatch(entry,/set_active_tenant|platform_join_tenant_as_admin|supabase\.auth\.signOut/);
 });
 
-test("Empresia login sends platform administrators to their company portfolio",()=>{
+test("Empresia login sends platform administrators to the principal dashboard",()=>{
   const login=read("app/login/page.tsx");
-  assert.match(login,/value\.is_platform_admin \? "\/mis-empresas" : "\/crm"/);
-  assert.doesNotMatch(login,/value\.is_platform_admin \? "\/platform-admin"/);
+  assert.match(login,/value\.is_platform_admin \? "\/platform-admin" : "\/crm"/);
+  assert.doesNotMatch(login,/value\.is_platform_admin \? "\/mis-empresas"/);
 });
 
 test("portfolio offers Empresia first and client entry only after explicit owner selection",()=>{
