@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { CreditCard, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import BillingFinancialDashboard from "@/components/billing-financial-dashboard";
 
 type Invoice = {
   id:string; provider:string; status:string; currency:string; total_cents:number; amount_due_cents:number;
@@ -19,7 +20,8 @@ const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",curren
 export default function FamilyPowerBillingPortal(){
   const tenant=useActiveTenant();
   const tenantId=tenant?.tenant_id??null;
-  const allowed=tenant?.tenant_slug==="family-power" && ["owner","admin"].includes(tenant.membership_role);
+  const allowed=Boolean(tenant) && ["owner","admin"].includes(tenant?.membership_role??"");
+  const isFamilyPower=tenant?.tenant_slug==="family-power";
   const [invoices,setInvoices]=useState<Invoice[]>([]);
   const [subscription,setSubscription]=useState<Subscription|null>(null);
   const [reports,setReports]=useState<Report[]>([]);
@@ -97,20 +99,21 @@ export default function FamilyPowerBillingPortal(){
       setError("No se pudo contactar al verificador PayPal.");
     }finally{setSyncing(false);}
   }
-  if(!allowed)return <div className="notice" role="alert">Pagos de Family Power: solo propietario o administración autorizada.</div>;
+  if(!allowed)return <div className="notice" role="alert">Facturación: solo propietario o administración autorizada de la empresa.</div>;
   return <div className="content" style={{maxWidth:1000,margin:"0 auto"}}>
-    <header className="topbar"><div><div className="eyebrow">Family Power · Cuenta comercial</div>
+    <header className="topbar"><div><div className="eyebrow">{tenant?.tenant_name??"Tu empresa"} · Cuenta comercial</div>
       <h1>Pagos y suscripción</h1><p className="muted">Consulta tus importes, utiliza PayPal o reporta una transferencia o entrega en efectivo.</p></div>
       <button className="button" type="button" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualizar</button>
     </header>
+    <BillingFinancialDashboard tenantId={tenantId}/>
     {error&&<div className="notice" role="alert">{error}</div>}
     {notice&&<div className="notice" role="status">{notice}</div>}
     {loading?<div className="loading">Consultando facturación…</div>:<>
       <section className="grid two-col">
         <article className="card">
-          <div className="eyebrow">Implementación inicial</div>
-          <h2>{initial?usd(initial.total_cents):"Por sincronizar"}</h2>
-          <p className="muted">{!initial?"La factura todavía no está registrada en el CRM.":initial.amount_due_cents>0?"Saldo pendiente de confirmación: "+usd(initial.amount_due_cents):"Pago inicial confirmado."}</p>
+          <div className="eyebrow">{isFamilyPower?"Implementación inicial":"Facturación de servicios"}</div>
+          <h2>{initial?usd(initial.total_cents):invoices.length?usd(invoices.reduce((sum,i)=>sum+Math.max(0,i.amount_due_cents||0),0)):"Sin facturas registradas"}</h2>
+          <p className="muted">{!initial?"Consulta tus facturas pendientes y los pagos conciliados en este portal.":initial.amount_due_cents>0?"Saldo pendiente de confirmación: "+usd(initial.amount_due_cents):"Pago inicial confirmado."}</p>
           {initial&&<div className="pill">{initial.status==="paid"?"Pagado":initial.status==="open"?"Pendiente":"En revisión"}</div>}
           {initial?.status==="open"&&initial.hosted_invoice_url&&<a className="button primary" style={{display:"flex",marginTop:15}} href={initial.hosted_invoice_url} target="_blank" rel="noopener noreferrer"><CreditCard size={16}/> Pagar factura en PayPal</a>}
           {due?.provider==="paypal"&&<button type="button" className="button" disabled={syncing} style={{display:"flex",marginTop:10}} onClick={()=>void syncPayPal()}>
@@ -118,9 +121,9 @@ export default function FamilyPowerBillingPortal(){
           </button>}
         </article>
         <article className="card">
-          <div className="eyebrow">Plan mensual acordado</div>
-          <h2>US$80.00/mes</h2>
-          <p className="muted">{initial?.status==="paid"?"Mensualidad aplicable después del pago inicial confirmado.":"La mensualidad empieza después de confirmar la implementación inicial, según el acuerdo comercial."}</p>
+          <div className="eyebrow">Plan de suscripción</div>
+          <h2>{isFamilyPower?usd(8000):subscription?.custom_monthly_price_cents?usd(subscription.custom_monthly_price_cents):"Por definir"}/mes</h2>
+          <p className="muted">{isFamilyPower&&initial?.status!=="paid"?"La mensualidad de US$80 empieza después de confirmar la implementación inicial, según el acuerdo comercial.":subscription?.provider_subscription_id?"Suscripción identificada en el proveedor. Verifica su estado en PayPal.":"Aún no hay un mandato de cobro automático aprobado en PayPal."}</p>
           {subscription?.current_period_end&&<div className="muted">Referencia de siguiente período: {new Date(subscription.current_period_end).toLocaleDateString("es-DO")}</div>}
           <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal.</p>
         </article>
