@@ -2,7 +2,7 @@ name: CRM CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, test/cita24-full-suite-20261109]
   pull_request:
     branches: [main]
   workflow_dispatch:
