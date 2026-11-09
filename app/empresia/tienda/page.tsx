@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 
@@ -26,7 +27,7 @@ export default function EmpresiaTienda(){
  },[]);
  return <main className="content" style={{maxWidth:1080,minHeight:"100vh",margin:"0 auto"}}>
   <header className="topbar" style={{alignItems:"center"}}>
-   <div><div className="eyebrow">EMPRESIA · SOFTWARE Y SERVICIOS</div>
+   <div><Link href="/empresia" aria-label="Empresia, inicio"><Image src="/empresia-logo.svg" width={145} height={41} alt="Empresia" unoptimized/></Link><div className="eyebrow">EMPRESIA · SOFTWARE Y SERVICIOS</div>
     <h1>Soluciones para hacer crecer tu negocio</h1>
     <p className="muted">Compra única o suscripción mensual. Todos los precios en dólares estadounidenses.</p>
    </div>
