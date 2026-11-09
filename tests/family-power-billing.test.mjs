@@ -27,9 +27,9 @@ test("only existing PayPal invoice 0002 charges the fixed initial $197",()=>{
 test("billing resides in the authorized CRM portal and cannot grant access",()=>{
  assert.match(router,/section === "pagos"/);
  assert.match(gate,/pagos: "dashboard"/);
- assert.match(gate,/familyOnlySections=.*"pagos"/);
+ assert.doesNotMatch(gate,/familyOnlySections=.*"pagos"/);
  assert.match(gate,/\["settings","pagos"\].includes\(section\)/);
- assert.match(portal,/tenant\?\.tenant_slug==="family-power"/);
+ assert.match(portal,/const isFamilyPower=tenant\?\.tenant_slug==="family-power"/);
  assert.match(portal,/\["owner","admin"\]/);
  assert.match(banner,/\.eq\("status","open"\)/);
 });
@@ -44,7 +44,7 @@ test("reported payments remain pending until platform owner verifies",()=>{
  assert.match(admin,/window.confirm/);
 });
 test("monthly price is USD 80 and only activates after the initial fee is verified",()=>{
- assert.match(portal,/US\$80\.00\/mes/);
+ assert.match(portal,/isFamilyPower\?usd\(8000\)/);
  assert.match(sql,/set custom_monthly_price_cents=8000/);
  assert.match(sql,/v_remaining=0 and v_invoice.metadata->>'billing_stage'='initial'/);
  assert.match(step,/no está activado/);
