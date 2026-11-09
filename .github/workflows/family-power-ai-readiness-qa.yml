@@ -1,0 +1,34 @@
+name: Family Power OpenAI readiness QA
+on:
+  push:
+    branches:
+      - main
+      - feat/family-power-ai-readiness-20261109
+    paths:
+      - "components/digital-employee-studio.tsx"
+      - "supabase/functions/ai-employee-readiness/**"
+      - "tests/family-power-ai-readiness.test.mjs"
+      - "tests/family-power-openai-lab.test.mjs"
+      - ".github/workflows/family-power-ai-readiness-qa.yml"
+  pull_request:
+    paths:
+      - "components/digital-employee-studio.tsx"
+      - "supabase/functions/ai-employee-readiness/**"
+      - "tests/family-power-ai-readiness.test.mjs"
+      - "tests/family-power-openai-lab.test.mjs"
+      - ".github/workflows/family-power-ai-readiness-qa.yml"
+jobs:
+  security-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate nonbillable authenticated readiness and human-review-only trial
+        run: node --experimental-strip-types --test tests/family-power-ai-readiness.test.mjs tests/family-power-openai-lab.test.mjs
