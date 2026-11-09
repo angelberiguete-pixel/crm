@@ -1,0 +1,35 @@
+/* Unified Empresia identity for every /empresia route; no tenant branding leaks. */
+.empresia-brand-scope{
+ color-scheme:light;
+ --brand-ink:#101828;
+ --brand-navy:#101828;
+ --brand-blue:#315bff;
+ --brand-cyan:#35d9b7;
+ --brand-violet:#315bff;
+ --brand-lime:#35d9b7;
+ --brand-white:#fff;
+ --bg:#f7f9fc;
+ --panel:#fff;
+ --panel2:#f4f7fc;
+ --text:#101828;
+ --muted:#64748b;
+ --border:#dde6f2;
+ --accent:#315bff;
+ --accent2:#35d9b7;
+ --violet:#315bff;
+ --lime:#35d9b7;
+ --shadow:0 12px 32px rgba(17,26,51,.07);
+ --brand-gradient:linear-gradient(120deg,#315bff,#2468e6);
+ min-height:100dvh;background:#f7f9fc;color:#101828;
+ font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.empresia-brand-scope :is(a,button,input,select,textarea,summary):focus-visible{
+ outline:3px solid #94b0ff;outline-offset:2px;
+}
+.empresia-brand-scope :is(.button.primary){background:#315bff;color:#fff;border-color:transparent;box-shadow:0 7px 21px rgba(49,91,255,.16)}
+.empresia-brand-scope :is(.button.primary):hover{background:#244bdc}
+.empresia-brand-scope .eyebrow{color:#315bff}
+.empresia-brand-scope :is(.auth-shell,.content){background-color:#f7f9fc}
+@media(prefers-reduced-motion:reduce){
+ .empresia-brand-scope *{scroll-behavior:auto}
+}
