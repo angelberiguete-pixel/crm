@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'feat/family-power-billing-post-signup-20261107'
+      - 'feat/fp-paypal-buyer-approval-20261108'
     paths:
       - 'supabase/functions/paypal-billing/**'
       - 'supabase/functions/paypal-subscriptions/**'
