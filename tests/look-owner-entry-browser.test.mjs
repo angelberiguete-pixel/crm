@@ -44,6 +44,19 @@ async function prepare(role){
   if(name==="user")body=user;
   else if(name==="platform_current_access"){calls.platform++;body={is_platform_admin:role==="owner"};}
   else if(name==="platform_admin_tenants")body=tenants;
+  else if(name==="plans")body=[{id:"starter",code:"starter",name:"Essential",monthly_price_cents:8000,is_active:true}];
+  else if(name==="platform_admin_tenant_snapshot"){
+   const id=request.postDataJSON().p_tenant_id;
+   body={tenant:{id,name:id===look?"Empresia":"Family Power",slug:id===look?"eurevector":"family-power"},
+    settings:{brand_name:id===look?"Empresia":"Family Power",currency:"DOP",timezone:"America/Santo_Domingo",locale:"es-DO"},
+    metrics:{companies:0,contacts:0,open_opportunities:0,won_opportunities:0,won_mrr:0,open_mrr:0,conversations:0,products:0}};
+  }
+  else if(name==="platform_client_readiness"){
+   const id=request.postDataJSON().p_tenant_id;
+   body={tenant_id:id,account_onboarding_status:"in_progress",verified_configuration:0,required_actions:0,
+    manual_checks:1,ready_for_commercial_activation:false,checks:[]};
+  }
+  else if(name==="platform_admin_tenant_roles")body=[{role_key:"viewer",role_name:"Solo lectura"}];
   else if(name==="platform_admin_tenant_analytics"){
    const id=request.postDataJSON().p_tenant_id;
    body={tenant_id:id,calculated_at:new Date().toISOString(),branding:null,
