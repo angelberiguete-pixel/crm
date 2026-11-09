@@ -67,8 +67,8 @@ test("privileged functions live in private schema behind invoker API wrappers",(
   assert.ok(rpcGate.includes("select private."+name+"("));
  }
  assert.match(rpcGate,/language sql security invoker set search_path=''/);
- assert.match(rpcGate,/revoke all on function public\\.crm_arm_execute_intervention\\(uuid,uuid\\) from public,anon,authenticated/);
- assert.match(rpcGate,/grant execute on function public\\.crm_arm_execute_intervention\\(uuid,uuid\\) to authenticated/);
+  assert.ok(rpcGate.includes("revoke all on function public.crm_arm_execute_intervention(uuid,uuid) from public,anon,authenticated"));
+  assert.ok(rpcGate.includes("grant execute on function public.crm_arm_execute_intervention(uuid,uuid) to authenticated"));
 });
 
 test("user UI requires real click for proposal approval execution and measurement",()=>{
