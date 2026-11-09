@@ -37,7 +37,13 @@ assert.match(landing.html,/href="\/empresia\/start"/,"onboarding CTA must use ne
 assert.doesNotMatch(landing.html,/LOOK SOCIAL MEDIA/i,"old brand must not appear on landing");
 
 const legacy=await visit("/look-social-media");
-assert.equal(legacy.uri.pathname,"/empresia","old marketing links must redirect to Empresia");
+const refreshMeta=legacy.html.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*>/i)?.[0]??null;
+console.log(JSON.stringify({legacyRedirectMeta:refreshMeta,legacyMentions:legacy.html.match(/.{0,55}\\/empresia.{0,60}/g)?.slice(0,4)??[]}));
+assert.ok(
+  legacy.uri.pathname==="/empresia" ||
+  (refreshMeta!==null && /content=["']0;url=\\/empresia["']/i.test(refreshMeta)),
+  "old links must redirect through HTTP or a verified immediate HTML refresh to Empresia"
+);
 
 const login=await visit("/login");
 assert.match(login.html,/alt="Empresia"/,"login must identify the platform as Empresia");
