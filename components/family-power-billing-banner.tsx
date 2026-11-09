@@ -7,10 +7,10 @@ import {useActiveTenant} from "@/components/tenant-context";
 import {supabase} from "@/lib/supabase";
 
 type Implementation={
-  status:string;remaining_dop_cents?:number;paid_invoices_awaiting_allocation?:number;
+  status:string;remaining_dop_cents?:number;usd_reference_remaining_cents?:number|null;paid_invoices_awaiting_allocation?:number;
   first_installment?:{status:string;amount_due_cents:number}|null
 };
-const dop=(cents:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP"}).format(cents/100);
+const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(cents/100);
 
 export default function FamilyPowerBillingBanner(){
   const tenant=useActiveTenant();
@@ -33,9 +33,9 @@ export default function FamilyPowerBillingBanner(){
   return <div role="status" className="notice" style={{display:"flex",alignItems:"center",gap:10,justifyContent:"space-between",flexWrap:"wrap",margin:"12px auto",maxWidth:1230}}>
     <span style={{display:"inline-flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
       <AlertCircle size={18} aria-hidden="true"/>
-      <strong>Implementación pendiente: {dop(due)}</strong>
+      <strong>Implementación pendiente: {typeof contract.usd_reference_remaining_cents==="number"?"≈ "+usd(contract.usd_reference_remaining_cents):"Equivalencia en USD pendiente"}</strong>
       {contract.first_installment?.status==="open"&&<span>· Cuota 1 PayPal: US$197</span>}
-      {(contract.paid_invoices_awaiting_allocation??0)>0&&<span>· Abono pagado por aplicar a pesos</span>}
+      {(contract.paid_invoices_awaiting_allocation??0)>0&&<span>· Abono pendiente de conciliación</span>}
     </span>
     <Link href="/crm/pagos" className="button small">Ver cuotas y abonar</Link>
   </div>;

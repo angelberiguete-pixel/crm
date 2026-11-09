@@ -46,7 +46,7 @@ test("reported payments remain pending until platform owner verifies",()=>{
 test("US$80 monthly plan only after full RD$30,000 implementation settlement",()=>{
   const contractSql=get("../supabase/migrations/20261109010000_implementation_contract_dop_installments.sql");
   const paypalApi=get("../supabase/functions/paypal-subscriptions/index.ts");
-  assert.match(step,/RD\$30,000\.00/);
+  assert.match(step,/US\$493\.75/);
   assert.match(step,/Primera cuota/);
   assert.match(portal,/implementationStatus!=="settled"/);
   assert.match(contractSql,/custom_monthly_price_cents=8000/);
