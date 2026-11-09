@@ -1,0 +1,30 @@
+name: Cita-24 Edge verification
+
+on:
+  push:
+    branches: [test/cita24-full-suite-20261109]
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/functions/cita24-*/**"
+      - "supabase/migrations/*cita24*"
+      - "tests/cita24-*"
+      - ".github/workflows/cita24-edge-qa.yml"
+
+jobs:
+  edge-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check patient portal public intake Edge Function
+        run: deno check supabase/functions/cita24-public-request/index.ts
+      - name: Check authenticated AI reception draft Edge Function
+        run: deno check supabase/functions/cita24-reception-draft/index.ts
+      - name: Check private YCloud approved template dispatch Edge Function
+        run: deno check supabase/functions/cita24-reminder-dispatch/index.ts
+      - name: Check static security contracts
+        run: node --test tests/cita24-portal-ai-whatsapp-contract.test.mjs
