@@ -56,7 +56,8 @@ export default function EurevectorConsole(){
    setTenantLoading(false);
    if(err){setNotice(err.message);return;}
    const snap=(s.data??{}) as Snapshot;
-   setSnapshot(snap);setReadiness(readinessResult.data as Readiness);setModules((m.data??[]) as Module[]);setMembers((u.data??[]) as Member[]);setTenantRoles((tenantRoleResult.data??[]) as TenantRole[]);
+   const validatedReadiness=readinessResult.data && typeof readinessResult.data==="object" && !Array.isArray(readinessResult.data) && Array.isArray((readinessResult.data as Readiness).checks) ? readinessResult.data as Readiness : null;
+   setSnapshot(snap);setReadiness(validatedReadiness);setModules((m.data??[]) as Module[]);setMembers((u.data??[]) as Member[]);setTenantRoles((tenantRoleResult.data??[]) as TenantRole[]);
    setBrand(snap.settings?.brand_name??snap.tenant?.name??'');
    setSupport(snap.settings?.support_email??'');
    setColor(snap.settings?.primary_color??'#0f766e');

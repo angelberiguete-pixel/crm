@@ -68,6 +68,8 @@ jobs:
         run: node --test tests/marketing-conversation-events.test.mjs
       - name: Empresia commercial evaluation public landing contracts
         run: node --test tests/empresia-public-acquisition.test.mjs
+      - name: Empresia sales design and PayPal checkout readiness
+        run: node --test tests/empresia-sales-redesign.test.mjs
       - name: Tenant-isolated email campaigns and opt-in safety contracts
         run: node --test tests/crm-email-campaigns.test.mjs
       - name: YCloud signed webhooks, CTWA referrals, reply controls and guarded human sender

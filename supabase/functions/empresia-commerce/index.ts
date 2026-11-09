@@ -3,7 +3,8 @@ import {createClient} from "npm:@supabase/supabase-js@2.116.0";
 const url=Deno.env.get("SUPABASE_URL")??"";
 const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")??"";
 const anonKey=Deno.env.get("SUPABASE_ANON_KEY")??"";
-const origin="https://crm-look.vercel.app";
+// Canonical authorized origin for PayPal checkout returns. Never trust a request Origin header.
+const origin="https://portal-empresia.vercel.app";
 const cors={
  "Access-Control-Allow-Origin":"*",
  "Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type",

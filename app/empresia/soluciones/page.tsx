@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, BarChart3, CheckCircle2, ClipboardList, Clock3, Layers3, Mail, ShieldCheck, Target, Workflow } from "lucide-react";
 import EmpresiaDemoForm from "../empresia-demo-form";
 import styles from "../empresia-landing.module.css";
@@ -29,11 +30,13 @@ const steps = [
 export default function EmpresiaPublicPage() {
   return <main className={styles.page}>
     <header className={styles.header}>
-      <Link href="/empresia" className={styles.brand} aria-label="Empresia, inicio"><span className={styles.brandMark}>E</span> EMPRESIA<span className={styles.brandDot}>.</span></Link>
+      <Link href="/empresia" className={styles.brand} aria-label="Empresia, inicio"><Image src="/empresia-logo.svg" alt="Empresia" width={162} height={47} priority unoptimized/></Link>
       <nav className={styles.nav} aria-label="Navegación principal">
         <a href="#beneficios">Solución</a>
         <a href="#como-funciona">Cómo funciona</a>
         <a href="#oferta">Piloto</a>
+        <Link href="/empresia#planes">Planes oficiales</Link>
+        <Link href="/acceso-crm">Acceso CRM</Link>
         <a href="#evaluacion" className={styles.navAction}>Solicitar evaluación <ArrowRight size={15}/></a>
       </nav>
     </header>

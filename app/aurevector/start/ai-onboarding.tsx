@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import styles from "./start.module.css";
 
 type Business = {
@@ -39,7 +40,7 @@ export function AiOnboarding() {
   if(!hydrated) return <main className={styles.shell}><div className={styles.card}>Preparando tu experiencia…</div></main>;
   return <main className={styles.shell}>
     <section className={styles.card}>
-      <header className={styles.header}><span className={styles.brand}>EMPRESIA</span><span className={styles.badge}>Vista previa · no crea un tenant todavía</span></header>
+      <header className={styles.header}><span className={styles.brand}><Image src="/empresia-logo.svg" width={148} height={45} alt="Empresia" unoptimized/></span><span className={styles.badge}>Vista previa · no crea un tenant todavía</span></header>
       <div className={styles.progress} aria-label={`Paso ${step} de 3`}><b>{step}/3</b><span><i style={{width:`${step/3*100}%`}} /></span></div>
       {step===1 && <form onSubmit={nextBusiness} className={styles.form}>
         <p className={styles.eyebrow}>PASO 1 · TU NEGOCIO</p><h1>Convierte conversaciones en clientes.</h1><p>Cuéntanos lo esencial. EMPRESIA preparará una propuesta comercial para que puedas verla antes de activar tu CRM.</p>

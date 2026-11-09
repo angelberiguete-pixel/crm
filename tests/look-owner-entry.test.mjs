@@ -6,8 +6,8 @@ const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
 test("Empresia landing CRM links never enter the currently selected client",()=>{
   const sales=read("app/aurevector/sales-page.tsx");
-  assert.equal((sales.match(/href="\/acceso-crm"/g)||[]).length,2,
-    "both primary and footer Empresia CRM links use the owner-aware entry");
+  assert.ok((sales.match(/href="\/acceso-crm"/g)||[]).length>=2,
+    "all Empresia navigation, mobile and footer CRM links use the owner-aware entry");
   assert.doesNotMatch(sales,/href="\/crm"/);
   assert.match(read("app/empresia/page.tsx"),/AurevectorSalesPage/);
   assert.match(read("app/look-social-media/page.tsx"),/redirect\("\/empresia"\)/);
