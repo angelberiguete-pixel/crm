@@ -3,7 +3,6 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/empresia-dolibarr/**'
-      - 'supabase/functions/_shared/dolibarr-protocol.ts'
       - 'supabase/migrations/*empresia_dolibarr*'
       - 'components/empresia-erp-overview.tsx'
       - 'supabase/functions/empresia-dolibarr/protocol.test.ts'
