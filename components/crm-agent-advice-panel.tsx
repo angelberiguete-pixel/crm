@@ -3,6 +3,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import styles from "./crm-ml-hub.module.css";
+import CrmArmActionQueue from "@/components/crm-arm-action-queue";
 
 type AgentAdvice={
  tenant_id:string;opportunity_id:string;opportunity_title:string;
@@ -55,6 +56,7 @@ export default function CrmAgentAdvicePanel({tenantId,compact=false}:{tenantId:s
     <Link href="/crm/revenue" className="button" style={{display:"inline-flex",marginTop:9}}>Revisar oportunidad</Link>
    </article>)}
   </>}
-  <p className={styles.disclaimer}>No envía WhatsApp, no genera cotizaciones ni cambia etapas. El vendedor o supervisor debe revisar y aprobar cualquier acción. No se transmite información a modelos externos.</p>
+  <CrmArmActionQueue tenantId={tenantId} recommendations={items}/>
+  <p className={styles.disclaimer}>No envía WhatsApp, no genera cotizaciones ni cambia etapas. Solo crea tareas internas después de una aprobación explícita y conserva el resultado observado por separado.</p>
  </section>;
 }
