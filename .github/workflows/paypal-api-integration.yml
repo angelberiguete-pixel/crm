@@ -5,18 +5,22 @@ on:
       - 'feat/family-power-billing-post-signup-20261107'
     paths:
       - 'supabase/functions/paypal-billing/**'
+      - 'supabase/functions/paypal-subscriptions/**'
       - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
       - 'components/family-power-billing-portal.tsx'
       - 'tests/paypal-api-integration.test.mjs'
       - 'tests/family-power-paypal-approval.test.mjs'
+      - 'tests/paypal-recurring-contract.test.mjs'
       - '.github/workflows/paypal-api-integration.yml'
   pull_request:
     paths:
       - 'supabase/functions/paypal-billing/**'
+      - 'supabase/functions/paypal-subscriptions/**'
       - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
       - 'components/family-power-billing-portal.tsx'
       - 'tests/paypal-api-integration.test.mjs'
       - 'tests/family-power-paypal-approval.test.mjs'
+      - 'tests/paypal-recurring-contract.test.mjs'
       - '.github/workflows/paypal-api-integration.yml'
 jobs:
   billing-contract:
@@ -27,6 +31,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs tests/family-power-paypal-approval.test.mjs
+      - run: node --test tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs tests/family-power-paypal-approval.test.mjs tests/paypal-recurring-contract.test.mjs
       - run: npm ci
       - run: npm run typecheck
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/paypal-subscriptions/index.ts
