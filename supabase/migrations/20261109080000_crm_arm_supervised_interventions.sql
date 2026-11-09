@@ -241,6 +241,10 @@ begin
  select * into v_task from public.tasks where tenant_id=p_tenant_id and id=v_row.task_id for update;
  if not found then raise exception 'task_not_found'; end if;
  if v_task.status='done' then return true; end if;
+ if v_task.assigned_user_id is not null and v_task.assigned_user_id<>v_actor
+  and not private.has_tenant_role(p_tenant_id,array['owner','admin']::text[]) then
+  raise exception 'task_assignee_or_admin_required' using errcode='42501';
+ end if;
  if v_task.status='cancelled' then raise exception 'task_cancelled'; end if;
  update public.tasks set status='done',completed_at=now() where id=v_task.id;
  insert into public.crm_arm_intervention_events(tenant_id,intervention_id,event_key,actor_user_id,task_id)
