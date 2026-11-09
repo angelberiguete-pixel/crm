@@ -273,6 +273,7 @@ export default function Cita24ClinicWorkspace() {
   }
   if (loading || loadedTenantId !== tenantId) return <div className="loading">Cargando agenda segura de Cita-24…</div>;
 
+  const clinicName = tenant.tenant_name;
   const fieldStyle = { width: "100%", minHeight: 42, padding: "8px 10px" };
   const formStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 };
   const headerStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" as const, gap: 12 };
@@ -280,7 +281,7 @@ export default function Cita24ClinicWorkspace() {
     <main className="content">
       <header className="topbar" style={headerStyle}>
         <div><div className="eyebrow">Empresia · Operación administrativa</div>
-          <h1>Cita-24</h1><p className="muted">Agenda, contactos y seguimiento humano de {tenant.tenant_name}</p></div>
+          <h1>Cita-24</h1><p className="muted">Agenda, contactos y seguimiento humano de {clinicName}</p></div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Link className="button" href="/crm/calendar">Calendario general</Link>
           <Link className="button" href="/crm">Volver a Empresia</Link>
@@ -345,7 +346,7 @@ export default function Cita24ClinicWorkspace() {
                   const digits = (contact?.whatsapp_phone ?? contact?.phone ?? "").replace(/\D/g, "");
                   const number = digits.length === 10 ? "1" + digits : digits;
                   const consent = contact?.metadata?.cita24_whatsapp_admin_consent === true;
-                  const body = "Hola, te escribimos desde " + tenant.tenant_name + " para confirmar tu cita del " + appointmentTime.format(new Date(a.starts_at)) + ". ¿Nos confirmas si asistirás?";
+                  const body = "Hola, te escribimos desde " + clinicName + " para confirmar tu cita del " + appointmentTime.format(new Date(a.starts_at)) + ". ¿Nos confirmas si asistirás?";
                   return consent && number.length >= 11 && number.length <= 15
                     ? <div><a className="button small" href={"https://wa.me/" + number + "?text=" + encodeURIComponent(body)} target="_blank" rel="noopener noreferrer">Abrir WhatsApp (envío manual)</a></div>
                     : <div className="muted">WhatsApp manual no habilitado: verificar autorización y número.</div>;
