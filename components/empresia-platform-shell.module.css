@@ -50,6 +50,7 @@
   height: 100dvh;
   overflow-y: auto;
 }
+.drawerClose { display: none; }
 .sidebarHead { padding: 0 11px 20px; display: grid; gap: 6px; }
 .sidebarHead img { width: 148px; height: auto; object-fit: contain; }
 .sidebarHead span { font-size: 11px; color: #9baac2; font-weight: 600; letter-spacing: .06em; }
@@ -237,6 +238,8 @@
   .clientList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 840px) {
+  .drawerClose { display: grid; place-items: center; position: absolute; right: 14px; top: 17px; width: 42px; height: 42px; border: 1px solid #375076; border-radius: 10px; color: #fff; background: #21314b; z-index: 2; }
+  .sidebarHead { padding-right: 52px; }
   .platformShell { display: block; }
   /* Global CRM styles hide .sidebar on phones; owner drawer must remain mountable. */
   .platformShell .platformSidebar { display: flex; }
