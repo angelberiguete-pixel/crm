@@ -1,0 +1,20 @@
+name: Commercial quotation lifecycle checks
+on:
+  pull_request:
+    paths:
+      - 'lib/commercial/quote-lifecycle.ts'
+      - 'tests/commercial-quote-lifecycle.test.mjs'
+      - '.github/workflows/commercial-quote-lifecycle.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: node --experimental-strip-types --test tests/commercial-quote-lifecycle.test.mjs
+      - run: npm run typecheck

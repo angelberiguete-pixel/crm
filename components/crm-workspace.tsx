@@ -507,14 +507,12 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
 
   async function syncQuotationToOdoo(q:Quotation) { if(q.total<=0) return notice("La cotización necesita artículos y total antes de enviarse a Odoo."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"quotation",p_entity_id:q.id}); if(r.error)return notice(r.error.message); notice("Cotización encolada para sincronizar con Odoo. Odoo será la fuente del documento/PDF definitivo."); }
 
-  async function setQuoteStatus(q:Quotation,status:string) {
-    if(status==="accepted" && q.total<=0) return notice("No puedes aceptar una cotización sin artículos y total.");
-    const patch:Record<string,unknown>={status};
-    if(status==="accepted") patch.accepted_at=new Date().toISOString();
-    if(status==="rejected") patch.rejected_at=new Date().toISOString();
-    const r=await supabase.from("quotations").update(patch).eq("tenant_id",tenantId).eq("id",q.id);
-    if(r.error) return notice(r.error.message);
-    notice(`Cotización ${q.quote_number}: ${status}.`); refresh();
+  // Fail closed: client-side status changes are disabled until the server-side
+  // authorization + atomic audit RPC is deployed and RLS-tested for this tenant.
+  // The legacy direct quotations.update({status}) path allowed staff to
+  // impersonate customer acceptance; do not restore it.
+  function setQuoteStatus(_q:Quotation,_status:string) {
+    notice("Cambios de estado temporalmente bloqueados: requieren aprobación autenticada y registro de auditoría en el servidor.");
   }
 
   function printQuote(q:Quotation) {
@@ -545,9 +543,9 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
           {selectedItems.map(i=><div key={i.id} className="priority-item"><div><strong>{i.description}</strong><div className="muted">{i.quantity} × {money.format(i.unit_price)}</div></div><span>{money.format(Number(i.line_subtotal??i.quantity*i.unit_price))}</span></div>)}
           {selected.status==="draft"&&<form onSubmit={addItem} className="stack gap-12"><label>Producto<select value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">Seleccionar producto activo</option>{approvedProducts.map(p=><option key={p.id} value={p.id}>{p.name} · {money.format(p.sale_price)}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} required /></label><button className="button primary">Añadir artículo</button></form>}
           <div className="top-actions" style={{flexWrap:"wrap"}}>
-            {selected.status==="draft"&&<button className="button" onClick={()=>setQuoteStatus(selected,"sent")}>Marcar enviada</button>}
-            {["draft","sent"].includes(selected.status)&&<button className="button primary" onClick={()=>setQuoteStatus(selected,"accepted")}>Aceptar</button>}
-            {["draft","sent"].includes(selected.status)&&<button className="button danger" onClick={()=>setQuoteStatus(selected,"rejected")}>Rechazar</button>}
+            {selected.status==="draft"&&<span className="muted">El envío requiere validación del servidor.</span>}
+            {["draft","sent"].includes(selected.status)&&<span className="muted" role="status">La aprobación debe realizarla el cliente desde un acceso seguro; pendiente de habilitación.</span>}
+            
             {!family&&<button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>}
             <button className="button" onClick={()=>printQuote(selected)}>Vista previa interna</button>
           </div>
