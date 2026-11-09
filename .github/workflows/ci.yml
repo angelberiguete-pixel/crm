@@ -70,12 +70,18 @@ jobs:
         run: node --test tests/ycloud-integrations-live-status.test.mjs
       - name: Family Power brand and portal authorization contracts
         run: node --experimental-strip-types --test tests/family-power-brand-admin.test.mjs
+      - name: Family Power new-owner login language contract
+        run: node --test tests/family-power-owner-login-copy.test.mjs tests/family-power-owner-registration.test.mjs
       - name: Family Power branded login and private Drive evidence library contracts
         run: node --test tests/family-power-drive-library.test.mjs
       - name: Family Power quotation PDF and client workflow regressions
         run: node --experimental-strip-types --test tests/family-power-quotation-pdf.test.mjs
       - name: Family Power verified inbound contact names safety
         run: node --test tests/family-power-verified-name-capture.test.mjs
+      - name: Umami tenant authorization and secret contracts
+        run: node --test tests/umami-analytics-contract.test.mjs
+      - name: Family Power web behavior and privacy contracts
+        run: node --test tests/family-power-behavior-analytics.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: OpenReply tenant authorization, native API and Spanish keyword tests

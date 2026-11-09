@@ -126,7 +126,7 @@ declare
  r public.openreply_account_routes%rowtype;
  mapping public.openreply_campaign_products%rowtype;
  product public.products%rowtype;
- receipt_id uuid; existing_hash text; contact_id uuid; conversation_id uuid; quote_id uuid; task_id uuid; assignee uuid;
+ receipt_id uuid; existing_hash text; contact_id uuid; new_contact_id uuid; conversation_id uuid; message_id uuid; quote_id uuid; task_id uuid; assignee uuid;
  event_id text; event_type text; external_id text; person_id text; campaign_id text; body text; at_time timestamptz;
  action_code text := 'lead_received'; normalized text;
 begin
@@ -177,6 +177,7 @@ begin
    values(r.tenant_id,coalesce(nullif(left(btrim(p_event#>>'{data,displayName}'),120),''),'Contacto Instagram'),'instagram','lead',
      jsonb_build_object('origin','openreply','instagram_account_id',r.instagram_account_id,'instagram_person_id',person_id,'name_verification','provider_display_only'))
    returning id into contact_id;
+   new_contact_id:=contact_id;
    insert into public.openreply_external_contacts values(r.tenant_id,r.id,person_id,contact_id);
  end if;
  insert into public.conversations(tenant_id,channel_id,contact_id,external_thread_id,status,subject,last_message_at,unread_count,metadata)
@@ -188,7 +189,7 @@ begin
  returning id into conversation_id;
  insert into public.messages(tenant_id,conversation_id,direction,sender_type,sender_contact_id,external_message_id,message_type,body,status,metadata)
  values(r.tenant_id,conversation_id,'inbound','contact',contact_id,external_id,'text',body,'received',
-   jsonb_build_object('origin','openreply','openreply_event_id',event_id,'campaign_id',campaign_id));
+   jsonb_build_object('origin','openreply','openreply_event_id',event_id,'campaign_id',campaign_id)) returning id into message_id;
  select cp.* into mapping from public.openreply_campaign_products cp
  where cp.route_id=r.id and cp.campaign_id=campaign_id and cp.is_enabled;
  normalized:=btrim(regexp_replace(translate(lower(body),'áéíóúü','aeiouu'),'[^a-z0-9]+',' ','g'));
@@ -225,6 +226,14 @@ begin
      jsonb_build_object('origin','openreply','openreply_route_id',r.id,'conversation_id',conversation_id,'quotation_id',quote_id,'requires_human',true))
    returning id into task_id;
  end if;
+ -- Existing CRM triggers enqueue live automations. Hold only the events from
+ -- these new records before committing, so ingestion cannot invoke paid AI,
+ -- external sends or another quote without a separate human decision.
+ update public.automation_events ae set status='skipped',processed_at=now(),last_error='openreply_human_review_required'
+ where ae.tenant_id=r.tenant_id and ae.status='queued' and
+   ((ae.entity_type='contact' and ae.entity_id=new_contact_id)
+     or (ae.entity_type='message' and ae.entity_id=message_id)
+     or (ae.entity_type='quotation' and ae.entity_id=quote_id));
  update public.openreply_event_receipts er set contact_id=contact_id,conversation_id=conversation_id,
    quotation_id=quote_id,task_id=task_id,action_code=action_code where er.id=receipt_id;
  return 'stored';

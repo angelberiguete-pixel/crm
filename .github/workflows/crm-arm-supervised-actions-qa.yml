@@ -1,0 +1,30 @@
+name: ARM Supervised Interventions QA
+on:
+  push:
+    branches:
+      - feat/arm-supervised-interventions-20261109
+  pull_request:
+    paths:
+      - "supabase/migrations/20261109080000_crm_arm_supervised_interventions.sql"
+      - "components/crm-arm-action-queue.tsx"
+      - "components/crm-agent-advice-panel.tsx"
+      - "tests/crm-arm-supervised-actions.test.mjs"
+      - ".github/workflows/crm-arm-supervised-actions-qa.yml"
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify supervised intervention contract
+        run: node --experimental-strip-types --test tests/crm-arm-supervised-actions.test.mjs
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build

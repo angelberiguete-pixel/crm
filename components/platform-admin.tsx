@@ -17,6 +17,10 @@ import {
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import PlatformBillingReviews from "@/components/platform-billing-reviews";
+import BillingFinancialDashboard from "@/components/billing-financial-dashboard";
+import PlatformPayPalSubscriptionPlan from "@/components/platform-paypal-subscription-plan";
+import ImplementationContractLedger from "@/components/implementation-contract-ledger";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 
 type Access = { is_platform_admin?: boolean; is_platform_user?: boolean; role?: string | null };
@@ -32,6 +36,7 @@ type Tenant = {
 };
 type Module = { module_key: string; module_name: string; enabled: boolean; source: string; config: Record<string, unknown> };
 type Member = { user_id: string; email: string | null; membership_role: string; membership_status: string; role_key: string | null; role_name: string | null };
+type FamilyRegistration = { id:string; tenant_id:string; full_name:string; email:string; status:string; created_at:string };
 type Role = { role_key: string; role_name: string; description: string | null; permissions: Record<string, unknown>; is_system: boolean };
 type Plan = { id?: string; code?: string; name?: string; [key: string]: unknown };
 type Template = { template_key: string; name: string; description: string | null; status: string };
@@ -56,6 +61,9 @@ export default function PlatformAdmin() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [familyRegistrations,setFamilyRegistrations]=useState<FamilyRegistration[]>([]);
+  const [registrationNames,setRegistrationNames]=useState<Record<string,string>>({});
+  const [reviewingRegistration,setReviewingRegistration]=useState<string|null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -125,7 +133,7 @@ export default function PlatformAdmin() {
   }, [loadAccess, loadPlatform]);
 
   const loadTenant = useCallback(async (tenantId: string) => {
-    const [moduleResult, memberResult, roleResult, readinessResult, billingResult] = await Promise.all([
+    const [moduleResult, memberResult, roleResult, readinessResult, billingResult, registrationResult] = await Promise.all([
       supabase.rpc("tenant_effective_modules", { p_tenant_id: tenantId }),
       supabase.rpc("platform_admin_members", { p_tenant_id: tenantId }),
       supabase.rpc("platform_admin_tenant_roles", { p_tenant_id: tenantId }),
@@ -133,15 +141,20 @@ export default function PlatformAdmin() {
       supabase.from("tenant_subscriptions")
         .select("provider,status,provider_subscription_id,provider_customer_id")
         .eq("tenant_id",tenantId).maybeSingle(),
+      supabase.from("family_power_access_requests")
+        .select("id,tenant_id,full_name,email,status,created_at")
+        .eq("tenant_id",tenantId).eq("status","pending")
+        .order("created_at",{ascending:true}),
     ]);
     // An A -> B switch must never render the previous tenant's readiness,
     // billing information, members or role permissions under B's heading.
     if(selectedTenantRef.current!==tenantId)return;
     const err = moduleResult.error ?? memberResult.error ?? roleResult.error
-      ?? readinessResult.error ?? billingResult.error;
+      ?? readinessResult.error ?? billingResult.error ?? registrationResult.error;
     if (err) setNotice(err.message);
     setModules((moduleResult.data ?? []) as Module[]);
     setMembers((memberResult.data ?? []) as Member[]);
+    setFamilyRegistrations((registrationResult.data ?? []) as FamilyRegistration[]);
     setRoles((roleResult.data ?? []) as Role[]);
     setReadiness(readinessResult.error?null:readinessResult.data as Readiness);
     setSubscriptionProof(billingResult.error?null:billingResult.data as SubscriptionProof|null);
@@ -149,7 +162,7 @@ export default function PlatformAdmin() {
 
   useEffect(() => {
     if (selectedId && access?.is_platform_admin) loadTenant(selectedId);
-    else { setModules([]); setMembers([]); setRoles([]); setReadiness(null);setSubscriptionProof(null); }
+    else { setModules([]); setMembers([]);setFamilyRegistrations([]); setRoles([]); setReadiness(null);setSubscriptionProof(null); }
   }, [selectedId, access, loadTenant]);
 
   async function claimOwner(e: FormEvent) {
@@ -291,6 +304,27 @@ export default function PlatformAdmin() {
     setNotice("Rol actualizado sin alterar el estado de la invitación.");
   }
 
+  async function reviewFamilyRegistration(request:FamilyRegistration,approve:boolean){
+    if(!selectedId||selectedId!==request.tenant_id||access?.role!=="platform_owner"){
+      setNotice("Solo el propietario de plataforma puede aprobar este registro.");return;
+    }
+    if(reviewingRegistration)return;
+    const name=(registrationNames[request.id]??request.full_name).trim().replace(/\s+/g," ");
+    if(approve&&(name.length<3||name.length>120||name.split(" ").length<2)){
+      setNotice("Escribe nombre y apellido antes de aprobar.");return;
+    }
+    setReviewingRegistration(request.id);setNotice("");
+    try{
+      const result=await supabase.rpc("platform_review_family_power_registration",{
+        p_request_id:request.id,p_approve:approve,p_display_name:approve?name:null
+      });
+      if(result.error){setNotice(result.error.message);return;}
+      await loadTenant(selectedId);
+      setNotice(approve?"Solicitud aprobada. La cuenta ya puede entrar como propietaria de Family Power.":"Solicitud rechazada sin conceder acceso.");
+    }catch{setNotice("No se pudo revisar la solicitud.");}
+    finally{setReviewingRegistration(null);}
+  }
+
   async function inviteMember(e: FormEvent) {
     e.preventDefault();
     if (!selectedId || !inviteEmail.trim() || !inviteRole) return;
@@ -350,6 +384,10 @@ export default function PlatformAdmin() {
       <header className="topbar"><div><div className="eyebrow">Control global de la plataforma</div><h1>Look Social Media · Super Admin</h1></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14} /> Actualizar</button><button type="button" className="button mobile-only" onClick={async()=>{const result=await supabase.auth.signOut({scope:"local"});if(result.error)return setNotice("No se pudo cerrar la sesión. Intenta nuevamente.");router.replace("/login");}}>Salir</button></div></header>
       {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
 
+      {access.role==="platform_owner"&&<BillingFinancialDashboard />}
+      {access.role==="platform_owner"&&<PlatformPayPalSubscriptionPlan />}
+      {selectedId&&access.role==="platform_owner"&&<ImplementationContractLedger tenantId={selectedId} ownerControls/>}
+      {selectedId&&access.role==="platform_owner"&&<PlatformBillingReviews tenantId={selectedId}/>}
       <section className="grid metrics" style={{ marginBottom: 16 }}>
         <div className="metric"><div className="metric-label">Empresas</div><div className="metric-value">{tenants.length}</div><div className="metric-sub">Espacios creados, no clientes de pago</div></div>
         <div className="metric"><div className="metric-label">Usuarios activos</div><div className="metric-value">{tenants.reduce((n, t) => n + Number(t.member_count ?? 0), 0)}</div><div className="metric-sub">Membresías activas</div></div>
@@ -452,6 +490,26 @@ export default function PlatformAdmin() {
           <div className="card">
             <div className="eyebrow">Acceso del cliente</div>
             <h2>Usuarios e invitaciones</h2>
+            {selected.tenant_slug==="family-power"&&<section aria-label="Solicitudes pendientes Family Power" className="stack gap-12" style={{marginBottom:20}}>
+              <h3>Solicitudes de registro pendientes ({familyRegistrations.length})</h3>
+              {familyRegistrations.length===0&&<p className="muted">Sin solicitudes de acceso pendientes.</p>}
+              {familyRegistrations.map(request=><div className="priority-item" key={request.id} style={{display:"block"}}>
+                <strong>{request.email}</strong>
+                <div className="muted">Solicitante: {request.full_name}</div>
+                <label>Nombre y apellido aprobados
+                  <input type="text" maxLength={120} aria-label={"Nombre aprobado de "+request.email}
+                    value={registrationNames[request.id]??request.full_name}
+                    onChange={e=>setRegistrationNames(prev=>({...prev,[request.id]:e.target.value}))}
+                    disabled={reviewingRegistration===request.id||access?.role!=="platform_owner"}/>
+                </label>
+                {access?.role==="platform_owner"&&<div className="top-actions" style={{marginTop:8}}>
+                  <button className="button primary small" type="button" disabled={!!reviewingRegistration}
+                    onClick={()=>void reviewFamilyRegistration(request,true)}>Aprobar propietario</button>
+                  <button className="button small" type="button" disabled={!!reviewingRegistration}
+                    onClick={()=>void reviewFamilyRegistration(request,false)}>Rechazar</button>
+                </div>}
+              </div>)}
+            </section>}
             <form className="stack gap-12" onSubmit={inviteMember} style={{ marginBottom: 16 }}>
               <label>Email del usuario<input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="persona@empresa.com" required /></label>
               <label>Rol inicial<select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} required>{roles.map((r) => <option key={r.role_key} value={r.role_key}>{r.role_name}</option>)}</select></label>
@@ -466,7 +524,7 @@ export default function PlatformAdmin() {
             </div>
           </div>
           <div className="card">
-            <h2>Perfiles de acceso</h2>{selected.tenant_slug==="family-power"&&<p className="notice">Family Power: el propietario, los administradores y los vendedores usan <strong>/family-power/login</strong> con cuentas individuales. La invitación se envía desde este panel y los permisos se asignan según su rol; no se crean cuentas públicas ni se copian contraseñas del CRM anterior.</p>}
+            <h2>Perfiles de acceso</h2>{selected.tenant_slug==="family-power"&&<p className="notice">Family Power: el propietario solicita su registro en <strong>/family-power/registro</strong> y solo el propietario de plataforma lo aprueba aquí. Los colaboradores siguen entrando mediante invitación y permisos limitados.</p>}
             <p className="muted">Cada rol se traduce a un rol base seguro y conserva permisos específicos del tenant. Roles personalizados como Producción o Entregas no necesitan tocar código.</p>
             {roles.map((r) => <div className="priority-item" key={r.role_key}><div><strong>{r.role_name}</strong><div className="muted">{r.description ?? r.role_key}</div></div><span className="pill">{r.is_system ? "Base" : "Custom"}</span></div>)}
           </div>

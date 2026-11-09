@@ -77,6 +77,9 @@ insert into qa_or_results select 'quote_is_draft_with_approved_totals',status='d
 from public.quotations where tenant_id=(select id from qa_or_ids where k='tenant_a');
 insert into qa_or_results select 'no_cross_tenant_effects',not exists(select 1 from public.contacts where tenant_id=(select id from qa_or_ids where k='tenant_b'))
 and not exists(select 1 from public.quotations where tenant_id=(select id from qa_or_ids where k='tenant_b'));
+insert into qa_or_results select 'native_automation_effects_held_for_human_review',
+ count(*)=4 and bool_and(status='skipped' and last_error='openreply_human_review_required')
+ from public.automation_events where tenant_id=(select id from qa_or_ids where k='tenant_a');
 reset role;
 update public.products set sale_price=1200 where id=(select id from qa_or_ids where k='product_a');
 set local role service_role;

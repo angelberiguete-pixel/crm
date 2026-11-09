@@ -336,3 +336,110 @@ end;
 $function$;
 
 CREATE TRIGGER quotation_items_recalculate AFTER INSERT OR UPDATE OR DELETE ON public.quotation_items FOR EACH ROW EXECUTE FUNCTION private.quotation_items_recalc_trigger();
+
+-- Native automation enqueue functions captured from the live CRM on 2026-11-09.
+CREATE TABLE public.automation_events (
+ id uuid primary key default gen_random_uuid(), tenant_id uuid not null references public.tenants(id),
+ event_type text not null, entity_type text, entity_id uuid, payload jsonb not null default '{}',
+ mode text not null default 'live' check(mode in ('live','test')),target_rule_id uuid,
+ status text not null default 'queued' check(status in ('queued','running','succeeded','failed','skipped')),
+ attempts integer not null default 0 check(attempts>=0), available_at timestamptz not null default now(),
+ locked_at timestamptz,processed_at timestamptz,last_error text,idempotency_key text,created_at timestamptz not null default now()
+);
+CREATE UNIQUE INDEX qa_automation_events_idempotency ON public.automation_events(tenant_id,idempotency_key) WHERE idempotency_key IS NOT NULL;
+ALTER TABLE public.automation_events ENABLE ROW LEVEL SECURITY;
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.automation_events TO service_role;
+CREATE OR REPLACE FUNCTION private.automation_contacts_event()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  perform private.enqueue_automation_event(
+    new.tenant_id,'contact_created','contact',new.id,
+    jsonb_build_object('contact_id',new.id,'company_id',new.company_id,'display_name',new.display_name,'email',new.email,'phone',new.phone,'whatsapp_phone',new.whatsapp_phone,'status',new.status,'owner_user_id',new.owner_user_id,'source',new.source),
+    'contact_created:'||new.id::text
+  );
+  if new.status='lead' then
+    perform private.enqueue_automation_event(
+      new.tenant_id,'lead_created','contact',new.id,
+      jsonb_build_object('contact_id',new.id,'company_id',new.company_id,'display_name',new.display_name,'email',new.email,'phone',new.phone,'whatsapp_phone',new.whatsapp_phone,'status',new.status,'owner_user_id',new.owner_user_id,'source',new.source),
+      'lead_created:'||new.id::text
+    );
+  end if;
+  return new;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.automation_message_event()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_contact uuid; v_opportunity uuid;
+begin
+  if new.direction='inbound' then
+    select c.contact_id,c.opportunity_id into v_contact,v_opportunity
+    from public.conversations c
+    where c.tenant_id=new.tenant_id and c.id=new.conversation_id;
+    perform private.enqueue_automation_event(
+      new.tenant_id,'message_received','message',new.id,
+      jsonb_build_object('message_id',new.id,'conversation_id',new.conversation_id,'contact_id',v_contact,'opportunity_id',v_opportunity,'body',left(coalesce(new.body,''),4000),'message_type',new.message_type,'status',new.status),
+      'message_received:'||new.id::text
+    );
+  end if;
+  return new;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.automation_quotation_event()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_event text;
+begin
+  if tg_op='INSERT' then
+    v_event := 'quotation_created';
+  elsif old.status is distinct from new.status then
+    v_event := case new.status when 'sent' then 'quotation_sent' when 'accepted' then 'quotation_accepted' when 'expired' then 'quotation_expired' else null end;
+  end if;
+  if v_event is not null then
+    perform private.enqueue_automation_event(
+      new.tenant_id,v_event,'quotation',new.id,
+      jsonb_build_object('quotation_id',new.id,'quote_number',new.quote_number,'contact_id',new.contact_id,'company_id',new.company_id,'opportunity_id',new.opportunity_id,'status',new.status,'total',new.total,'currency',new.currency,'valid_until',new.valid_until),
+      v_event||':'||new.id::text||':'||coalesce(new.status,'')
+    );
+  end if;
+  return new;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.enqueue_automation_event(p_tenant_id uuid, p_event_type text, p_entity_type text, p_entity_id uuid, p_payload jsonb, p_idempotency_key text DEFAULT NULL::text, p_mode text DEFAULT 'live'::text, p_target_rule_id uuid DEFAULT NULL::uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_id uuid; v_cause jsonb; v_payload jsonb := coalesce(p_payload,'{}'::jsonb);
+begin
+  v_cause:=nullif(current_setting('look.automation_cause',true),'')::jsonb;
+  if v_cause is not null and v_cause->>'tenant_id'=p_tenant_id::text then
+    v_payload:=v_payload || jsonb_build_object('_automation',v_cause-'tenant_id');
+  end if;
+  insert into public.automation_events(tenant_id,event_type,entity_type,entity_id,payload,idempotency_key,mode,target_rule_id)
+  values(p_tenant_id,p_event_type,p_entity_type,p_entity_id,v_payload,p_idempotency_key,p_mode,p_target_rule_id)
+  on conflict (tenant_id,idempotency_key) where idempotency_key is not null do nothing returning id into v_id;
+  if v_id is null and p_idempotency_key is not null then
+    select id into v_id from public.automation_events where tenant_id=p_tenant_id and idempotency_key=p_idempotency_key;
+  end if;
+  return v_id;
+end;
+$function$;
+
+CREATE TRIGGER contacts_automation_events AFTER INSERT ON public.contacts FOR EACH ROW EXECUTE FUNCTION private.automation_contacts_event();
+CREATE TRIGGER messages_automation_events AFTER INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION private.automation_message_event();
+CREATE TRIGGER quotations_automation_events AFTER INSERT OR UPDATE OF status ON public.quotations FOR EACH ROW EXECUTE FUNCTION private.automation_quotation_event();

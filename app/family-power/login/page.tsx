@@ -35,7 +35,7 @@ export default function FamilyPowerLogin(){
    const access=familyPowerMembership(list.data as TenantAccess[]|null);
    if(!access){
      if(newSignIn)await supabase.auth.signOut({scope:"local"});
-     setMessage("Esta cuenta no tiene acceso autorizado a Family Power. Solicita una invitación a su administrador.");
+     setMessage("Tu acceso a Family Power todavía no está autorizado. Si te registraste, espera la aprobación del administrador central.");
      setOtherSession(!newSignIn);
      return;
    }
@@ -103,14 +103,14 @@ export default function FamilyPowerLogin(){
        <h1>Tu empresa, en control.</h1>
        <p>Gestiona clientes, cotizaciones, instalaciones y ventas desde un solo lugar.</p>
        <div className={styles.features}>
-         <span><ShieldCheck size={17}/> Acceso por invitación</span>
-         <span><UsersRound size={17}/> Dueño, administradores y vendedores</span>
+         <span><ShieldCheck size={17}/> Primer acceso seguro para el propietario</span>
+         <span><UsersRound size={17}/> Administradores y vendedores por invitación</span>
        </div>
      </header>
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>Inicia sesión con la cuenta que te haya autorizado Family Power.</p>
+       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, crea tu cuenta con tu nombre completo, correo y contraseña. El acceso necesita aprobación de la administración central.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -130,7 +130,13 @@ export default function FamilyPowerLogin(){
        </form>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
-       <div className={styles.invite}>Los vendedores y administradores reciben su acceso mediante invitación del responsable de la empresa. No hay registro público.</div>
+       <div className={styles.ownerRegistration}>
+  <Link className={styles.ownerRegistrationLink} href="/family-power/registro">
+    ¿Es tu primera vez? Solicitar registro
+  </Link>
+  <small>La solicitud queda pendiente hasta que el administrador central la apruebe.</small>
+</div>
+       <div className={styles.invite}>El propietario crea sus credenciales y solicita aprobación. Vendedores y colaboradores acceden únicamente cuando reciben los permisos autorizados.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>

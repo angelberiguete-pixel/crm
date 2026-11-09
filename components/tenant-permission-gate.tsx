@@ -12,6 +12,7 @@ import TenantSessionExit from "@/components/tenant-session-exit";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import MobileTenantNavigation from "@/components/mobile-tenant-navigation";
 import FamilyPowerTaskAlerts from "@/components/family-power-task-alerts";
+import FamilyPowerBillingBanner from "@/components/family-power-billing-banner";
 import BrandLogo from "@/components/brand-logo";
 import RouteLoadingBrand from "@/components/route-loading-brand";
 import TenantBrandProvider from "@/components/tenant-brand-provider";
@@ -24,11 +25,13 @@ const sectionPermission: Record<string, string> = {
   companies: "companies",
   contacts: "contacts",
   revenue: "pipeline",
+  ml: "pipeline",
   sales: "pipeline",
   inbox: "inbox",
   channels: "settings",
   integrations: "settings",
   marketing: "settings",
+  "web-analytics": "settings",
   employees: "settings",
   arm: "dashboard",
   tasks: "operations",
@@ -41,6 +44,7 @@ const sectionPermission: Record<string, string> = {
   settings: "settings",
   sessions: "settings",
   files: "dashboard",
+  pagos: "dashboard",
 };
 
 type TenantAccess = {
@@ -141,7 +145,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
-           (section==="settings"&&!["owner","admin"].includes(activeTenant.membership_role))));
+           (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
       if (hasPermission && moduleEnabled && !familyPowerRestriction) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
@@ -208,6 +212,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
       <TenantSessionPresence tenantId={tenant.tenant_id}/>
       <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><FamilyPowerTaskAlerts/><TenantSessionExit/><MobileTenantNavigation /></div>
+      <FamilyPowerBillingBanner />
       {children}
     </TenantBrandProvider> : children}
   </TenantContextProvider>;

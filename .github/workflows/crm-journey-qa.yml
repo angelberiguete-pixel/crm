@@ -1,0 +1,35 @@
+name: CRM ARM Commercial Journey QA
+on:
+  push:
+    branches:
+      - feat/crm-arm-history-quality-agent-advice-20261109
+  pull_request:
+    paths:
+      - "supabase/migrations/20261109040500_crm_journey_quality_agent_readonly.sql"
+      - "lib/crm-data-quality.ts"
+      - "components/crm-ml-governance.tsx"
+      - "components/crm-agent-advice-panel.tsx"
+      - "components/crm-ml-hub.tsx"
+      - "components/tenant-permission-gate.tsx"
+      - "components/family-power-arm-cockpit.tsx"
+      - "components/digital-employee-studio.tsx"
+      - "tests/crm-journey-governance.test.mjs"
+      - ".github/workflows/crm-journey-qa.yml"
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate quality rules, lifecycle history and agent safety
+        run: node --experimental-strip-types --test tests/crm-journey-governance.test.mjs
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify TypeScript
+        run: npm run typecheck
+      - name: Build production app
+        run: npm run build

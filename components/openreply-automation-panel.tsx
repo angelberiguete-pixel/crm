@@ -137,7 +137,7 @@ export default function OpenReplyAutomationPanel({ tenantId }: { tenantId: strin
         </div>
       </>}
       <p>Al responder el cliente, el puente registra la conversación, el prospecto y una tarea. Una solicitud de cotización solo crea un borrador cuando la campaña tiene un producto aprobado y conserva su precio e inventario válidos. El envío requiere revisión humana.</p>
-      <div className={styles.links}><Link href="/crm/inbox">Conversaciones</Link><Link href="/crm/automations">Flujos del CRM</Link><Link href="/crm/marketing">Resultados comerciales</Link></div>
+      <div className={styles.links}><Link href="/crm/inbox">Conversaciones</Link><Link href="/crm/contacts">Prospectos</Link><Link href="/crm/quotations">Cotizaciones</Link><Link href="/crm/tasks">Seguimientos</Link></div>
     </div>
   </section>;
 }

@@ -89,7 +89,7 @@ test("branded portal login never trusts a URL or self-signup for tenant access",
  assert.match(login,/notifyTenantContextChanged\(\)/);
  assert.match(login,/router\.replace\("\/crm"\)/);
  assert.doesNotMatch(login,/supabase\.auth\.signUp|platform_join_tenant_as_admin|window\.location\.search.*next/);
- assert.match(login,/no tiene acceso autorizado/);
+ assert.match(login,/todavía no está autorizado/);
  assert.match(styles,/background:#0c0d10/);
  assert.match(styles,/border-top:4px solid #d20a14/);
  assert.match(helper,/FAMILY_POWER_SLUG="family-power"/);

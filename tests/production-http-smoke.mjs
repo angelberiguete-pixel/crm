@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 
 const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
-const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels"];
+const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels","/family-power/registro"];
 for(const route of routes){
  let finalError=null,passed=false;
  for(let attempt=1;attempt<=3;attempt++){
@@ -27,3 +27,19 @@ for(const route of routes){
  if(!passed)throw new Error(`Production smoke failure on ${route}: ${String(finalError)}`);
 }
 console.log("PASS: production public HTTPS/HTML routes. Credentials, tenants, Storage and password emails NOT tested.");
+
+// Verify the customer-facing hostname separately from the canonical platform hostname.
+const familyUrl="https://crm-look.vercel.app/family-power/registro";
+let familyError=null,familyPassed=false;
+for(let attempt=1;attempt<=4;attempt++){
+ try{
+  const response=await fetch(familyUrl,{method:"GET",redirect:"follow",headers:{"Accept":"text/html","User-Agent":"Family-Power-public-smoke/1.0"},signal:AbortSignal.timeout(14000)});
+  const body=await response.text();
+  assert.equal(response.status,200,"Family Power owner registration must return HTTP 200");
+  assert.match(body,/Crea tu cuenta/i,"new Family Power registration content must be published");
+  assert.match(body,/Solicitar registro/i,"registration button must be published");
+  console.log("PASS Family Power owner registration published at "+familyUrl);
+  familyPassed=true;break;
+ }catch(error){familyError=error;if(attempt<4)await new Promise(resolve=>setTimeout(resolve,2500*attempt));}
+}
+if(!familyPassed)throw new Error("Family Power owner registration not verified on customer URL: "+String(familyError));
