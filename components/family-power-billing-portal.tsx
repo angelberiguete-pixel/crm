@@ -38,6 +38,7 @@ export default function FamilyPowerBillingPortal(){
   const [reports,setReports]=useState<Report[]>([]);
   const [busy,setBusy]=useState(false);
   const [syncing,setSyncing]=useState(false);
+  const [preparingSubscription,setPreparingSubscription]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
@@ -78,6 +79,23 @@ export default function FamilyPowerBillingPortal(){
        subscription.custom_monthly_price_cents!==8000||!subscription.provider_plan_id)return null;
     return trustedPaypalAuthorizationUrl(subscription.provider_approval_url);
   },[initial,subscription]);
+  const canPrepare=Boolean(isFamilyPower&&initial?.status==="paid"&&
+    subscription?.custom_monthly_price_cents===8000&&
+    subscription.provider_approval_state==="not_requested"&&!subscription.provider_subscription_id);
+  async function prepareSubscription(){
+    if(!canPrepare||!tenantId||preparingSubscription)return;
+    if(!window.confirm("¿Solicitar a PayPal la autorización para cobrar US$80 cada mes a partir de la fecha del período indicado? El cliente deberá aprobar personalmente la suscripción en PayPal."))return;
+    setPreparingSubscription(true);setError("");setNotice("");
+    try{
+      const {data,error:apiError}=await supabase.functions.invoke("paypal-subscriptions",{
+        body:{action:"start_subscription",tenant_id:tenantId}
+      });
+      if(apiError||!data?.ok){setError("No se pudo preparar la suscripción. El plan puede estar pendiente de configurar en PayPal.");return;}
+      setNotice("Solicitud preparada. Revisa y autoriza la suscripción en PayPal; esto aún no confirma ningún cargo.");
+      await load();
+    }catch{setError("No se pudo preparar la autorización de PayPal.");}
+    finally{setPreparingSubscription(false);}
+  }
   async function reportPayment(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
     if(!tenantId||!allowed||!due||busy)return;
@@ -144,6 +162,7 @@ export default function FamilyPowerBillingPortal(){
           <h2>{isFamilyPower?usd(8000):subscription?.custom_monthly_price_cents?usd(subscription.custom_monthly_price_cents):"Por definir"}/mes</h2>
           <p className="muted">{isFamilyPower&&initial?.status!=="paid"?"La mensualidad de US$80 empieza después de confirmar la implementación inicial, según el acuerdo comercial.":subscription?.provider_subscription_id?"Suscripción identificada en el proveedor. Verifica su estado en PayPal.":"Aún no hay un mandato de cobro automático aprobado en PayPal."}</p>
           {subscription?.current_period_end&&<div className="muted">Referencia de siguiente período: {new Date(subscription.current_period_end).toLocaleDateString("es-DO")}</div>}
+          {canPrepare&&<button type="button" className="button primary" disabled={preparingSubscription} style={{display:"flex",marginTop:14}} onClick={()=>void prepareSubscription()}><CreditCard size={16}/>{preparingSubscription?"Preparando autorización…":"Preparar autorización de US$80/mes"}</button>}
           {approvalUrl&&<a className="button primary" href={approvalUrl} target="_blank" rel="noopener noreferrer" style={{display:"flex",marginTop:14}}><CreditCard size={16}/> Autorizar suscripción en PayPal</a>}
           {subscription?.provider_subscription_id&&subscription.provider_approval_state==="approved"&&subscription.status==="active"&&<div className="pill" style={{marginTop:10}}>Suscripción autorizada · verificar cada cobro en PayPal</div>}
           <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal. La autorización por sí sola no confirma el cobro de una cuota.</p>
