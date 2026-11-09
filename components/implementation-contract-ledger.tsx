@@ -150,7 +150,7 @@ export default function ImplementationContractLedger({
             :"Pendiente de pago y verificación"}
         </div>
       </div>
-      {first.status==="open"&&first.hosted_invoice_url
+      {contract.status!=="settled"&&first.status==="open"&&first.hosted_invoice_url
         ?<a href={first.hosted_invoice_url} target="_blank" rel="noopener noreferrer" className="button small">Pagar cuota en PayPal</a>
         :first.credited_to_contract?<CircleCheck size={22} aria-label="Aplicada"/>:<FileClock size={22} aria-label="Pendiente de conciliación"/>}
     </div>}
@@ -158,6 +158,7 @@ export default function ImplementationContractLedger({
       Hay {contract.paid_invoices_awaiting_allocation} factura(s) pagada(s) que requieren registro de conversión a pesos antes de reducir el saldo contractual.
     </div>}
     {contract.status==="settled"&&<div className="notice" role="status"><CircleCheck size={17}/> Implementación totalmente pagada.</div>}
+    {ownerControls&&contract.status==="settled"&&first?.status==="open"&&<div className="notice" role="alert">La factura PayPal de la primera cuota sigue abierta aunque la deuda contractual está saldada. Anúlala en PayPal para evitar un doble cobro.</div>}
     {credits.length>0&&<div style={{marginTop:16}}>
       <h3>Historial de abonos confirmados</h3>
       {credits.map(c=><div className="priority-item" key={c.id}>
