@@ -1,11 +1,11 @@
 :root{
   color-scheme:light;
-  --brand-ink:#0B0F1A;
-  --brand-navy:#111A33;
-  --brand-blue:#2563EB;
-  --brand-cyan:#00D4FF;
-  --brand-violet:#7C3AED;
-  --brand-lime:#A3E635;
+  --brand-ink:#102938;
+  --brand-navy:#102938;
+  --brand-blue:#117D82;
+  --brand-cyan:#22D3BE;
+  --brand-violet:#42677A;
+  --brand-lime:#A3EEDB;
   --brand-white:#FFFFFF;
   --bg:#F4F7FC;
   --panel:#FFFFFF;
@@ -13,8 +13,8 @@
   --text:#101828;
   --muted:#667085;
   --border:#DCE5F2;
-  --accent:#2563EB;
-  --accent2:#00AEEB;
+  --accent:#117D82;
+  --accent2:#17B6A4;
   --violet:#7C3AED;
   --lime:#65A30D;
   --danger:#D92D20;
