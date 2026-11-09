@@ -71,6 +71,9 @@ test("ML and human agent tools use scope, do not execute autonomously",()=>{
  assert.match(ui,/\.eq\("tenant_id",tenantId\)/);
  assert.match(ui,/assessOpportunityQuality/);
  assert.match(ui,/describeJourney/);
+ const hub=read("components/crm-ml-hub.tsx");
+ assert.match(hub,/quality.readyForProbability\?salesModel:null/);
+ assert.match(hub,/hasItems&&validUntil\?quoteModel:null/);
  const agent=read("components/crm-agent-advice-panel.tsx");
  assert.match(agent,/from\("crm_arm_next_actions"\)/);
  assert.match(agent,/\.eq\("tenant_id",tenantId\)/);
