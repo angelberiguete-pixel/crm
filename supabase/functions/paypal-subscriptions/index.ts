@@ -114,6 +114,7 @@ async function provision(req: Request) {
   const { data: permitted, error: aclError } = await user.from("billing_gateway_plans")
     .select("id").eq("plan_key", PLAN_KEY).maybeSingle();
   if (aclError || !permitted) return json({ error: "forbidden" }, 403);
+  if (getEnv("PAYPAL_SUBSCRIPTIONS_ENABLED") !== "true") return json({ error: "subscriptions_not_enabled" }, 503);
 
   const plan = await exactPlan();
   if (plan.status === "ready" && plan.provider_plan_id) return json({ ok: true, status: "ready" });
@@ -189,6 +190,7 @@ async function startSubscription(req: Request, payload: Record<string, unknown>)
   const tenantId = payload.tenant_id;
   if (typeof tenantId !== "string") return json({ error: "invalid_tenant" }, 400);
   await ensureAuthorizedTenant(user, tenantId);
+  if (getEnv("PAYPAL_SUBSCRIPTIONS_ENABLED") !== "true") return json({ error: "subscriptions_not_enabled" }, 503);
   const { data: invoice, error: invoiceError } = await user.from("billing_invoices")
     .select("id,status,currency,total_cents,amount_paid_cents,amount_due_cents")
     .eq("tenant_id", tenantId).contains("metadata", { billing_stage: "initial" })
