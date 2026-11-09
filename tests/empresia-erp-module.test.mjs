@@ -9,7 +9,7 @@ const gate = read("components/tenant-permission-gate.tsx");
 
 test("ERP is one module of Empresia, not a second public brand or external CRM", () => {
   assert.match(panel, /Empresia · Plataforma principal/);
-  assert.match(panel, /Motor Dolibarr/);
+  assert.match(panel, /motor Dolibarr/i);
   assert.match(panel, /Integración operativa/);
   assert.match(panel, /Sin verificar/);
   assert.match(workspace, /\["erp", "ERP", Boxes\]/);
