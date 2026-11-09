@@ -12,6 +12,8 @@ type Intervention={
  reviewed_by:string|null;executed_by:string|null;measured_by:string|null;
 };
 type Learned={tenant_id:string;recommendation_key:string;measured_count:number;progress_count:number;won_count:number;lost_count:number;no_progress_count:number};
+type ActionEvent={id:number;intervention_id:string;event_key:string;occurred_at:string;actor_user_id:string|null;task_id:string|null;observed_result:string|null};
+const eventLabel:Record<string,string>={proposed:"Propuesta registrada",approved:"Aprobación concedida",rejected:"Propuesta rechazada",stale:"Revisión necesaria",task_created:"Tarea interna creada",task_completed:"Tarea declarada completada",result_measured:"Resultado contrastado con el CRM"};
 const statusLabels:Record<Intervention["status"],string>={
  proposed:"Pendiente de aprobación",approved:"Aprobada",rejected:"Rechazada",
  stale:"Necesita nueva evaluación",executed:"Tarea creada",measured:"Resultado observado"
@@ -37,6 +39,7 @@ export default function CrmArmActionQueue({tenantId,recommendations}:{tenantId:s
  const approver=["owner","admin"].includes(tenant?.membership_role??"");
  const [rows,setRows]=useState<Intervention[]>([]);
  const [learning,setLearning]=useState<Learned[]>([]);
+ const [events,setEvents]=useState<ActionEvent[]>([]);
  const [pending,setPending]=useState<string|null>(null);
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
@@ -44,21 +47,25 @@ export default function CrmArmActionQueue({tenantId,recommendations}:{tenantId:s
  const [revision,setRevision]=useState(0);
  useEffect(()=>{
   let alive=true;
-  setRows([]);setLearning([]);setLoading(true);setError("");
+  setRows([]);setLearning([]);setEvents([]);setLoading(true);setError("");
   void(async()=>{
    try{
-    const [a,l]=await Promise.all([
+    const [a,l,h]=await Promise.all([
      supabase.from("crm_arm_interventions")
       .select("id,tenant_id,opportunity_id,recommendation_key,recommendation_reason,status,task_id,observed_result,proposed_at,proposed_by,reviewed_by,executed_by,measured_by")
       .eq("tenant_id",tenantId).order("proposed_at",{ascending:false}).limit(60),
      supabase.from("crm_arm_intervention_learning")
       .select("tenant_id,recommendation_key,measured_count,progress_count,won_count,lost_count,no_progress_count")
-      .eq("tenant_id",tenantId)
+      .eq("tenant_id",tenantId),
+     supabase.from("crm_arm_intervention_events")
+      .select("id,intervention_id,event_key,occurred_at,actor_user_id,task_id,observed_result")
+      .eq("tenant_id",tenantId).order("occurred_at",{ascending:false}).limit(250)
     ]);
     if(!alive)return;
-    if(a.error||l.error)throw new Error(a.error?.message??l.error?.message);
+    if(a.error||l.error||h.error)throw new Error(a.error?.message??l.error?.message??h.error?.message);
     setRows((a.data??[]) as Intervention[]);
     setLearning((l.data??[]) as Learned[]);
+    setEvents((h.data??[]) as ActionEvent[]);
    }catch(e){if(alive)setError("No se pudo leer el circuito de aprobación: "+(e instanceof Error?e.message:"error"));}
    finally{if(alive)setLoading(false);}
   })();
@@ -116,6 +123,7 @@ export default function CrmArmActionQueue({tenantId,recommendations}:{tenantId:s
      <div className={styles.recordMain}><div><small>{new Date(a.proposed_at).toLocaleString("es-DO")} · {a.recommendation_key.replaceAll("_"," ")}</small>
       <strong>{a.recommendation_reason}</strong></div><span className={styles.risk}>{statusLabels[a.status]}</span></div>
      {a.observed_result&&<p className={styles.hint}>Resultado observado: {resultLabels[a.observed_result]??a.observed_result}</p>}
+     <div className={styles.hint} aria-label="Historial de aprobación y ejecución">{events.filter(e=>e.intervention_id===a.id).slice(0,4).map(e=><div key={e.id}>• {new Date(e.occurred_at).toLocaleString("es-DO")} · {eventLabel[e.event_key]??e.event_key}{e.actor_user_id?" · Usuario "+e.actor_user_id.slice(0,8):""}</div>)}</div>
      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:10}}>
       {a.status==="proposed"&&approver&&<>
        <button className="button primary" disabled={!!pending} onClick={()=>act("approve",a)}>Aprobar</button>
