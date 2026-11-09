@@ -15,6 +15,8 @@ export default function MisCompras(){
  const [entitlements,setEntitlements]=useState<Record<string,string>>({});
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
+ const [notice,setNotice]=useState("");
+ const [busyId,setBusyId]=useState<string|null>(null);
  useEffect(()=>{
   let live=true;
   void (async()=>{
@@ -38,6 +40,21 @@ export default function MisCompras(){
   })();
   return()=>{live=false;};
  },[]);
+ async function cancelSubscription(order:Order){
+  if(order.kind!=="monthly"||order.status!=="active"||busyId)return;
+  if(!window.confirm("¿Cancelar la suscripción y detener futuros cobros? PayPal podría suspender el acceso inmediatamente y esta acción no devuelve pagos anteriores."))return;
+  setBusyId(order.id);setError("");setNotice("");
+  const {data,error:e}=await supabase.functions.invoke("empresia-commerce",{
+    body:{action:"cancel_subscription",order_id:order.id}
+  });
+  if(e||!data||data.error){
+    setError("No se pudo confirmar la cancelación en PayPal. Revisa el estado desde tu cuenta PayPal.");
+  }else if(data.status==="cancelled"){
+    setOrders(current=>current.map(x=>x.id===order.id?{...x,status:"cancelled"}:x));
+    setNotice("PayPal confirmó que la suscripción está cancelada.");
+  }else setNotice("Solicitud enviada; todavía falta confirmación de PayPal.");
+  setBusyId(null);
+ }
  return <main className="content" style={{maxWidth:1000,margin:"0 auto",minHeight:"100vh"}}>
   <header className="topbar">
    <div><div className="eyebrow">EMPRESIA · MI CUENTA</div>
@@ -46,6 +63,7 @@ export default function MisCompras(){
    </div><Link className="button" href="/empresia/tienda">Ver catálogo</Link>
   </header>
   {error&&<div role="alert" className="notice">{error}</div>}
+  {notice&&<div role="status" className="notice">{notice}</div>}
   {loading?<p role="status">Consultando tus compras…</p>:!user?
    <section className="card"><h2>Accede a tu cuenta</h2>
     <p className="muted">El historial es privado y se consulta con tu sesión de comprador.</p>
@@ -65,6 +83,11 @@ export default function MisCompras(){
       <div style={{textAlign:"right"}}>
        <strong style={{fontSize:20}}>{money(o.amount_cents)}{o.kind==="monthly"&&"/mes"}</strong>
        <div><Link className="button small" href={"/empresia/checkout?order="+encodeURIComponent(o.id)}>Ver estado</Link></div>
+       {o.kind==="monthly"&&o.status==="active"&&<div style={{marginTop:8}}>
+         <button className="button small" type="button" disabled={busyId===o.id} onClick={()=>void cancelSubscription(o)}>
+           {busyId===o.id?"Consultando PayPal…":"Cancelar renovación"}
+         </button>
+       </div>}
       </div>
      </article>)}
    </div>}
