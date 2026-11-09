@@ -1,1 +1,26 @@
-.pricingSection{padding:92px 28px;background:#f6f8fc}.plansGrid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.planCard{background:#fff;border:1px solid #e0e4ee;border-radius:22px;padding:28px;display:flex;flex-direction:column;min-height:540px}.planFeatured{border:2px solid #5b4dff;box-shadow:0 22px 54px rgba(91,77,255,.13);transform:translateY(-8px)}.planBadge{display:inline-block;align-self:flex-start;background:#eeeaff;color:#5b4dff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.planCard h3{font-size:27px;margin:14px 0 4px}.planPrice{font-size:44px;font-weight:950;letter-spacing:-.04em;margin:12px 0 0}.planPrice span{font-size:14px;color:#70798b;font-weight:700}.planSetup{color:#596176;font-size:14px;margin:5px 0 18px}.planCard>p{color:#596176;line-height:1.55}.planCard ul{padding:0;list-style:none;margin:14px 0 24px;flex:1}.planCard li{padding:9px 0 9px 22px;position:relative;line-height:1.45;font-size:14px;border-bottom:1px solid #eef0f5}.planCard li:before{content:"✓";position:absolute;left:0;color:#5b4dff;font-weight:900}.planButton{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:14px 20px;text-decoration:none;font-weight:850;background:#0d1321;color:#fff}.pricingNote{max-width:1180px;margin:22px auto 0;color:#737c8c;font-size:13px;line-height:1.5}@media(max-width:900px){.plansGrid{grid-template-columns:1fr}.planFeatured{transform:none}}@media(max-width:620px){.pricingSection{padding:66px 20px}.planPrice{font-size:40px}}
+
+.pricingSection{background:#eef3fa;padding:95px 24px 89px;scroll-margin-top:86px;color:#101828}
+.plansGrid{max-width:1200px;margin:38px auto 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch}
+.planCard{position:relative;display:flex;flex-direction:column;padding:33px 29px 28px;background:#fff;border:1px solid #dce5f1;border-radius:21px;box-shadow:0 9px 32px rgba(18,33,61,.035);min-width:0}
+.planFeatured{border:2px solid #315bff;box-shadow:0 20px 55px rgba(49,91,255,.11)}
+.ribbon{position:absolute;top:-18px;left:21px;max-width:calc(100% - 42px);display:inline-flex;align-items:center;min-height:29px;padding:7px 13px;background:#315bff;color:#fff;font-size:10px;font-weight:800;letter-spacing:.02em;border-radius:99px}
+.planCategory{margin:0 0 12px;color:#315bff;font-size:11px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.planCard h3{font-size:24px;letter-spacing:-.035em;margin:0;line-height:1.25}
+.planPrice{display:flex;align-items:baseline;margin:21px 0 9px;line-height:1;font-size:clamp(38px,3.2vw,49px);font-weight:860;letter-spacing:-.045em}
+.planPrice small{font-size:17px;letter-spacing:0;margin-right:4px;font-weight:800}
+.planPrice span{font-size:13px;color:#68778c;font-weight:650;letter-spacing:0;margin-left:7px}
+.planDescription{font-size:13px;line-height:1.7;color:#606d80;margin:6px 0 14px;min-height:67px}
+.setup{padding:12px 13px;background:#f2f6fd;border:1px solid #e6edf7;border-radius:11px;font-size:12px;line-height:1.55;color:#64738b}
+.setup strong{display:block;color:#293b59;font-size:14px}
+.planCard h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:25px 0 12px;color:#20324f}
+.planCard ul{list-style:none;display:grid;gap:12px;padding:0;margin:0 0 25px;flex:1}
+.planCard li{position:relative;padding-left:23px;font-size:13px;line-height:1.5;color:#3a485f}
+.planCard li:before{content:"✓";position:absolute;left:0;top:0;color:#15937c;font-weight:900}
+:global(.empresia-paypal-cta){display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:48px;border-radius:11px;padding:13px 16px;background:#315bff;color:#fff!important;font-size:13px;font-weight:850;box-shadow:0 7px 18px rgba(49,91,255,.12);text-decoration:none}
+:global(.empresia-paypal-cta:hover){background:#2345dc}
+:global(.empresia-paypal-cta--outline){background:#101828;color:#fff!important;box-shadow:none}
+:global(.empresia-paypal-cta--outline:hover){background:#24334d}
+:global(.empresia-paypal-status){font-size:11px;line-height:1.6;color:#778498;margin:11px 0 0}
+.pricingNote{max-width:1200px;margin:22px auto 0;color:#6c798c;font-size:12px;line-height:1.65}
+@media(max-width:1000px){.plansGrid{grid-template-columns:1fr;max-width:620px;gap:25px}.planCard{min-height:0}.planDescription{min-height:0}}
+@media(max-width:620px){.pricingSection{padding:72px 20px 65px}.planCard{padding:30px 21px 24px}.planFeatured{margin-top:8px}.planPrice{font-size:45px}}
