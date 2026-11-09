@@ -7,13 +7,15 @@ import {
  type MlOpportunity,type MlQuote,type MlQuoteItem,type MlStage,type MlTask,type MlTrainingExample,
 } from "@/lib/tenant-ml";
 import styles from "./crm-ml-hub.module.css";
+import CrmMlGovernance from "@/components/crm-ml-governance";
+import {assessOpportunityQuality,type QualityOpportunity} from "@/lib/crm-data-quality";
 
 type Section="ventas"|"cotizaciones"|"seguimiento"|"capacidades";
 const sections:readonly [Section,string][]=[
  ["ventas","Ventas"],["cotizaciones","Cotizaciones"],["seguimiento","Seguimiento"],["capacidades","Próximas capacidades"]
 ];
 const empty={
- opportunities:[] as MlOpportunity[],
+ opportunities:[] as (MlOpportunity & QualityOpportunity)[],
  stages:[] as MlStage[],
  quotes:[] as MlQuote[],
  items:[] as MlQuoteItem[],
@@ -34,7 +36,7 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
   void(async()=>{
    try{
     const [o,s,q,i,t,e]=await Promise.all([
-     supabase.from("opportunities").select("id,title,pipeline_id,stage_id,status,created_at,owner_user_id,last_activity_at,next_action_at")
+     supabase.from("opportunities").select("id,title,pipeline_id,stage_id,status,created_at,owner_user_id,last_activity_at,next_action_at,contact_id,company_id,acquisition_source,expected_close_date,actual_close_date,loss_reason")
       .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(1000),
      supabase.from("pipeline_stages").select("id,pipeline_id,stage_type,position")
       .eq("tenant_id",tenantId).limit(500),
@@ -54,7 +56,7 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
     if(e.error)setError("El registro de aprendizaje está temporalmente indisponible; las prioridades se calculan por reglas sin probabilidades.");
     setLimited((o.data?.length??0)>=1000||(q.data?.length??0)>=1000||(i.data?.length??0)>=2500||(t.data?.length??0)>=2500||(e.data?.length??0)>=1000);
     setData({
-     opportunities:(o.data??[]) as MlOpportunity[],
+     opportunities:(o.data??[]) as (MlOpportunity & QualityOpportunity)[],
      stages:(s.data??[]) as MlStage[],
      quotes:(q.data??[]) as MlQuote[],
      items:(i.data??[]) as MlQuoteItem[],
@@ -70,15 +72,20 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
 
  const salesModel=useMemo(()=>trainingAvailable?trainTenantModel("sales_win",data.examples):null,[data.examples,trainingAvailable]);
  const quoteModel=useMemo(()=>trainingAvailable?trainTenantModel("quote_acceptance",data.examples):null,[data.examples,trainingAvailable]);
- const sales=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>({
-   id:o.id,title:o.title,
-   result:scoreMl("sales_win",salesSignals(o,data.stages,data.quotes,data.tasks),salesModel),
-   risk:followupRisk(o)
-  })).sort((a,b)=>b.result.score-a.result.score),[data,salesModel]);
- const quotes=useMemo(()=>data.quotes.filter(q=>q.status==="sent"||q.status==="draft").map(q=>({
-   id:q.id,quoteNumber:q.quote_number,
-   result:scoreMl("quote_acceptance",quoteSignals(q,data.items),quoteModel)
-  })).sort((a,b)=>b.result.score-a.result.score),[data,quoteModel]);
+ const sales=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>{
+   const quality=assessOpportunityQuality(o,data.stages);
+   return {id:o.id,title:o.title,quality,
+    result:scoreMl("sales_win",salesSignals(o,data.stages,data.quotes,data.tasks),
+     quality.readyForProbability?salesModel:null),
+    risk:followupRisk(o)};
+  }).sort((a,b)=>b.result.score-a.result.score),[data,salesModel]);
+ const quotes=useMemo(()=>data.quotes.filter(q=>q.status==="sent"||q.status==="draft").map(q=>{
+   const hasItems=data.items.some(i=>i.quotation_id===q.id);
+   const validUntil=q.valid_until?Date.parse(q.valid_until+"T23:59:59Z")>=Date.now():false;
+   return {id:q.id,quoteNumber:q.quote_number,qualityReady:hasItems&&validUntil,
+    result:scoreMl("quote_acceptance",quoteSignals(q,data.items),
+     hasItems&&validUntil?quoteModel:null)};
+  }).sort((a,b)=>b.result.score-a.result.score),[data,quoteModel]);
  const attention=useMemo(()=>data.opportunities.filter(o=>o.status==="open").map(o=>({id:o.id,title:o.title,risk:followupRisk(o)}))
   .sort((a,b)=>({alta:0,media:1,baja:2}[a.risk.level]-{alta:0,media:1,baja:2}[b.risk.level])),[data.opportunities]);
  const salesLabels=data.examples.filter(e=>e.capability==="sales_win").length;
@@ -120,25 +127,25 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    {active==="ventas"&&<section className={styles.card}>
     <h3>Predicción de oportunidades</h3>
     <Summary model={salesModel} n={salesLabels} kind="cierre"/>
-    {sales.length===0?<p>Esta empresa no tiene oportunidades abiertas.</p>:sales.slice(0,15).map(({id,title,result,risk},index)=>
+    {sales.length===0?<p>Esta empresa no tiene oportunidades abiertas.</p>:sales.slice(0,15).map(({id,title,result,risk,quality},index)=>
       <div className={styles.record} key={id}>
        <div className={styles.recordMain}>
         <div><small>Prioridad {index+1} · {title}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
         <Score score={result.score} model={result.mode==="validated_ml"}/>
        </div>
-       <p className={styles.hint}>Seguimiento: {risk.reason}. El índice ordena prioridades, no modifica la probabilidad comercial ingresada.</p>
+       <p className={styles.hint}>Seguimiento: {risk.reason}. {quality.readyForProbability?"":"Calidad insuficiente para publicar una probabilidad ML. "}El índice ordena prioridades, no modifica la probabilidad comercial ingresada.</p>
       </div>)}
    </section>}
    {active==="cotizaciones"&&<section className={styles.card}>
     <h3>Análisis de cotizaciones</h3>
     <Summary model={quoteModel} n={quoteLabels} kind="aceptación"/>
-    {quotes.length===0?<p>No hay cotizaciones abiertas para priorizar.</p>:quotes.slice(0,15).map(({id,quoteNumber,result},index)=>
+    {quotes.length===0?<p>No hay cotizaciones abiertas para priorizar.</p>:quotes.slice(0,15).map(({id,quoteNumber,result,qualityReady},index)=>
       <div className={styles.record} key={id}>
        <div className={styles.recordMain}>
         <div><small>Cotización {index+1} · {quoteNumber}</small><strong>{result.reasons.slice(0,2).join(" · ")}</strong></div>
         <Score score={result.score} model={result.mode==="validated_ml"}/>
        </div>
-       <p className={styles.hint}>Solo análisis; precios, descuentos y aceptación siguen sujetos a aprobación humana.</p>
+       <p className={styles.hint}>{qualityReady?"":"Sin partidas o vigencia confirmada: no se publica probabilidad ML. "}Solo análisis; precios, descuentos y aceptación siguen sujetos a aprobación humana.</p>
       </div>)}
    </section>}
    {active==="seguimiento"&&<section className={styles.card}>
@@ -162,5 +169,6 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    </section>}
    <p className={styles.disclaimer}>Los modelos se entrenan por empresa y por tarea. No comparten registros entre empresas, no deciden cierres ni ejecutan acciones automáticas.</p>
   </>}
+  <CrmMlGovernance tenantId={tenantId}/>
  </div>;
 }

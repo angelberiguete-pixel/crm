@@ -7,6 +7,7 @@ import {useActiveTenant} from "@/components/tenant-context";
 import {supabase} from "@/lib/supabase";
 import BrandLogo from "@/components/brand-logo";
 import DigitalEmployeeReviewQueue from "@/components/digital-employee-review-queue";
+import CrmAgentAdvicePanel from "@/components/crm-agent-advice-panel";
 
 type Metrics={contacts:number|null;opportunities:number|null;quotations:number|null;runs:number|null};
 const empty:Metrics={contacts:null,opportunities:null,quotations:null,runs:null};
@@ -93,6 +94,7 @@ export default function FamilyPowerArmCockpit(){
    </div>
    {isAdmin&&<Link className="button primary" href="/crm/employees" style={{marginTop:16,display:"inline-flex",alignItems:"center",gap:8}}><Bot size={17}/> Configurar</Link>}
   </section>
+  {tenantId&&<div className="section-gap"><CrmAgentAdvicePanel tenantId={tenantId} compact/></div>}
   {isAdmin&&tenantId&&<section className="section-gap card" aria-label="Revisión humana de agentes">
    <div className="eyebrow">Gobierno de agentes</div><h2>Cola de aprobaciones</h2>
 
