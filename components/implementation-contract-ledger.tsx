@@ -13,6 +13,8 @@ type Contract={
   status:string;contract_id?:string;contract_code?:string;currency?:string;
   client_label?:string;total_dop_cents?:number;credited_dop_cents?:number;
   remaining_dop_cents?:number;first_installment?:Installment|null;
+  display_rate_dop_per_usd?:number|null;display_rate_source?:string|null;display_rate_date?:string|null;
+  usd_reference_total_cents?:number|null;usd_reference_credited_cents?:number|null;usd_reference_remaining_cents?:number|null;
   paid_invoices_awaiting_allocation?:number;
 };
 type Credit={
@@ -26,6 +28,7 @@ type InvoiceOption={
 };
 const dop=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP"}).format((value||0)/100);
 const usd=(value:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format((value||0)/100);
+const usdReference=(cents:number|null|undefined)=>typeof cents==="number"?"≈ "+usd(cents):"Cotización pendiente";
 
 export default function ImplementationContractLedger({
   tenantId,ownerControls=false
@@ -132,15 +135,20 @@ export default function ImplementationContractLedger({
     <h2>Implementación tecnológica en cuotas</h2>
     <div className="grid metrics" style={{marginTop:16,marginBottom:16}}>
       <div className="metric"><div className="metric-label">Contrato total</div>
-        <div className="metric-value">{dop(contract.total_dop_cents??0)}</div>
+        <div className="metric-value">{usdReference(contract.usd_reference_total_cents)}</div>
       </div>
       <div className="metric"><div className="metric-label">Abonos aplicados</div>
-        <div className="metric-value">{dop(contract.credited_dop_cents??0)}</div>
+        <div className="metric-value">{usdReference(contract.usd_reference_credited_cents)}</div>
       </div>
       <div className="metric"><div className="metric-label">Saldo pendiente</div>
-        <div className="metric-value">{dop(contract.remaining_dop_cents??0)}</div>
+        <div className="metric-value">{usdReference(contract.usd_reference_remaining_cents)}</div>
       </div>
     </div>
+    <p className="muted" style={{fontSize:12,lineHeight:1.6,marginTop:0}}>
+      Equivalentes aproximados en USD, calculados con la referencia de {contract.display_rate_source??"tasa registrada"}
+      {contract.display_rate_dop_per_usd?" (RD$"+Number(contract.display_rate_dop_per_usd).toFixed(4)+" por US$1)":""}.
+      El monto originalmente pactado permanece en {dop(contract.total_dop_cents??0)} hasta acordar un precio fijo en dólares.
+    </p>
     {first&&<div className="priority-item">
       <div>
         <strong>Cuota 1 · Factura PayPal #{first.invoice_number??"0002"} · {usd(first.amount_cents)}</strong>
@@ -163,11 +171,11 @@ export default function ImplementationContractLedger({
       <h3>Historial de abonos confirmados</h3>
       {credits.map(c=><div className="priority-item" key={c.id}>
         <span>{new Date(c.confirmed_at).toLocaleDateString("es-DO")} · {c.method==="paypal"?"PayPal":c.method==="cash"?"Efectivo":"Transferencia"}</span>
-        <strong>{dop(c.credited_dop_cents)}</strong>
+        <strong>{contract.display_rate_dop_per_usd?usdReference(Math.round(c.credited_dop_cents/Number(contract.display_rate_dop_per_usd))):dop(c.credited_dop_cents)}</strong>
       </div>)}
     </div>}
     <p className="muted" style={{fontSize:12,marginTop:14}}>
-      Las cuotas en dólares solo reducen la deuda en pesos cuando se confirma el cobro y se registra la tasa DOP/USD acordada. La mensualidad de US$80 es independiente del contrato.
+      Los importes estimados en USD no alteran la deuda pactada. Cada abono confirmado se aplica con su tasa de cambio aprobada. La mensualidad de US$80 es independiente del contrato.
     </p>
     {ownerControls&&contract.status==="open"&&<>
       {error&&<div className="notice" role="alert">{error}</div>}
