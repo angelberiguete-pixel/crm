@@ -7,6 +7,7 @@ on:
       - 'components/empresia-erp-overview.tsx'
       - 'supabase/functions/empresia-dolibarr/protocol.test.ts'
       - 'tests/empresia-dolibarr-bridge-contract.test.mjs'
+      - 'tests/empresia-dolibarr-edge-auth-live.mjs'
       - '.github/workflows/empresia-dolibarr-bridge.yml'
   push:
     branches:
@@ -28,5 +29,6 @@ jobs:
       - run: deno test supabase/functions/empresia-dolibarr/protocol.test.ts
       - run: deno check supabase/functions/empresia-dolibarr/index.ts
       - run: node --test tests/empresia-dolibarr-bridge-contract.test.mjs tests/empresia-erp-module.test.mjs
+      - run: node tests/empresia-dolibarr-edge-auth-live.mjs
       - run: npm run typecheck
       - run: npm run build
