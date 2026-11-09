@@ -33,7 +33,7 @@ test("only authenticated platform tenant owners/admins can use Dolibarr bridge",
 test("only safe status probe and limited product list, not fake active ERP",()=>{
   assert.match(bridge,/body\.action === "status"/);
   assert.match(bridge,/body\.action === "probe"/);
-  assert.match(bridge,/body\.action === "products"/);
+  assert.match(bridge,/body\.action !== "products"/);
   assert.match(bridge,/provider_not_configured/);
   assert.match(bridge,/connected_read_only/);
   assert.match(bridge,/listDolibarrProducts/);
