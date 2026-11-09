@@ -6,6 +6,7 @@ import { CreditCard, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import BillingFinancialDashboard from "@/components/billing-financial-dashboard";
+import ImplementationContractLedger from "@/components/implementation-contract-ledger";
 
 type Invoice = {
   id:string; provider:string; status:string; currency:string; total_cents:number; amount_due_cents:number;
@@ -24,6 +25,7 @@ export default function FamilyPowerBillingPortal(){
   const isFamilyPower=tenant?.tenant_slug==="family-power";
   const [invoices,setInvoices]=useState<Invoice[]>([]);
   const [subscription,setSubscription]=useState<Subscription|null>(null);
+  const [implementationStatus,setImplementationStatus]=useState<string|null>(null);
   const [reports,setReports]=useState<Report[]>([]);
   const [busy,setBusy]=useState(false);
   const [syncing,setSyncing]=useState(false);
@@ -53,11 +55,16 @@ export default function FamilyPowerBillingPortal(){
     else setInvoices((inv.data??[]) as Invoice[]);
     if(!sub.error)setSubscription(sub.data as Subscription|null);
     if(!report.error)setReports((report.data??[]) as Report[]);
+    if(isFamilyPower){
+      const {data:contract,error:contractError}=await supabase.rpc("crm_implementation_contract_summary",{p_tenant_id:tenantId});
+      setImplementationStatus(!contractError&&contract&&typeof contract==="object"
+        ?String((contract as {status?:string}).status??"unknown"):"unknown");
+    }else setImplementationStatus(null);
     setLoading(false);
-  },[tenantId,allowed]);
+  },[tenantId,allowed,isFamilyPower]);
   useEffect(()=>{void load();},[load]);
-  const initial=useMemo(()=>invoices.find(x=>x.metadata?.billing_stage==="initial")??null,[invoices]);
-  const monthly=useMemo(()=>invoices.filter(x=>x.metadata?.billing_stage!=="initial" && x.amount_due_cents>0 && x.status==="open"),[invoices]);
+  const initial=useMemo(()=>invoices.find(x=>x.metadata?.billing_stage==="implementation_installment" && x.metadata?.installment_number===1)??null,[invoices]);
+  const monthly=useMemo(()=>invoices.filter(x=>!x.metadata?.contract_code && x.amount_due_cents>0 && x.status==="open"),[invoices]);
   const due=initial&&initial.amount_due_cents>0&&initial.status==="open"?initial:monthly[0]??null;
   const pendingReport=due?reports.find(r=>r.invoice_id===due.id && r.status==="submitted"):null;
   async function reportPayment(e:FormEvent<HTMLFormElement>){
@@ -101,14 +108,14 @@ export default function FamilyPowerBillingPortal(){
     }finally{setSyncing(false);}
   }
   async function startPayPalSubscription(){
-    if(!isFamilyPower||!tenantId||initial?.status!=="paid"||subscriptionBusy)return;
+    if(!isFamilyPower||!tenantId||implementationStatus!=="settled"||subscriptionBusy)return;
     setSubscriptionBusy(true);setError("");setNotice("");
     try{
       const {data,error:invokeError}=await supabase.functions.invoke("paypal-subscriptions",{
         body:{action:"start_subscription",tenant_id:tenantId}
       });
       if(invokeError||!data||data.error){
-        setError("No se pudo iniciar la autorización PayPal. Verifica que el plan US$80 esté creado y que la implementación inicial esté conciliada.");
+        setError("No se pudo iniciar la autorización PayPal. El contrato de RD$30,000 debe estar totalmente saldado y el plan de US$80 preparado.");
       }else if(typeof data.approval_url==="string"&&data.approval_url.startsWith("https://www.paypal.com/")){
         window.location.assign(data.approval_url);
         return;
@@ -144,15 +151,16 @@ export default function FamilyPowerBillingPortal(){
       <h1>Pagos y suscripción</h1><p className="muted">Consulta tus importes, utiliza PayPal o reporta una transferencia o entrega en efectivo.</p></div>
       <button className="button" type="button" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualizar</button>
     </header>
+    {isFamilyPower&&tenantId&&<ImplementationContractLedger tenantId={tenantId}/>}
     <BillingFinancialDashboard tenantId={tenantId}/>
     {error&&<div className="notice" role="alert">{error}</div>}
     {notice&&<div className="notice" role="status">{notice}</div>}
     {loading?<div className="loading">Consultando facturación…</div>:<>
       <section className="grid two-col">
         <article className="card">
-          <div className="eyebrow">{isFamilyPower?"Implementación inicial":"Facturación de servicios"}</div>
+          <div className="eyebrow">{isFamilyPower?"Primera cuota de implementación":"Facturación de servicios"}</div>
           <h2>{initial?usd(initial.total_cents):invoices.length?usd(invoices.reduce((sum,i)=>sum+Math.max(0,i.amount_due_cents||0),0)):"Sin facturas registradas"}</h2>
-          <p className="muted">{!initial?"Consulta tus facturas pendientes y los pagos conciliados en este portal.":initial.amount_due_cents>0?"Saldo pendiente de confirmación: "+usd(initial.amount_due_cents):"Pago inicial confirmado."}</p>
+          <p className="muted">{!initial?"Consulta tus facturas pendientes y los pagos conciliados en este portal.":initial.amount_due_cents>0?"Primera cuota pendiente: "+usd(initial.amount_due_cents)+" (del contrato de RD$30,000).":"Primera cuota pagada. El saldo contractual en pesos se reduce al aplicar el tipo de cambio acordado."}</p>
           {initial&&<div className="pill">{initial.status==="paid"?"Pagado":initial.status==="open"?"Pendiente":"En revisión"}</div>}
           {initial?.status==="open"&&initial.hosted_invoice_url&&<a className="button primary" style={{display:"flex",marginTop:15}} href={initial.hosted_invoice_url} target="_blank" rel="noopener noreferrer"><CreditCard size={16}/> Pagar factura en PayPal</a>}
           {due?.provider==="paypal"&&<button type="button" className="button" disabled={syncing} style={{display:"flex",marginTop:10}} onClick={()=>void syncPayPal()}>
@@ -162,7 +170,7 @@ export default function FamilyPowerBillingPortal(){
         <article className="card">
           <div className="eyebrow">Plan de suscripción</div>
           <h2>{isFamilyPower?usd(8000):subscription?.custom_monthly_price_cents?usd(subscription.custom_monthly_price_cents):"Por definir"}/mes</h2>
-          <p className="muted">{isFamilyPower&&initial?.status!=="paid"?"La mensualidad de US$80 empieza después de confirmar la implementación inicial, según el acuerdo comercial.":subscription?.provider_subscription_id?"Suscripción identificada en el proveedor. Verifica su estado en PayPal.":"Aún no hay un mandato de cobro automático aprobado en PayPal."}</p>
+          <p className="muted">{isFamilyPower&&implementationStatus!=="settled"?"La mensualidad de US$80 es independiente y se ofrece después de liquidar el contrato de RD$30,000, con tu autorización en PayPal.":subscription?.provider_subscription_id?"Suscripción identificada en el proveedor. Verifica su estado en PayPal.":"Aún no hay un mandato de cobro automático aprobado en PayPal."}</p>
           {subscription?.current_period_end&&<div className="muted">Referencia de siguiente período: {new Date(subscription.current_period_end).toLocaleDateString("es-DO")}</div>}
           <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal.</p>
         </article>
@@ -170,8 +178,8 @@ export default function FamilyPowerBillingPortal(){
       {isFamilyPower&&<section className="section-gap card" aria-label="Autorización de suscripción PayPal">
         <div className="eyebrow">Plan Family Power ARM</div>
         <h2>Suscripción de US$80/mes</h2>
-        {initial?.status!=="paid"
-          ?<p className="muted">Primero necesitamos la confirmación real del pago inicial de US$197. Después podrás autorizar tu mensualidad en PayPal.</p>
+        {implementationStatus!=="settled"
+          ?<p className="muted">Primero deben completarse todas las cuotas del contrato de implementación de RD$30,000. El pago de US$197 es solo la primera cuota.</p>
           :<>
             <p className="muted">Los pagos recurrentes requieren tu consentimiento dentro de PayPal. No se activan al registrarte ni al pulsar pagar después.</p>
             {subscription?.provider_approval_state==="approved"
