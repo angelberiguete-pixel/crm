@@ -31,7 +31,7 @@ test("billing resides in the authorized CRM portal and cannot grant access",()=>
  assert.match(gate,/\["settings","pagos"\].includes\(section\)/);
  assert.match(portal,/const isFamilyPower=tenant\?\.tenant_slug==="family-power"/);
  assert.match(portal,/\["owner","admin"\]/);
- assert.match(banner,/\.eq\("status","open"\)/);
+ assert.match(banner,/crm_implementation_contract_summary/);
 });
 test("reported payments remain pending until platform owner verifies",()=>{
  assert.match(portal,/from\("billing_payment_reports"\)\.insert/);
@@ -43,9 +43,13 @@ test("reported payments remain pending until platform owner verifies",()=>{
  assert.match(admin,/platform_confirm_billing_invoice/);
  assert.match(admin,/window.confirm/);
 });
-test("monthly price is USD 80 and only activates after the initial fee is verified",()=>{
- assert.match(portal,/isFamilyPower\?usd\(8000\)/);
- assert.match(sql,/set custom_monthly_price_cents=8000/);
- assert.match(sql,/v_remaining=0 and v_invoice.metadata->>'billing_stage'='initial'/);
- assert.match(step,/no está activado/);
+test("US$80 monthly plan only after full RD$30,000 implementation settlement",()=>{
+  const contractSql=get("../supabase/migrations/20261109010000_implementation_contract_dop_installments.sql");
+  const paypalApi=get("../supabase/functions/paypal-subscriptions/index.ts");
+  assert.match(step,/RD\$30,000\.00/);
+  assert.match(step,/Primera cuota/);
+  assert.match(portal,/implementationStatus!=="settled"/);
+  assert.match(contractSql,/custom_monthly_price_cents=8000/);
+  assert.match(paypalApi,/implementation_contract_not_settled/);
+  assert.match(step,/no está activado/);
 });
