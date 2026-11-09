@@ -51,7 +51,7 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
  useEffect(()=>{
    const shown=loading?fallback:brand;
    const previous=document.title;
-   document.title=shown.name+" | CRM";
+   document.title=shown.name+" | Empresia";
    let favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
    const created=!favicon;
    if(!favicon){
@@ -60,7 +60,7 @@ export default function TenantBrandProvider({tenant,children}:{tenant:TenantIden
      document.head.appendChild(favicon);
    }
    const originalHref=favicon.getAttribute("href");
-   favicon.href=shown.faviconUrl??(shown.officialLookBrand?"/look-social-media-logo.svg":"/tenant-crm-icon.svg");
+   favicon.href=shown.faviconUrl??(shown.officialLookBrand?"/empresia-icon.svg":"/tenant-crm-icon.svg");
    return()=>{
      document.title=previous;
      if(created)favicon.remove();
