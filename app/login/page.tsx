@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import BrandLogo from "@/components/brand-logo";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function LoginPage() {
     const access = await supabase.rpc("platform_current_access");
     if(access.error){setMessage("La sesión es válida, pero no pudimos comprobar tu acceso. Intenta entrar nuevamente.");return;}
     const value = (access.data ?? {}) as { is_platform_admin?: boolean };
-    router.replace(value.is_platform_admin ? "/mis-empresas" : "/crm");
+    router.replace(value.is_platform_admin ? "/platform-admin" : "/crm");
   }
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
   return <main className="auth-shell">
     <section className="auth-panel">
-      <BrandLogo size="login"/>
+      <span className="look-brand-logo look-brand-logo--login"><Image src="/empresia-logo.svg" alt="Empresia" width={220} height={55} priority unoptimized/></span>
       <div className="eyebrow">Acceso seguro al CRM</div>
       <h1>Iniciar sesión</h1>
       <p className="muted">Cada empresa y cada vendedor accede a su propio espacio de trabajo. El administrador de plataforma gestiona a sus clientes por separado.</p>

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Building2, CheckCircle2, ChevronRight, Database, ExternalLink, Layers3, LogOut, Plus, RefreshCw, Settings2, Users } from "lucide-react";
+import { BarChart3, Building2, CheckCircle2, ChevronRight, Database, ExternalLink, Gauge, Home, Layers3, LogOut, Menu, Plus, RefreshCw, Settings2, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
-import BrandLogo from "@/components/brand-logo";
+import styles from "@/components/empresia-platform-shell.module.css";
 import { isCommercialClientTenant } from "@/lib/visible-client-tenants";
 
 type Tenant = { tenant_id:string; tenant_name:string; tenant_slug:string; owner_user_id:string|null; plan_code:string|null; subscription_status:string|null; member_count:number; created_at:string };
@@ -24,6 +25,7 @@ const slugify=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,
 
 export default function EurevectorConsole(){
  const router=useRouter(); const[loading,setLoading]=useState(true); const[notice,setNotice]=useState("");
+ const[menuOpen,setMenuOpen]=useState(false);
  const[tenants,setTenants]=useState<Tenant[]>([]); const[plans,setPlans]=useState<Plan[]>([]); const[selectedId,setSelectedId]=useState<string|null>(null);
  const[showTechnical,setShowTechnical]=useState(false);
  const commercialTenants=useMemo(()=>tenants.filter(t=>isCommercialClientTenant(t.tenant_slug)),[tenants]);
@@ -93,12 +95,89 @@ export default function EurevectorConsole(){
  }
  async function saveOdoo(e:FormEvent){e.preventDefault();if(!selectedId||selectedRef.current!==selectedId||tenantLoading)return;const r=await supabase.rpc('platform_configure_odoo',{p_tenant_id:selectedId,p_base_url:odooUrl,p_database_name:odooDb||null,p_sync_direction:odooDirection});if(r.error)return setNotice(r.error.message);await loadTenant(selectedId);setNotice('Odoo configurado. Las credenciales se gestionan fuera del navegador.')}
  if(loading)return <div className="loading">Abriendo administración de empresas…</div>; const metrics=snapshot?.metrics??{companies:0,contacts:0,open_opportunities:0,won_opportunities:0,won_mrr:0,open_mrr:0,conversations:0,products:0};
- return <div className="shell"><aside className="sidebar"><div className="brand"><BrandLogo size="sidebar"/><span>Administración de clientes</span></div><nav className="nav"><Link href="/mis-empresas"><Building2 size={17}/> Mis empresas · panel global</Link><Link href="/empresia/comercio"><Building2 size={17}/> Comercio y pagos Empresia</Link><Link href="/empresia/tienda"><ExternalLink size={17}/> Tienda pública Empresia</Link><a className="active" href="#clientes"><Building2 size={17}/>Mis empresas cliente</a><a href="#resultado"><BarChart3 size={17}/>Resultados</a><a href="#personalizacion"><Settings2 size={17}/>Personalización</a><a href="#localizacion"><Settings2 size={17}/>País y moneda</a><a href="#readiness"><CheckCircle2 size={17}/>Verificación</a><a href="#onboarding-users"><Users size={17}/>Usuarios</a><a href="#modulos"><Layers3 size={17}/>Módulos</a><a href="#odoo"><Database size={17}/>Odoo / ERP</a><Link href="/ventas"><ChevronRight size={17}/>Ventas LOOK SOCIAL MEDIA</Link></nav><div className="sidebar-footer"><div className="muted">Platform Owner</div><button className="text-button" onClick={async()=>{await supabase.auth.signOut();router.replace('/login')}}><LogOut size={14}/> Salir</button></div></aside>
- <main className="content"><header className="topbar"><div><div className="eyebrow">Control global de la agencia y SaaS</div><div className="platform-brand-head"><BrandLogo size="compact"/><div><h1>Administración de empresas</h1><p className="muted">Acceso de propietario · Configura cada cliente y sus usuarios</p></div></div></div><div className="top-actions"><button className="button" onClick={loadPlatform}><RefreshCw size={14}/> Actualizar</button><button type="button" className="button mobile-only" onClick={async()=>{const r=await supabase.auth.signOut();if(r.error)return setNotice("No se pudo cerrar la sesión. Intenta nuevamente.");router.replace("/login");}}>Salir</button></div></header>{notice&&<div className="notice" style={{marginBottom:16}}>{notice}</div>}
- <section className="grid metrics" style={{marginBottom:16}}><Metric label="Empresas cliente" value={String(commercialTenants.length)} sub="Excluye demostraciones y entornos QA"/><Metric label="Usuarios" value={String(commercialTenants.reduce((n,t)=>n+Number(t.member_count||0),0))} sub="Miembros de empresas cliente"/><Metric label="Planes" value={String(plans.length)} sub="Essential · Growth · Scale"/><Metric label="Control" value="Activo" sub="Platform Admin"/></section>
- <section className="grid two-col" id="clientes"><div className="card"><h2>Empresas que administro</h2><p className="muted">Se muestran las empresas comerciales que administra la plataforma. Puedes gestionar su plan, branding, equipo y accesos sin crear otro CRM.</p><label className="platform-technical-toggle"><input type="checkbox" checked={showTechnical} onChange={e=>setShowTechnical(e.target.checked)}/> Mostrar entornos técnicos de pruebas ({tenants.length-commercialTenants.length})</label><div className="table-wrap"><table className="data-table platform-client-table"><thead><tr><th>Cliente</th><th>Plan</th><th>Usuarios</th><th></th></tr></thead><tbody>{visibleTenants.map(t=><tr key={t.tenant_id}><td><strong>{t.tenant_name}</strong><div className="muted">{t.tenant_slug}</div></td><td data-label="Plan">{t.plan_code??'—'}</td><td data-label="Usuarios">{t.member_count}</td><td><button className="button small" onClick={()=>chooseTenant(t.tenant_id)}>Gestionar</button></td></tr>)}</tbody></table></div></div>
- <form className="card" onSubmit={createClient}><div className="eyebrow">Incorporación de clientes</div><h2>Agregar empresa cliente</h2><p className="muted">Provisiona un workspace aislado y reutilizable desde la plataforma.</p><div className="stack gap-12"><label>Nombre<input value={newName} onChange={e=>{setNewName(e.target.value);if(!newSlug)setNewSlug(slugify(e.target.value))}} placeholder="Proyecto 812 Tareas — Cevicos" required/></label><label>Identificador interno<input value={newSlug} onChange={e=>setNewSlug(slugify(e.target.value))} placeholder="proyecto-812-cevicos" required/></label><label>Plan<select value={newPlan} onChange={e=>setNewPlan(e.target.value)}>{plans.map(p=><option key={p.id} value={p.code}>{p.name} · {usd(p.monthly_price_cents)}/mes</option>)}</select></label><label>Sector<input value={newVertical} onChange={e=>setNewVertical(e.target.value)} placeholder="Clínicas / servicios / comercio"/></label><label>Plantilla<select value={newTemplate} onChange={e=>setNewTemplate(e.target.value)}><option value="">CRM base</option><option value="cita-24">Sistema Cita-24</option></select></label><button className="button primary" disabled={creating}><Plus size={14}/>{creating?' Creando…':' Crear cliente'}</button></div></form></section>
- {selected&&<div className="stack gap-16 section-gap"><section className="card"><div className="eyebrow">Cliente seleccionado</div><h2>{selected.tenant_name}</h2><p className="muted">Entra al mismo tenant en el que trabaja su equipo, sin mezclar datos.</p>{tenantLoading&&<p role="status">Validando datos y permisos del cliente seleccionado…</p>}<div className="top-actions"><label>Plan <select disabled={tenantLoading} value={selected.plan_code??''} onChange={e=>e.target.value&&assignPlan(e.target.value)}>{plans.map(p=><option value={p.code} key={p.id}>{p.name}</option>)}</select></label><button className="button primary" disabled={tenantLoading} onClick={()=>enter('/crm')}>Entrar al CRM <ExternalLink size={13}/></button><button className="button" disabled={tenantLoading} onClick={()=>enter('/ventas')}>Abrir Ventas</button></div></section>
+
+ return <div className={`shell ${styles.platformShell}`}>
+ {menuOpen&&<button className={styles.scrim} type="button" aria-label="Cerrar navegación" onClick={()=>setMenuOpen(false)}/>}
+ <aside className={`sidebar ${styles.platformSidebar} ${menuOpen?styles.isOpen:""}`} id="empresia-platform-navigation" aria-label="Navegación de Empresia">
+   <button type="button" className={styles.drawerClose} aria-label="Cerrar menú de Empresia" onClick={()=>setMenuOpen(false)}><X size={20}/></button>
+   <div className={styles.sidebarHead}><Image src="/empresia-logo-light.svg" alt="Empresia" width={174} height={44} priority/><span>PLATAFORMA DE ADMINISTRACIÓN</span></div>
+   <div className={styles.sidebarCaption}>Panel principal</div>
+   <nav className={`nav ${styles.platformNav}`} aria-label="Navegación de Empresia" onClick={()=>setMenuOpen(false)}>
+     <a className="active" href="#inicio"><Home size={17}/> Resumen</a>
+     <a href="#clientes"><Building2 size={17}/> Empresas cliente</a>
+     <a href="#nuevo-cliente"><Plus size={17}/> Nueva empresa</a>
+     <Link href="/agency"><BarChart3 size={17}/> Prospección comercial</Link>
+     <Link href="/mis-empresas"><Layers3 size={17}/> Elegir workspace</Link>
+     <div className={styles.sidebarCaption}>Finanzas y servicios</div>
+     <Link href="/empresia/comercio"><Database size={17}/> Comercio y pagos</Link>
+     <Link href="/empresia/tienda"><ExternalLink size={17}/> Tienda Empresia</Link>
+     <div className={styles.sidebarCaption}>Configuración de clientes</div>
+     <a href="#detalle-cliente"><Gauge size={17}/> Panel del cliente</a>
+     <a href="#resultado"><BarChart3 size={17}/> Indicadores</a>
+     <a href="#readiness"><CheckCircle2 size={17}/> Verificación</a>
+     <a href="#onboarding-users"><Users size={17}/> Usuarios y roles</a>
+     <a href="#personalizacion"><Settings2 size={17}/> Personalización</a>
+     <a href="#modulos"><Layers3 size={17}/> Módulos</a>
+     <a href="#odoo"><Database size={17}/> Integración ERP</a>
+   </nav>
+   <div className={styles.sidebarEnd}><span>Administración privada · Empresia</span><button type="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login")}}><LogOut size={16}/> Cerrar sesión</button></div>
+ </aside>
+ <main className={`content ${styles.workspace}`} id="inicio">
+   <header className={styles.platformTopbar}>
+     <div className={styles.brandHeading}>
+       <button className={styles.menuButton} type="button" aria-label={menuOpen?"Cerrar menú":"Abrir menú"} aria-expanded={menuOpen} aria-controls="empresia-platform-navigation" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?<X size={20}/>:<Menu size={20}/>}</button>
+       <Image src="/empresia-logo.svg" width={134} height={35} alt="Empresia" priority/>
+       <span className={styles.brandHeadingDivider} aria-hidden="true"/>
+       <span>Administración general</span>
+     </div>
+     <div className={styles.platformTopbarActions}><button type="button" className="button" onClick={loadPlatform}><RefreshCw size={16}/> Actualizar</button></div>
+   </header>
+   {notice&&<div className="notice" role="alert" style={{marginBottom:16}}>{notice}</div>}
+   <section className={styles.hero} aria-labelledby="empresia-overview-title">
+     <span className={styles.heroTag}>Centro de control · Empresia</span>
+     <h1 id="empresia-overview-title">Tu empresa, todas las operaciones bajo control.</h1>
+     <p>Administra los negocios cliente, sus accesos, módulos y preparación comercial desde un mismo lugar. Los datos de cada empresa permanecen en su propio espacio.</p>
+     <div className={styles.heroActions}>
+       <a href="#nuevo-cliente"><Plus size={16}/> Incorporar empresa</a>
+       <a href="#clientes"><Building2 size={16}/> Ver clientes</a>
+       <Link href="/agency"><BarChart3 size={16}/> Prospección</Link>
+     </div>
+   </section>
+   <section className={`grid ${styles.kpis}`} aria-label="Indicadores globales de Empresia">
+     <Metric label="Empresas cliente" value={String(commercialTenants.length)} sub="Sin contar entornos técnicos"/>
+     <Metric label="Usuarios vinculados" value={String(commercialTenants.reduce((n,t)=>n+Number(t.member_count||0),0))} sub="Miembros de empresas comerciales"/>
+     <Metric label="Con plan asignado" value={String(commercialTenants.filter(t=>Boolean(t.plan_code)).length)} sub="Configuración comercial"/>
+     <Metric label="Sin plan asignado" value={String(commercialTenants.filter(t=>!t.plan_code).length)} sub="Requieren revisión"/>
+   </section>
+   <div className={styles.sectionTitleRow}><div><span className="eyebrow">Cartera Empresia</span><h2>Empresas y operaciones</h2></div><p>Selecciona un cliente para administrarlo sin salir de Empresia</p></div>
+
+ <section className={styles.clientLayout} id="clientes" aria-label="Empresas cliente de Empresia">
+   <div className={`card ${styles.clientPanel}`}>
+     <h2>Empresas que administras</h2>
+     <p className="muted">Cada organización conserva su plan, permisos, identidad y datos. Aquí ves la cartera comercial de Empresia.</p>
+     <label className="platform-technical-toggle"><input type="checkbox" checked={showTechnical} onChange={e=>setShowTechnical(e.target.checked)}/> Mostrar entornos técnicos ({tenants.length-commercialTenants.length})</label>
+     <div className={styles.clientList}>
+       {visibleTenants.map(t=><button type="button" key={t.tenant_id} className={`${styles.clientButton} ${selectedId===t.tenant_id?styles.selected:""}`} aria-pressed={selectedId===t.tenant_id} onClick={()=>{chooseTenant(t.tenant_id);document.getElementById("detalle-cliente")?.scrollIntoView({behavior:"smooth",block:"start"});}}>
+         <span className={styles.clientButtonTop}><span className={styles.clientAvatar} aria-hidden="true">{t.tenant_name.trim().slice(0,2).toUpperCase()}</span><span className={styles.clientIdentity}><strong>{t.tenant_name}</strong><small>{t.tenant_slug}</small></span></span>
+         <span className={styles.clientMetadata}><span>Plan: {t.plan_code??"Sin asignar"}</span><span>{t.member_count} usuario(s)</span></span>
+         <span className={styles.clientAction}>Gestionar empresa <ChevronRight size={16}/></span>
+       </button>)}
+     </div>
+     {!visibleTenants.length&&<div className={styles.noClients}>Aún no hay empresas en esta vista. Incorpora tu primer cliente o activa los entornos técnicos para revisarlos.</div>}
+   </div>
+   <form className={`card ${styles.formPanel}`} id="nuevo-cliente" onSubmit={createClient}>
+     <div className="eyebrow">Alta de clientes</div><h2>Incorporar nueva empresa</h2><p className="muted">Provisiona un workspace aislado. No modifica los datos de otros clientes.</p>
+     <div className="stack gap-12">
+       <label>Nombre de la empresa<input value={newName} onChange={e=>{setNewName(e.target.value);if(!newSlug)setNewSlug(slugify(e.target.value))}} placeholder="Nombre comercial" required/></label>
+       <label>Identificador interno<input value={newSlug} onChange={e=>setNewSlug(slugify(e.target.value))} placeholder="nombre-comercial" required/></label>
+       <label>Plan<select value={newPlan} onChange={e=>setNewPlan(e.target.value)}>{plans.map(p=><option key={p.id} value={p.code}>{p.name} · {usd(p.monthly_price_cents)}/mes</option>)}</select></label>
+       <label>Sector<input value={newVertical} onChange={e=>setNewVertical(e.target.value)} placeholder="Servicios, clínicas, comercio…"/></label>
+       <label>Plantilla<select value={newTemplate} onChange={e=>setNewTemplate(e.target.value)}><option value="">CRM base</option><option value="cita-24">Sistema Cita-24</option></select></label>
+       <button className="button primary" type="submit" disabled={creating||!plans.length}><Plus size={15}/>{creating?" Creando empresa…":" Crear empresa"}</button>
+     </div>
+   </form>
+ </section>
+ {selected&&<div id="detalle-cliente" className={`stack gap-16 ${styles.detail}`}><section className="card"><div className="eyebrow">Cliente seleccionado</div><h2>{selected.tenant_name}</h2><p className="muted">Entra al mismo tenant en el que trabaja su equipo, sin mezclar datos.</p>{tenantLoading&&<p role="status">Validando datos y permisos del cliente seleccionado…</p>}<div className="top-actions"><label>Plan <select disabled={tenantLoading} value={selected.plan_code??''} onChange={e=>e.target.value&&assignPlan(e.target.value)}>{plans.map(p=><option value={p.code} key={p.id}>{p.name}</option>)}</select></label><button className="button primary" disabled={tenantLoading} onClick={()=>enter('/crm')}>Entrar al CRM <ExternalLink size={13}/></button><button className="button" disabled={tenantLoading} onClick={()=>enter('/ventas')}>Abrir Ventas</button></div></section>
  <section className="card" id="onboarding-users" aria-label="Vincular cuenta existente al cliente">
  <div className="eyebrow">Onboarding · Equipo del cliente</div>
  <h2>Vincular usuario ya registrado</h2>
@@ -150,5 +229,13 @@ export default function EurevectorConsole(){
  </form></section>
  <section className="card" id="modulos"><h2>Módulos</h2><div className="grid two-col">{modules.map(m=><div className="priority-item" key={m.module_key}><div><strong>{m.module_name}</strong><div className="muted">{m.source}</div></div><button className={`button small ${m.enabled?'':'danger'}`} onClick={()=>toggleModule(m)}>{m.enabled?<><CheckCircle2 size={13}/> Activo</>:'Desactivado'}</button></div>)}</div></section>
  <section className="grid two-col" id="odoo"><form className="card" onSubmit={saveOdoo}><h2>Odoo / ERP</h2><div className="stack gap-12"><label>URL<input value={odooUrl} onChange={e=>setOdooUrl(e.target.value)} required/></label><label>Base de datos<input value={odooDb} onChange={e=>setOdooDb(e.target.value)}/></label><label>Sincronización<select value={odooDirection} onChange={e=>setOdooDirection(e.target.value)}><option value="bidirectional">Bidireccional</option><option value="erp_to_crm">Odoo → CRM</option><option value="crm_to_erp">CRM → Odoo</option></select></label><button className="button primary">Guardar Odoo</button></div></form><div className="card"><h2>Integraciones</h2><div className="priority-item"><strong>Landing / Leads</strong><span>{Number(snapshot?.lead_pages??0)} activa(s)</span></div>{(snapshot?.odoo??[]).map(o=><div className="priority-item" key={o.id}><strong>{o.name}</strong><span className="pill">{o.status}</span></div>)}{(snapshot?.channels??[]).map((c,i)=><div className="priority-item" key={`${c.provider}-${i}`}><strong>{c.name}</strong><span className="pill">{c.status}</span></div>)}</div></section></div>}
- </main></div>}
+
+ </main>
+ <nav className={styles.mobileBar} aria-label="Accesos rápidos de Empresia">
+   <a href="#inicio"><Home/>Inicio</a>
+   <a href="#clientes"><Building2/>Empresas</a>
+   <a href="#nuevo-cliente"><Plus/>Nueva</a>
+   <Link href="/agency"><BarChart3/>Ventas</Link>
+ </nav>
+ </div>}
 function Metric({label,value,sub}:{label:string;value:string;sub:string}){return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>}

@@ -48,19 +48,26 @@ try {
   });
   const page = await context.newPage();
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
-  const row=page.getByRole('row').filter({has:page.getByText('QA A',{exact:true})});
-  const rowB=page.getByRole('row').filter({has:page.getByText('QA B',{exact:true})});
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  const openMenu=page.getByRole('button',{name:'Abrir menú'});
+  await openMenu.click();
+  await page.getByRole('navigation',{name:'Navegación de Empresia'}).getByRole('link',{name:'Prospección comercial'}).waitFor();
+  await page.getByRole('button',{name:'Cerrar menú de Empresia'}).click();
+  await page.getByRole('navigation',{name:'Navegación de Empresia',includeHidden:true}).waitFor({state:'hidden',timeout:5000});
+  assert.equal(await page.getByRole('navigation',{name:'Navegación de Empresia'}).isVisible(),false,'mobile drawer closes without overlay trapping the dashboard');
+
+  const row=page.locator('button[aria-pressed]').filter({hasText:'QA A'});
+  const rowB=page.locator('button[aria-pressed]').filter({hasText:'QA B'});
+  await row.click();
   for(let i=0;i<60&&!delayedAStarted;i++)await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(delayedAStarted,true,'QA A request must start before switching');
-  await rowB.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await rowB.click();
   await page.getByLabel('Marca',{exact:true}).waitFor();
   await page.waitForFunction(()=>document.querySelector('input')!==null);
   await page.getByLabel('Marca',{exact:true}).fill('Marca B');
   await page.waitForTimeout(1000);
   assert.equal(await page.getByLabel('Marca',{exact:true}).inputValue(),'Marca B','late QA A must not overwrite client B branding');
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click(); // no force: catches overlapping cells
+  await row.click(); // no force: catches overlapping cells
   await page.getByRole('heading',{name:'QA A',exact:true}).waitFor();
   await page.getByLabel('País (ISO, 2 letras)').fill('DO');
   await page.getByLabel('Moneda (ISO, 3 letras)').fill('DOP');
@@ -78,11 +85,11 @@ try {
   assert.deepEqual(supportEntries,[A],'support entry uses the explicitly selected client');
   assert.equal(await page.getByLabel('Empresa activa').inputValue(),A);
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
-  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Agregar empresa cliente'})});
-  await onboarding.getByLabel('Nombre').fill('Nuevo Cliente QA');
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Incorporar nueva empresa'})});
+  await onboarding.getByLabel('Nombre de la empresa').fill('Nuevo Cliente QA');
   await onboarding.getByLabel('Identificador interno').fill('nuevo-cliente-qa');
-  await onboarding.getByRole('button',{name:'Crear cliente'}).click();
+  await onboarding.getByRole('button',{name:'Crear empresa'}).click();
   await page.getByRole('heading',{name:'Nuevo Cliente QA',exact:true}).waitFor();
   await page.getByText('Cliente creado; abre su verificación de activación y completa los pendientes.').waitFor();
   await page.getByTestId('client-readiness-status').getByText('Configuraciones comprobadas: 2').waitFor();
@@ -94,5 +101,12 @@ try {
   await page.getByText('Usuario vinculado a esta empresa. No se ha enviado correo; necesita sus credenciales existentes.').waitFor();
   await page.getByText('qa-client@example.invalid',{exact:true}).waitFor();
   assert.equal(linkedCalls,1,'exactly one user account linked under selected tenant');
+
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(base+'/platform-admin');
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  assert.ok(await page.getByRole('navigation',{name:'Navegación de Empresia'}).isVisible(),'desktop owner sidebar remains visible');
+  const desktopSize=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
+  assert.ok(desktopSize.scroll<=desktopSize.viewport+1,'Super Admin desktop page does not overflow');
   console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, mobile support entry and isolation (mocked API; separate real SQL rollback proof).');
 } finally { if(browser)await browser.close(); if(server)server.kill(); }

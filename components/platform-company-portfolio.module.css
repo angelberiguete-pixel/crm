@@ -15,3 +15,86 @@
 .channels{display:flex;flex-wrap:wrap;gap:8px}.channels span{font-size:12px;border:1px solid var(--border);border-radius:9px;padding:8px}.warning{padding:13px 17px;border:1px solid #ba6c6c;border-radius:12px;background:#572b2b;color:#fff;margin:12px 0}
 @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.double{grid-template-columns:1fr}}
 @media(max-width:540px){.page{padding:15px}.tile{min-height:236px}.actions>*{flex:1}.enter{width:100%;justify-content:center}.panel{padding:14px}}
+
+
+/* Empresia-owned selector, visually separate from customer-themed workspaces. */
+.page {
+ color-scheme: light;
+ --text: #111827;
+ --muted: #64748b;
+ --panel: #fff;
+ --panel2: #f8fafc;
+ --border: #e2e8f0;
+ --shadow: 0 10px 32px rgba(19,35,65,.045);
+ background: #f5f7fb;
+ min-height: 100dvh;
+ max-width: none;
+}
+.page > * { max-width: 1450px; margin-left: auto; margin-right: auto; }
+.platformMark { display: block; width: 147px; height: auto; margin-bottom: 20px; }
+.top { align-items: flex-end; }
+.top h1 { font-weight: 800; letter-spacing: -.048em; font-size: clamp(28px,4vw,40px); color: #111827; }
+.top p { font-size: 14px; line-height: 1.55; }
+.eyebrow { color: #315bff; letter-spacing: .09em; font-size: 11px; }
+.actions a,.actions button {
+ background: #fff;
+ border: 1px solid #dce3ee;
+ border-radius: 10px;
+ color: #334155;
+ min-height: 44px;
+ font-size: 12px;
+ font-weight: 680;
+}
+.actions a[href="/platform-admin"] { background: #315bff; color: #fff; border-color: #315bff; }
+.cards { gap: 14px; }
+.tile {
+ min-height: 260px;
+ padding: 15px;
+ border: 1px solid #dee6f1;
+ border-top: 3px solid #4671ff;
+ background: #fff;
+ color: #18233a;
+ border-radius: 16px;
+ box-shadow: 0 10px 32px rgba(19,35,65,.045);
+ gap: 10px;
+}
+.tile:hover { border-color: #91aafe; box-shadow: 0 15px 36px rgba(37,74,161,.09); }
+.tile:focus-visible,.actions a:focus-visible,.actions button:focus-visible {
+ outline: 3px solid #83a9ff;
+ outline-offset: 3px;
+}
+.tile strong { font-size: 15px; }
+.tile small { color: #64748b; }
+.tile span:last-child { color: #315bff; font-weight: 750; font-size: 12px; }
+.logo {
+ height: 106px;
+ width: 100%;
+ display: grid;
+ place-items: center;
+ padding: 13px;
+ border-radius: 11px;
+ background: linear-gradient(135deg,#151f32,#273952);
+}
+.logo img { max-height: 90px; }
+.logo strong { color: #d8e8ff; }
+.panel { box-shadow: 0 10px 32px rgba(19,35,65,.045); }
+.kpi { background: #f8faff; }
+.kpi strong { color: #172339; }
+.block { background: #fcfdff; }
+.scroller { -webkit-overflow-scrolling: touch; }
+.warning { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+@media (max-width: 540px) {
+ .page { padding: 16px 14px 85px; }
+ .platformMark { width: 122px; margin-bottom: 12px; }
+ .top { gap: 8px; margin-bottom: 20px; }
+ .top h1 { margin: 6px 0; }
+ .actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+ .actions > * { justify-content: center; min-width: 0; text-align: center; }
+ .actions > *:first-child { grid-column: 1 / -1; }
+ .cards { grid-template-columns: 1fr; }
+ .tile { min-height: 217px; }
+ .panel { padding: 17px 14px; }
+ .detailHead label { width: 100%; }
+ .detailHead select { min-height: 44px; }
+ .kpi { padding: 13px; }
+}
