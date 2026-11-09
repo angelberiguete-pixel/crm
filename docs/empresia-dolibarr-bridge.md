@@ -74,7 +74,7 @@ configuración. No se apoya en metadatos editables por el usuario.
 ## Pruebas
 
 ```bash
-deno test --allow-none tests/dolibarr-protocol.test.ts
+deno test supabase/functions/empresia-dolibarr/protocol.test.ts
 deno check supabase/functions/empresia-dolibarr/index.ts
 node --test tests/empresia-dolibarr-bridge-contract.test.mjs tests/empresia-erp-module.test.mjs
 npm ci && npm run typecheck && npm run build
