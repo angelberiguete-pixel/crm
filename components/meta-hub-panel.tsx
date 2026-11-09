@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ExternalLink, Facebook, Inbox, Instagram, Megaphone, MessageCircle, ShieldCheck } from "lucide-react";
+import { AtSign, ExternalLink, Inbox, Megaphone, MessageCircle, MessagesSquare, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   deriveMetaHubSnapshot,
@@ -54,8 +54,8 @@ export default function MetaHubPanel({ tenantId, health, refreshKey }: Props) {
   const overview = deriveMetaHubSnapshot(tenantId, health, bridge);
   const products = [
     { name: "WhatsApp Business", Icon: MessageCircle, status: overview.whatsapp, detail: "Cloud API · número y WABA por empresa" },
-    { name: "Instagram", Icon: Instagram, status: overview.instagram, detail: "OpenReply · comentarios y mensajes" },
-    { name: "Facebook y Messenger", Icon: Facebook, status: overview.messenger, detail: "Pages API · mensajería y comentarios" },
+    { name: "Instagram", Icon: AtSign, status: overview.instagram, detail: "OpenReply · comentarios y mensajes" },
+    { name: "Facebook y Messenger", Icon: MessagesSquare, status: overview.messenger, detail: "Pages API · mensajería y comentarios" },
     { name: "Meta Lead Ads", Icon: Megaphone, status: overview.leadAds, detail: "Formularios y campañas autorizadas" },
   ];
   return <section className={styles.wrap} aria-label="Meta Hub por empresa">
