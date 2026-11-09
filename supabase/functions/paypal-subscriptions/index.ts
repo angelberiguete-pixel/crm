@@ -118,13 +118,15 @@ async function provision(req: Request) {
   const plan = await exactPlan();
   if (plan.status === "ready" && plan.provider_plan_id) return json({ ok: true, status: "ready" });
   if (plan.status !== "pending") return json({ error: "plan_requires_operator_review", status: plan.status }, 409);
+  // Fail before locking the plan if credentials and webhook endpoint are not configured.
+  if (!getEnv("PAYPAL_SUBSCRIPTIONS_WEBHOOK_ID")) throw Error("webhook_not_configured");
+  const access = await token();
   // Atomic compare-and-set: simultaneous operator clicks cannot create two products.
   const { data: claimed, error: claimError } = await service.from("billing_gateway_plans")
     .update({ status: "provisioning", updated_at: new Date().toISOString() })
     .eq("id", plan.id).eq("status", "pending").select("id").maybeSingle();
   if (claimError || !claimed) return json({ error: "plan_already_in_progress" }, 409);
   try {
-    const access = await token();
     let productId = plan.provider_product_id;
     if (!productId) {
       const product = await paypal("/v1/catalogs/products", access, "POST", {
@@ -211,7 +213,8 @@ async function startSubscription(req: Request, payload: Record<string, unknown>)
   const start = new Date(sub.current_period_end ?? "");
   if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now() + 60_000)
     return json({ error: "billing_start_date_not_configured" }, 409);
-  const returnOrigin = getEnv("PAYPAL_RETURN_ORIGIN");
+  if (!getEnv("PAYPAL_SUBSCRIPTIONS_WEBHOOK_ID")) throw Error("webhook_not_configured");
+  const returnOrigin = getEnv("PAYPAL_RETURN_ORIGIN") || "https://crm-revenue-os.vercel.app";
   if (returnOrigin !== "https://crm-revenue-os.vercel.app" && returnOrigin !== "https://crm-look.vercel.app")
     throw Error("return_origin_not_configured");
   const access = await token();
