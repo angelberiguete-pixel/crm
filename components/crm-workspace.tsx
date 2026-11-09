@@ -72,6 +72,7 @@ const nav = [
   ["quotations", "Cotizaciones", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
+  ["cita24", "Cita-24", CalendarDays],
   ["automations", "Automatizaciones", Bot],
   ["arm", "Agentes", Bot],
   ["tasks", "Tareas", CalendarDays],
@@ -92,7 +93,7 @@ const familyLabels:Record<string,string>={
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
- products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
+ products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",cita24:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
