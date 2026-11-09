@@ -24,6 +24,7 @@ Variables del entorno Edge:
 - `PAYPAL_ENVIRONMENT`: `sandbox` para pruebas; `live` solo cuando el comerciante esté autorizado.
 - `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: REST app de la **misma cuenta PayPal Business de Ángel Berigüete** que recibe la factura 0002.
 - `PAYPAL_SUBSCRIPTIONS_WEBHOOK_ID`: ID del webhook REST creado para la app y entorno elegidos (distinto al de facturas si hay dos URLs).
+- `PAYPAL_SUBSCRIPTIONS_ENABLED`: configurar exactamente `true` **solo después** de revisar Sandbox, Live, permisos y webhooks; sin esta variable no se crea ningún plan ni autorización recurrente.
 - `PAYPAL_RETURN_ORIGIN` (opcional): solo se admiten `https://crm-revenue-os.vercel.app` y `https://crm-look.vercel.app`; el primero es predeterminado.
 - Supabase agrega sus propias claves de servidor `SUPABASE_URL`, `SUPABASE_ANON_KEY`/`SUPABASE_PUBLISHABLE_KEYS` y `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_SECRET_KEYS`.
 
