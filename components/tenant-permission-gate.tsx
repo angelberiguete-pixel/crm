@@ -31,6 +31,7 @@ const sectionPermission: Record<string, string> = {
   channels: "settings",
   integrations: "settings",
   marketing: "settings",
+  email: "settings",
   "web-analytics": "settings",
   employees: "settings",
   arm: "dashboard",
@@ -140,7 +141,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const hasPermission = permissions.all === true || permissions[permissionKey] === true;
       const moduleEnabled = module ? module.enabled : true;
 
-      const restrictedFamilySections=["companies","sales","marketing","channels","automations","sessions"];
+      const restrictedFamilySections=["companies","sales","marketing","email","channels","automations","sessions"];
       const familyOnlySections=["arm","tasks","reports"];
       const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
