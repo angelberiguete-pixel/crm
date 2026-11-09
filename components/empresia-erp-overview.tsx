@@ -63,9 +63,9 @@ export default function EmpresiaErpOverview() {
   }, [tenantId, allowed]);
 
   // The permission gate independently checks server-supplied membership and module access.
-  if (!allowed) return <main className="content"><div className="notice" role="alert">
+  if (!allowed) return <div className="notice" role="alert">
     ERP: acceso reservado a la administración de Empresia.
-  </div></main>;
+  </div>;
 
   const existingProvider = record?.provider?.toLowerCase() ?? null;
   const legacyOdoo = existingProvider === "odoo";
@@ -76,11 +76,11 @@ export default function EmpresiaErpOverview() {
     : legacyOdoo ? "Conexión Odoo heredada"
     : "Conexión de otro proveedor";
 
-  return <main className="content" style={{ maxWidth: 1120, margin: "0 auto" }}>
+  return <div className="stack gap-16" style={{ maxWidth: 1120, margin: "0 auto" }}>
     <header className="topbar">
       <div>
         <div className="eyebrow">Empresia · Plataforma principal</div>
-        <h1>ERP</h1>
+        <h2>Estado del módulo ERP</h2>
         <p className="muted">Operaciones empresariales dentro de Empresia. El motor Dolibarr todavía no está integrado ni validado en producción.</p>
       </div>
       <Link className="button" href="/crm"><Boxes size={16}/> Volver al CRM</Link>
@@ -126,5 +126,5 @@ export default function EmpresiaErpOverview() {
       </div>
       <p className="muted" style={{ marginTop: 12, fontSize: 12 }}><Clock3 size={13} style={{ verticalAlign: "middle", marginRight: 5 }}/>Esta pantalla muestra el progreso de integración; no es una demostración simulada de Dolibarr.</p>
     </section>
-  </main>;
+  </div>;
 }
