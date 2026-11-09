@@ -11,6 +11,8 @@ type Contact = {
   display_name: string;
   phone: string | null;
   email: string | null;
+  whatsapp_phone: string | null;
+  metadata: Record<string, unknown> | null;
 };
 type Appointment = {
   id: string;
@@ -59,6 +61,7 @@ export default function Cita24ClinicWorkspace() {
   const [patientPhone, setPatientPhone] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [patientSource, setPatientSource] = useState("whatsapp");
+  const [contactConsent, setContactConsent] = useState(false);
   const [selectedContact, setSelectedContact] = useState("");
   const [service, setService] = useState("Evaluación inicial");
   const [startLocal, setStartLocal] = useState("");
@@ -79,7 +82,7 @@ export default function Cita24ClinicWorkspace() {
     void (async () => {
       const [c, a, t] = await Promise.all([
         supabase.from("contacts")
-          .select("id,display_name,phone,email")
+          .select("id,display_name,phone,email,whatsapp_phone,metadata")
           .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(700),
         supabase.from("calendar_events")
           .select("id,contact_id,title,starts_at,ends_at,status,metadata")
@@ -143,11 +146,16 @@ export default function Cita24ClinicWorkspace() {
       const saved = await supabase.from("contacts").insert({
         tenant_id: tenantId, display_name: name, phone,
         email: patientEmail.trim() || null, source: patientSource, status: "lead",
-        metadata: { origin_module: "cita24", intake: "administrative_only" },
+        whatsapp_phone: patientSource === "whatsapp" ? phone : null,
+        metadata: {
+          origin_module: "cita24", intake: "administrative_only",
+          cita24_whatsapp_admin_consent: contactConsent,
+          cita24_consent_captured_at: contactConsent ? new Date().toISOString() : null,
+        },
       }).select("id").single();
       if (saved.error) throw saved.error;
       setSelectedContact(saved.data.id);
-      setPatientName(""); setPatientPhone(""); setPatientEmail("");
+      setPatientName(""); setPatientPhone(""); setPatientEmail(""); setContactConsent(false);
       setNotice("Contacto registrado. Ya puedes asignarle una cita.");
       setRefreshKey((v) => v + 1);
     } catch (error) {
@@ -300,6 +308,7 @@ export default function Cita24ClinicWorkspace() {
               <option value="web">Web</option><option value="phone">Llamada</option><option value="walk_in">Presencial</option>
             </select></label>
           </div>
+          <label style={{ display: "block", marginTop: 12 }}><input type="checkbox" checked={contactConsent} onChange={(e) => setContactConsent(e.target.checked)} /> El contacto autorizó mensajes administrativos por WhatsApp. Registrar solo con consentimiento real.</label>
           <button className="button primary" style={{ marginTop: 12 }} disabled={busy}>Guardar contacto</button>
         </form>
         <form className="card" onSubmit={(event) => void bookAppointment(event)}>
@@ -331,6 +340,16 @@ export default function Cita24ClinicWorkspace() {
             {upcoming.map((a) => <article key={a.id} className="priority-item" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
               <div><strong>{patientById.get(a.contact_id ?? "")?.display_name ?? "Contacto"}</strong>
                 <div className="muted">{appointmentTime.format(new Date(a.starts_at))} · {String(a.metadata?.service ?? "Cita administrativa")}</div>
+                {(() => {
+                  const contact = patientById.get(a.contact_id ?? "");
+                  const digits = (contact?.whatsapp_phone ?? contact?.phone ?? "").replace(/\D/g, "");
+                  const number = digits.length === 10 ? "1" + digits : digits;
+                  const consent = contact?.metadata?.cita24_whatsapp_admin_consent === true;
+                  const body = "Hola, te escribimos desde " + tenant.tenant_name + " para confirmar tu cita del " + appointmentTime.format(new Date(a.starts_at)) + ". ¿Nos confirmas si asistirás?";
+                  return consent && number.length >= 11 && number.length <= 15
+                    ? <div><a className="button small" href={"https://wa.me/" + number + "?text=" + encodeURIComponent(body)} target="_blank" rel="noopener noreferrer">Abrir WhatsApp (envío manual)</a></div>
+                    : <div className="muted">WhatsApp manual no habilitado: verificar autorización y número.</div>;
+                })()}
                 <span className="pill">{a.metadata?.confirmed === true ? "Confirmada internamente" : "Sin confirmar"}</span>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
