@@ -41,6 +41,7 @@ const sectionPermission: Record<string, string> = {
   quotations: "quotations",
   operations: "operations",
   calendar: "calendar",
+  cita24: "calendar",
   automations: "automations",
   settings: "settings",
   sessions: "settings",
@@ -143,7 +144,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
 
       const restrictedFamilySections=["companies","sales","marketing","email","channels","automations","sessions"];
       const familyOnlySections=["arm","tasks","reports"];
-      const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
+      const familyPowerRestriction=(section==="cita24"&&activeTenant.tenant_slug==="family-power")
+        ||(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
            (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));

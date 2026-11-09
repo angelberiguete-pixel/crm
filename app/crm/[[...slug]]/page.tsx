@@ -1,4 +1,5 @@
 import CrmWorkspace from "@/components/crm-workspace";
+import Cita24ClinicWorkspace from "@/components/cita24-clinic-workspace";
 import CrmSales360 from "@/components/crm-sales-360";
 import CrmCustomers from "@/components/crm-customers";
 import CrmCommercialDashboard from "@/components/crm-commercial-dashboard";
@@ -19,7 +20,9 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
   const section = slug[0] ?? "";
   return (
     <TenantPermissionGate section={section}>
-      {section === ""
+      {section === "cita24"
+        ? <Cita24ClinicWorkspace />
+        : section === ""
         ? <CrmCommercialDashboard />
         : section === "sales" || section === "revenue"
         ? <CrmSales360 />
