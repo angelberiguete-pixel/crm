@@ -282,7 +282,7 @@ textarea{min-height:96px;resize:vertical}
 .look-brand-logo--loading img{width:100%}
 /* All existing screens with a global .loading placeholder show the real brand automatically. */
 .loading{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center}
-.loading::before{content:"";display:block;width:150px;height:122px;background:transparent url('/look-social-media-logo.svg') center/contain no-repeat;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+.loading::before{content:"";display:block;width:150px;height:122px;background:transparent url('/empresia-logo.svg') center/contain no-repeat;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
 @media(prefers-reduced-motion:no-preference){.loading::before{animation:look-loading-pulse 1.8s ease-in-out infinite}}
 @keyframes look-loading-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.72;transform:scale(.97)}}
 .platform-brand-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
