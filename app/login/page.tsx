@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [resetBusy, setResetBusy] = useState(false);
 
   async function routeAuthenticatedUser() {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next && /^\/empresia\/(checkout|mis-compras)(\?|$)/.test(next)) {
+      router.replace(next);
+      return;
+    }
     const access = await supabase.rpc("platform_current_access");
     if(access.error){setMessage("La sesión es válida, pero no pudimos comprobar tu acceso. Intenta entrar nuevamente.");return;}
     const value = (access.data ?? {}) as { is_platform_admin?: boolean };
