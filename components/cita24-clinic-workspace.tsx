@@ -119,7 +119,7 @@ export default function Cita24ClinicWorkspace() {
   const noShows = appointments.filter((a) => a.status === "no_show").length;
   const completed = appointments.filter((a) => a.status === "completed").length;
   const upcoming = appointments
-    .filter((a) => a.status === "scheduled" && new Date(a.ends_at).getTime() >= Date.now() - 3600000)
+    .filter((a) => a.status === "scheduled" && new Date(a.ends_at).getTime() >= Date.now() - 7 * 86400000)
     .slice(0, 80);
   const followups = tasks.filter((task) => task.status !== "done" && task.status !== "cancelled").slice(0, 50);
 
@@ -327,7 +327,7 @@ export default function Cita24ClinicWorkspace() {
         </form>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
-        <h2>3. Agenda próxima</h2>
+        <h2>3. Agenda reciente y próxima</h2>
         <p className="muted">Confirmar aquí significa registrar una decisión humana. No envía automáticamente SMS, WhatsApp ni correo.</p>
         {upcoming.length === 0 ? <p className="muted">No hay citas próximas registradas en Cita-24.</p> :
           <div style={{ display: "grid", gap: 10 }}>
