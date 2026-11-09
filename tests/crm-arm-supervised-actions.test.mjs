@@ -5,6 +5,7 @@ const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 
 const sql=read("supabase/migrations/20261109080000_crm_arm_supervised_interventions.sql");
 const queue=read("components/crm-arm-action-queue.tsx");
+const rpcGate=read("supabase/migrations/20261109081000_crm_arm_private_rpc_gate.sql");
 const panel=read("components/crm-agent-advice-panel.tsx");
 
 test("approval lifecycle uses explicit reviewed, executed and measured states",()=>{
@@ -58,6 +59,18 @@ test("outcomes depend on CRM evidence, not user-supplied conversion labels",()=>
  assert.doesNotMatch(sql,/p_success|p_observed_result|p_conversion/i);
 });
 
+test("privileged functions live in private schema behind invoker API wrappers",()=>{
+ for(const name of ["crm_arm_propose_intervention","crm_arm_review_intervention",
+   "crm_arm_execute_intervention","crm_arm_complete_intervention_task","crm_arm_measure_intervention"]){
+  assert.match(rpcGate,new RegExp("alter function public\\\\."+name+"\\\\("));
+  assert.match(rpcGate,new RegExp("create function public\\\\."+name+"\\\\("));
+  assert.match(rpcGate,new RegExp("select private\\\\."+name+"\\\\("));
+ }
+ assert.match(rpcGate,/language sql security invoker set search_path=''/);
+ assert.match(rpcGate,/revoke all on function public\\.crm_arm_execute_intervention\\(uuid,uuid\\) from public,anon,authenticated/);
+ assert.match(rpcGate,/grant execute on function public\\.crm_arm_execute_intervention\\(uuid,uuid\\) to authenticated/);
+});
+
 test("user UI requires real click for proposal approval execution and measurement",()=>{
  for(const key of ["propose","approve","reject","execute","complete","measure"])assert.match(queue,new RegExp('act\\("'+key+'"'));
  assert.match(queue,/crm_arm_propose_intervention/);
@@ -66,6 +79,7 @@ test("user UI requires real click for proposal approval execution and measuremen
  assert.match(queue,/crm_arm_complete_intervention_task/);
  assert.match(queue,/crm_arm_measure_intervention/);
  assert.match(queue,/crm_arm_intervention_learning/);
+ assert.match(queue,/crm_arm_intervention_events/);
  assert.match(queue,/x\.measured_count>=10/);
  assert.match(queue,/\.eq\("tenant_id",tenantId\)/);
  assert.match(panel,/CrmArmActionQueue tenantId=\{tenantId\}/);
