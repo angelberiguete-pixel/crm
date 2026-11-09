@@ -32,7 +32,10 @@ async function prepare(role){
     access_token:token,refresh_token:"qa-refresh",expires_at:exp,expires_in:3600,
     token_type:"bearer",user,
    }));
-   sessionStorage.setItem("crm:login-intent","family-power"); // intentionally stale
+   if(!sessionStorage.getItem("qa:intent-seeded")) {
+    sessionStorage.setItem("crm:login-intent","family-power"); // intentionally stale only on first navigation
+    sessionStorage.setItem("qa:intent-seeded","1");
+   }
   },{user,token,exp});
  }
  await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
