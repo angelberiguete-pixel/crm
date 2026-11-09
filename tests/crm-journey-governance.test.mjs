@@ -57,6 +57,8 @@ test("the SQL uses immutable snapshots, transition triggers and tenant RLS",()=>
  assert.match(m,/when old.status='open' and new.status in \('won','lost'\)/);
  assert.match(m,/when old.status in \('won','lost'\) and new.status='open'/);
  assert.match(m,/legacy_baseline/);
+ assert.match(m,/before update of tenant_id on public.opportunities/);
+ assert.match(m,/Opportunity cannot be reassigned to another tenant/);
  assert.match(m,/with \(security_invoker=true\)/);
  assert.match(m,/revoke all on public.crm_arm_next_actions from public,anon,authenticated/);
  assert.match(m,/true as requires_human_approval/);
