@@ -162,7 +162,7 @@ export default function FamilyPowerBillingPortal(){
           <h2>{initial?usd(initial.total_cents):invoices.length?usd(invoices.reduce((sum,i)=>sum+Math.max(0,i.amount_due_cents||0),0)):"Sin facturas registradas"}</h2>
           <p className="muted">{!initial?"Consulta tus facturas pendientes y los pagos conciliados en este portal.":initial.amount_due_cents>0?"Primera cuota pendiente: "+usd(initial.amount_due_cents)+" (del contrato de RD$30,000).":"Primera cuota pagada. El saldo contractual en pesos se reduce al aplicar el tipo de cambio acordado."}</p>
           {initial&&<div className="pill">{initial.status==="paid"?"Pagado":initial.status==="open"?"Pendiente":"En revisión"}</div>}
-          {initial?.status==="open"&&initial.hosted_invoice_url&&<a className="button primary" style={{display:"flex",marginTop:15}} href={initial.hosted_invoice_url} target="_blank" rel="noopener noreferrer"><CreditCard size={16}/> Pagar factura en PayPal</a>}
+          {(implementationStatus!=="settled"||!isFamilyPower)&&initial?.status==="open"&&initial.hosted_invoice_url&&<a className="button primary" style={{display:"flex",marginTop:15}} href={initial.hosted_invoice_url} target="_blank" rel="noopener noreferrer"><CreditCard size={16}/> Pagar factura en PayPal</a>}
           {due?.provider==="paypal"&&<button type="button" className="button" disabled={syncing} style={{display:"flex",marginTop:10}} onClick={()=>void syncPayPal()}>
             <RefreshCw size={16}/>{syncing?"Consultando PayPal…":"Comprobar pago en PayPal"}
           </button>}
