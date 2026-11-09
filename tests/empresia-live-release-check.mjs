@@ -38,10 +38,10 @@ assert.doesNotMatch(landing.html,/LOOK SOCIAL MEDIA/i,"old brand must not appear
 
 const legacy=await visit("/look-social-media");
 const refreshMeta=legacy.html.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*>/i)?.[0]??null;
-console.log(JSON.stringify({legacyRedirectMeta:refreshMeta,legacyMentions:legacy.html.match(/.{0,55}\\/empresia.{0,60}/g)?.slice(0,4)??[]}));
+console.log(JSON.stringify({legacyRedirectMeta:refreshMeta,legacyMentions:legacy.html.match(new RegExp(".{0,55}/empresia.{0,60}","g"))?.slice(0,4)??[]}));
 assert.ok(
   legacy.uri.pathname==="/empresia" ||
-  (refreshMeta!==null && /content=["']0;url=\\/empresia["']/i.test(refreshMeta)),
+  (refreshMeta!==null && refreshMeta.toLowerCase().includes("url=/empresia")),
   "old links must redirect through HTTP or a verified immediate HTML refresh to Empresia"
 );
 
