@@ -204,10 +204,11 @@ Deno.serve(async(req:Request)=>{
 
    // Reuse an existing unfinished checkout for the same user+offer.
    const cutoff=new Date(Date.now()-70*60*1000).toISOString();
-   const {data:pending}=await admin.from("empresia_checkout_orders")
+   let pendingQuery=admin.from("empresia_checkout_orders")
     .select("id,approval_url,status").eq("buyer_id",buyer.id)
-    .eq("offer_id",offer.id).eq("status","awaiting_approval")
-    .gt("created_at",cutoff).order("created_at",{ascending:false}).limit(1);
+    .eq("offer_id",offer.id).eq("status","awaiting_approval");
+   if(offer.kind==="one_time")pendingQuery=pendingQuery.gt("created_at",cutoff);
+   const {data:pending}=await pendingQuery.order("created_at",{ascending:false}).limit(1);
    if(pending?.[0]?.approval_url)
     return reply({status:"awaiting_approval",order_id:pending[0].id,approval_url:pending[0].approval_url});
 
@@ -225,6 +226,7 @@ Deno.serve(async(req:Request)=>{
     }).select("id").single();
    if(createError||!created)throw Error("storage_error");
    const orderId=created.id as string;
+   try{
    const token=await paypalToken();
    let providerId:string|undefined,approval:string|undefined;
    if(offer.kind==="one_time"){
@@ -271,6 +273,13 @@ Deno.serve(async(req:Request)=>{
     .update(write).eq("id",orderId);
    if(saveError)throw Error("storage_error");
    return reply({status:"awaiting_approval",order_id:orderId,approval_url:approval});
+   }catch(e){
+     // Do not leave a failed provider request locking a monthly buyer forever.
+     await admin.from("empresia_checkout_orders").update({
+       status:"failed",updated_at:new Date().toISOString()
+     }).eq("id",orderId).eq("status","created");
+     throw e;
+   }
   }
 
   if(action==="sync"||action==="capture"){
