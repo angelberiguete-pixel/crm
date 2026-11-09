@@ -58,6 +58,6 @@ test("preferred Gmail accounts are tenant-scoped metadata, not a mail transport"
   assert.match(senderSql, /sends_enabled=false/);
   assert.match(labels, /Correos comerciales seleccionados/);
   assert.match(labels, /no significa que Gmail esté conectado a Empresia/);
-  assert.match(labels, /no se alternarán para aumentar límites/);
+  assert.match(labels, /No se alternarán para aumentar límites/);
   assert.match(labels, /\.eq\("tenant_id", tenantId\)\.maybeSingle\(\)/);
 });
