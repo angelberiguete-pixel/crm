@@ -24,6 +24,6 @@ test("Family Power UI must check readiness before a paid generation",()=>{
  assert.match(ui,/setReadiness\(response\.data as AiReadiness\)/);
  assert.match(ui,/if\(tenant\?\.tenant_slug==="family-power"&&!readiness\?\.ready_for_trial\)/);
  assert.match(ui,/disabled=\{testing\|\|busy\|\|!readiness\?\.ready_for_trial/);
- assert.match(ui,/Falta OPENAI_API_KEY en Supabase Edge Functions/);
+ assert.match(ui,/Falta la clave del proveedor en Supabase Edge Functions/);
  assert.match(ui,/setSelectedId\(result\.data\.id\);setReadiness\(null\)/);
 });
