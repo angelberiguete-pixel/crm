@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {isCommercialClientTenant} from "../lib/visible-client-tenants.ts";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 
-test("commercial view retains exactly Look Social Media and Sublimaciones Lazala",()=>{
+test("commercial view retains legacy technical tenant slug and Sublimaciones Lazala",()=>{
   const tenants=["eurevector","sublimaciones-lazala","look-social-media-demo",
     "qa-e2e-25139e2a-b099-4786-b768-b496ea986595",
     "qa-e2e-db62e704-47b1-4df0-86ed-9481e2ac14d3"];
@@ -27,8 +27,8 @@ test("actual uploaded logo rendition is bundled as a working first-party SVG res
 });
 
 test("branding is shown on sign-in, owner control center, member portals and loading",()=>{
-  assert.match(read("app/login/page.tsx"),/<BrandLogo size="login"/);
-  assert.match(read("components/eurevector-console.tsx"),/<BrandLogo size="sidebar"/);
+  assert.match(read("app/login/page.tsx"),/<Image src="\/empresia-logo\.svg" alt="Empresia"/);
+  assert.match(read("components/eurevector-console.tsx"),/<Image src="\/empresia-logo-light\.svg" alt="Empresia"/);
   assert.match(read("components/crm-commercial-dashboard.tsx"),/<BrandLogo size="sidebar"/);
   assert.match(read("components/crm-workspace.tsx"),/<BrandLogo size="sidebar"/);
   assert.match(read("app/loading.tsx"),/<RouteLoadingBrand size="loading"/);
