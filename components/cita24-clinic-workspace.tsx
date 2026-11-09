@@ -161,7 +161,8 @@ export default function Cita24ClinicWorkspace() {
     event.preventDefault();
     if (!tenantId || busy || loadedTenantId !== tenantId) return;
     const contact = contacts.find((p) => p.id === selectedContact);
-    const starts = new Date(startLocal);
+    // Dominican clinics use Atlantic Standard Time year-round (UTC-04:00).
+    const starts = new Date(startLocal.length === 16 ? startLocal + ":00-04:00" : startLocal + "-04:00");
     const ends = new Date(starts.getTime() + minutes * 60000);
     if (!contact || !startLocal || !Number.isFinite(starts.getTime()) ||
         minutes < 10 || minutes > 240 || !service.trim()) {
@@ -317,7 +318,7 @@ export default function Cita24ClinicWorkspace() {
               <option>Evaluación inicial</option><option>Consulta de información</option>
               <option>Seguimiento administrativo</option><option>Revisión de presupuesto</option>
             </select></label>
-            <label>Fecha y hora<input style={fieldStyle} required type="datetime-local" value={startLocal} onChange={(e) => setStartLocal(e.target.value)} /></label>
+            <label>Fecha y hora (Santo Domingo, UTC-4)<input style={fieldStyle} required type="datetime-local" value={startLocal} onChange={(e) => setStartLocal(e.target.value)} /></label>
             <label>Duración<select style={fieldStyle} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
               <option value={15}>15 minutos</option><option value={30}>30 minutos</option>
               <option value={45}>45 minutos</option><option value={60}>60 minutos</option>
