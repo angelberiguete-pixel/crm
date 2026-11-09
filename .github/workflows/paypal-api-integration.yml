@@ -8,6 +8,7 @@ on:
       - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
       - 'components/family-power-billing-portal.tsx'
       - 'tests/paypal-api-integration.test.mjs'
+      - 'tests/family-power-paypal-approval.test.mjs'
       - '.github/workflows/paypal-api-integration.yml'
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - 'supabase/migrations/20261108070500_paypal_api_reconciliation.sql'
       - 'components/family-power-billing-portal.tsx'
       - 'tests/paypal-api-integration.test.mjs'
+      - 'tests/family-power-paypal-approval.test.mjs'
       - '.github/workflows/paypal-api-integration.yml'
 jobs:
   billing-contract:
@@ -25,6 +27,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs
+      - run: node --test tests/paypal-api-integration.test.mjs tests/family-power-billing.test.mjs tests/family-power-paypal-approval.test.mjs
       - run: npm ci
       - run: npm run typecheck
