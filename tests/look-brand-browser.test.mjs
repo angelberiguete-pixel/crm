@@ -12,19 +12,19 @@ try {
  browser=await chromium.launch({headless:true,...(process.env.CRM_TEST_CHROMIUM_PATH?{executablePath:process.env.CRM_TEST_CHROMIUM_PATH,args:["--no-sandbox","--disable-dev-shm-usage"]}:{channel:"chromium"})});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  await page.goto(base+"/login");
- const logo=page.getByRole("img",{name:"LOOK SOCIAL MEDIA"});
+ const logo=page.getByRole("img",{name:"Empresia"});
  await logo.waitFor({state:"visible"});
  const img=await logo.evaluate(async element=>{
    try{await element.decode()}catch{}
    return {complete:element.complete,naturalWidth:element.naturalWidth,naturalHeight:element.naturalHeight,src:element.getAttribute("src")};
  });
  assert.ok(img.complete&&img.naturalWidth>0&&img.naturalHeight>0,JSON.stringify(img));
- assert.equal(img.src,"/look-social-media-logo.svg");
+ assert.equal(img.src,"/empresia-logo.svg");
  const loading=await page.evaluate(()=>{
    const div=document.createElement("div");div.className="loading";div.textContent="Cargando…";document.body.appendChild(div);
    const background=getComputedStyle(div,"::before").backgroundImage;
    div.remove();return background;
  });
- assert.ok(loading.includes("look-social-media-logo.svg"),"global loading state uses official logo");
- console.log("PASS Android mobile: original logo asset rendered on login and displayed by loading indicator.");
+ assert.ok(loading.includes("empresia-logo.svg"),"global loading state uses official logo");
+ console.log("PASS Android mobile: Empresia logo renders on login and in loading state.");
 } finally {if(browser)await browser.close();if(server)server.kill()}
