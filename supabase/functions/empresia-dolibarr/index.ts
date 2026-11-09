@@ -1,6 +1,6 @@
 /// <reference lib="deno.ns" />
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
-import { dolibarrBaseUrl, isUuid, listDolibarrProducts } from "../_shared/dolibarr-protocol.ts";
+import { dolibarrBaseUrl, isUuid, listDolibarrProducts } from "./dolibarr-protocol.ts";
 
 /**
  * Empresia ERP: authenticated, tenant-isolated, read-only Dolibarr bridge.
