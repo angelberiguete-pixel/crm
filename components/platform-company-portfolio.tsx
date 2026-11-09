@@ -26,7 +26,7 @@ const money=(v:number|undefined,c:string)=>{
  catch{return c+" "+Number(v||0).toLocaleString("es-DO");}
 };
 function Logo({tenant,brand}:{tenant:Tenant;brand:Brand|null}){
- const fallback=tenant.tenant_slug==="family-power"?"/client-brands/family-power/logo-negativo-sin-fondo.svg":tenant.tenant_slug==="eurevector"?"/look-social-media-logo.svg":null;
+ const fallback=tenant.tenant_slug==="family-power"?"/client-brands/family-power/logo-negativo-sin-fondo.svg":tenant.tenant_slug==="eurevector"?"/empresia-logo-light.svg":null;
  const src=tenant.tenant_slug==="family-power"?fallback:(safeTenantAsset(brand?.logo_on_dark_url)||safeTenantAsset(brand?.logo_url)||fallback);
  return <div className={styles.logo}>{src?<Image src={src} alt={"Logo de "+tenant.tenant_name} width={240} height={120} unoptimized/>:<strong>{tenant.tenant_name.slice(0,2).toUpperCase()}</strong>}</div>;
 }
@@ -92,8 +92,8 @@ export default function PlatformCompanyPortfolio(){
  if(!authorized)return <main className={styles.page}><h1>Acceso de propietario requerido</h1><p>Esta sección está reservada a la administración global.</p><Link href="/crm">Volver a mi empresa</Link></main>;
  return <main className={styles.page}>
   <header className={styles.top}>
-   <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Esta es tu entrada principal. Abre Look Social Media para trabajar en tu CRM o selecciona Family Power y otros clientes para gestionar su empresa.</p></div>
-   <div className={styles.actions}><Link href="/look-social-media">Sitio de Look Social Media</Link><Link href="/platform-admin">Configuración de plataforma</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
+   <div><p className={styles.eyebrow}><ShieldCheck size={16}/> Control de plataforma</p><h1>Mis empresas</h1><p>Esta es tu entrada principal. Abre Empresia para gestionar tu plataforma o selecciona Family Power y otros clientes para gestionar su empresa.</p></div>
+   <div className={styles.actions}><Link href="/empresia">Sitio de Empresia</Link><Link href="/platform-admin">Configuración de plataforma</Link><button onClick={()=>{void load();setRevision(v=>v+1);}} type="button"><RefreshCw size={15}/> Actualizar</button></div>
   </header>
   {error&&<div className={styles.warning} role="alert">{error}</div>}
   <h2>Empresas registradas <small>({n(tenants.length)})</small></h2>
