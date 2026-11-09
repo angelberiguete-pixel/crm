@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {FormEvent,useCallback,useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
+import BillingFinancialDashboard from "@/components/billing-financial-dashboard";
 
 type Offer={
  id:string;slug:string;title:string;description:string;kind:"one_time"|"monthly";
@@ -117,6 +118,7 @@ export default function EmpresiaCommerceAdmin(){
      <div className="metric"><div className="metric-label">Valor de órdenes pagadas</div><div className="metric-value">{money(paid.filter(o=>o.kind==="one_time").reduce((a,x)=>a+x.amount_cents,0))}</div></div>
      <div className="metric"><div className="metric-label">Autorizaciones pendientes</div><div className="metric-value">{sales.filter(s=>s.status==="awaiting_approval").length}</div></div>
     </div>
+    <BillingFinancialDashboard />
     <section className="grid two-col" style={{marginBottom:16}}>
      <form onSubmit={createOffer} className="card stack gap-12">
       <h2>Crear producto o servicio</h2>
