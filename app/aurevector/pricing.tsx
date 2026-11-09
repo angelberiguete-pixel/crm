@@ -4,7 +4,7 @@ import styles from "./pricing.module.css";
 const plans = [
   {
     key: "essential",
-    name: "Look Social Media Essential",
+    name: "Empresia Essential",
     price: "US$80",
     setup: "US$250–500",
     description: "Para negocios que necesitan ordenar su proceso comercial y operar con un CRM visible y simple.",
@@ -12,7 +12,7 @@ const plans = [
   },
   {
     key: "growth",
-    name: "Look Social Media Growth",
+    name: "Empresia Growth",
     price: "US$460",
     setup: "US$750–1,500",
     description: "Para empresas que quieren que CRM, captación y seguimiento trabajen como un solo sistema.",
@@ -21,11 +21,11 @@ const plans = [
   },
   {
     key: "scale",
-    name: "Look Social Media Scale",
+    name: "Empresia Scale",
     price: "US$800",
     setup: "desde US$1,500",
     description: "Para empresas que requieren mayor personalización, automatización, IA e integración con su operación.",
-    features: ["CRM avanzado con todos los módulos", "Automatizaciones avanzadas", "IA / agentes", "Meta Ads + Google Ads*", "Web / landing dentro del alcance", "Integración Odoo / ERP cuando aplique", "Desarrollo personalizado acotado", "Reporting ejecutivo y soporte preferente"]
+    features: ["CRM avanzado con todos los módulos", "Automatizaciones avanzadas", "IA / agentes", "Meta Ads + Google Ads*", "Web / landing dentro del alcance", "Integración ERP / ERP cuando aplique", "Desarrollo personalizado acotado", "Reporting ejecutivo y soporte preferente"]
   }
 ];
 
@@ -33,7 +33,7 @@ export default function AurevectorPricing() {
   return (
     <section className={styles.pricingSection} id="planes">
       <div className={base.sectionHeading}>
-        <span className={base.kicker}>Planes Look Social Media</span>
+        <span className={base.kicker}>Planes Empresia</span>
         <h2>El CRM está incluido. Tú eliges cuánto quieres que operemos contigo.</h2>
         <p>Los tres planes usan la misma plataforma CRM; cambian el nivel de personalización, automatización y ejecución de agencia.</p>
       </div>
@@ -46,7 +46,7 @@ export default function AurevectorPricing() {
             <div className={styles.planSetup}>Setup: {plan.setup}</div>
             <p>{plan.description}</p>
             <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            <a className={plan.featured ? base.primary : styles.planButton} href="#diagnostico">Solicitar {plan.name.replace("Look Social Media ", "")}</a>
+            <a className={plan.featured ? base.primary : styles.planButton} href="#diagnostico">Solicitar {plan.name.replace("Empresia ", "")}</a>
           </article>
         ))}
       </div>

@@ -1,0 +1,29 @@
+name: Empresia brand migration
+on:
+  push:
+    branches:
+      - 'feat/empresia-unified-brand-20261109'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/brand-logo.tsx'
+      - 'components/tenant-brand-provider.tsx'
+      - 'lib/tenant-brand.ts'
+      - 'public/empresia-*.svg'
+      - 'tests/empresia-unified-brand.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/empresia-brand.yml'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/empresia-unified-brand.test.mjs
+      - run: npm run typecheck

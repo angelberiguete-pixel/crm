@@ -11,7 +11,7 @@ export type TenantBrand = {
   primaryColor:string;secondaryColor:string;accentColor:string;
   initials:string;officialLookBrand:boolean;
 };
-export const DEFAULT_LOOK_COLORS={primary:"#2563EB",secondary:"#7C3AED",accent:"#00D4FF"};
+export const DEFAULT_LOOK_COLORS={primary:"#315BFF",secondary:"#101828",accent:"#35D9B7"};
 const COLOR=/^#[0-9a-fA-F]{6}$/;
 export function safeHex(input:unknown,fallback:string):string{
   return typeof input==="string"&&COLOR.test(input)?input.toUpperCase():fallback;
@@ -43,18 +43,18 @@ export function resolveTenantBrand(identity:TenantIdentity,settings?:TenantBrand
   };
   const officialLookBrand=identity.tenant_slug==="eurevector";
   const rawName=typeof settings?.brand_name==="string"?settings.brand_name.trim():"";
-  const name=rawName.slice(0,100)||identity.tenant_name.trim().slice(0,100)||"Mi empresa";
+  const name=officialLookBrand?"Empresia":rawName.slice(0,100)||identity.tenant_name.trim().slice(0,100)||"Mi empresa";
   const firstLetters=name.split(/\s+/).slice(0,2).map(word=>word.charAt(0).toUpperCase()).join("");
   const defaults=officialLookBrand?DEFAULT_LOOK_COLORS:{primary:"#334155",secondary:"#64748B",accent:"#0891B2"};
   return {
     name,slug:identity.tenant_slug,
-    logoUrl:safeTenantAsset(settings?.logo_url),
-    logoOnLightUrl:safeTenantAsset(settings?.settings?.branding?.logo_on_light_url)??safeTenantAsset(settings?.logo_url),
-    logoOnDarkUrl:safeTenantAsset(settings?.settings?.branding?.logo_on_dark_url)??safeTenantAsset(settings?.logo_url),
-    faviconUrl:safeTenantAsset(settings?.favicon_url),
-    primaryColor:safeHex(settings?.primary_color,defaults.primary),
-    secondaryColor:safeHex(settings?.secondary_color,defaults.secondary),
-    accentColor:safeHex(settings?.accent_color,defaults.accent),
+    logoUrl:officialLookBrand?null:safeTenantAsset(settings?.logo_url),
+    logoOnLightUrl:officialLookBrand?null:(safeTenantAsset(settings?.settings?.branding?.logo_on_light_url)??safeTenantAsset(settings?.logo_url)),
+    logoOnDarkUrl:officialLookBrand?null:(safeTenantAsset(settings?.settings?.branding?.logo_on_dark_url)??safeTenantAsset(settings?.logo_url)),
+    faviconUrl:officialLookBrand?"/empresia-icon.svg":safeTenantAsset(settings?.favicon_url),
+    primaryColor:officialLookBrand?defaults.primary:safeHex(settings?.primary_color,defaults.primary),
+    secondaryColor:officialLookBrand?defaults.secondary:safeHex(settings?.secondary_color,defaults.secondary),
+    accentColor:officialLookBrand?defaults.accent:safeHex(settings?.accent_color,defaults.accent),
     initials:firstLetters||"CRM",officialLookBrand,
   };
 }

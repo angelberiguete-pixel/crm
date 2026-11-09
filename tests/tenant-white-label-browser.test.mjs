@@ -20,7 +20,7 @@ try{
   const A="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", B="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   let activeId=A;
   const rows=new Map([
-    [A,{tenant_id:A,brand_name:"Look Social Media",primary_color:"#2563EB",secondary_color:"#7C3AED",accent_color:"#00D4FF",logo_url:null,favicon_url:null}],
+    [A,{tenant_id:A,brand_name:"Empresia",primary_color:"#102938",secondary_color:"#117D82",accent_color:"#22D3BE",logo_url:null,favicon_url:null}],
     [B,{tenant_id:B,brand_name:"Sublimaciones Lazala",primary_color:"#0f766e",secondary_color:"#14532d",accent_color:"#f59e0b",logo_url:null,favicon_url:null}],
   ]);
   const reads=[];
@@ -36,7 +36,7 @@ try{
     const req=route.request(),url=new URL(req.url()),path=url.pathname.split("/").pop();
     let response=[];
     if(path==="list_my_tenants")response=[
-      {tenant_id:A,tenant_name:"Look Social Media",tenant_slug:"eurevector",membership_role:"owner",is_active:activeId===A},
+      {tenant_id:A,tenant_name:"Empresia",tenant_slug:"eurevector",membership_role:"owner",is_active:activeId===A},
       {tenant_id:B,tenant_name:"Sublimaciones Lazala",tenant_slug:"sublimaciones-lazala",membership_role:"owner",is_active:activeId===B},
     ];
     else if(path==="set_active_tenant"){activeId=req.postDataJSON().p_tenant_id;response={tenant_id:activeId,role:"owner"};}
@@ -60,29 +60,29 @@ try{
   });
   const page=await context.newPage();
   await page.goto(base+"/crm");
-  await page.getByRole("heading",{name:"Portal de Look Social Media"}).waitFor();
-  assert.ok(await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).isVisible(),"official logo stays on its own tenant");
+  await page.getByRole("heading",{name:"Portal de Empresia"}).waitFor();
+  assert.ok(await page.getByRole("img",{name:"Empresia"}).isVisible(),"official logo stays on its own tenant");
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"eurevector");
-  assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#2563eb");
+  assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#315bff");
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0,"other brand must not leak");
   await page.getByLabel("Empresa activa").selectOption(B);
   await page.getByRole("heading",{name:"Portal de Sublimaciones Lazala"}).waitFor();
   await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).waitFor();
-  assert.equal(await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).count(),0,"client portal cannot display platform logo");
+  assert.equal(await page.getByRole("img",{name:"Empresia"}).count(),0,"client portal cannot display platform logo");
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"sublimaciones-lazala");
   assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#0f766e");
-  assert.equal(await page.title(),"Sublimaciones Lazala | CRM");
+  assert.equal(await page.title(),"Sublimaciones Lazala | Empresia");
   await page.goto(base+"/crm/settings");
   await page.getByRole("heading",{name:"Identidad de tu negocio"}).waitFor();
   await page.getByLabel("Nombre comercial").fill("Lazala Personalizados");
   await page.getByRole("button",{name:"Guardar identidad visual"}).click();
   await page.getByText("Identidad visual guardada para esta empresa.").waitFor();
   await page.getByText("Lazala Personalizados",{exact:true}).first().waitFor();
-  assert.equal(rows.get(A).brand_name,"Look Social Media","save cannot mutate other business branding");
+  assert.equal(rows.get(A).brand_name,"Empresia","save cannot mutate other business branding");
   assert.equal(rows.get(B).brand_name,"Lazala Personalizados");
   await page.getByLabel("Empresa activa").selectOption(A);
   await page.getByRole("heading",{name:"Configuración"}).waitFor();
-  await page.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).waitFor();
+  await page.getByRole("img",{name:"Empresia"}).waitFor();
   assert.equal(await page.getByRole("img",{name:"Logo de Sublimaciones Lazala"}).count(),0);
   assert.ok(reads.includes(A)&&reads.includes(B),"both brand configs were tenant-scoped");
   console.log("PASS: tenant-specific logo, CSS, title, settings update and switching isolation on Android viewport.");

@@ -1,21 +1,36 @@
-# Look Social Media CRM
+# Empresia
 
-Plataforma CRM multi-tenant de Look Social Media para administrar clientes, ventas, automatizaciones, operaciones, integraciones y servicios de agencia desde un mismo core.
+Plataforma empresarial multiempresa de **Empresia**: CRM, ARM, agentes supervisados, automatización y facturación. La integración del motor ERP basado en Dolibarr está en desarrollo, no se presenta como integrada o lista para producción.
+
+## Arquitectura de marca
+
+- **Empresia**: la marca visible única, en Instagram y Facebook (@empresia.rd).
+- **CRM**: clientes, contactos, oportunidades, pipeline y seguimiento.
+- **ARM**: agentes, automatizaciones, aprobaciones, inbox y comunicación.
+- **ERP**: inventario, compras, administración y contabilidad mediante integración progresiva de Dolibarr; no es un producto separado llamado "Empresia ERP".
+- **Cada cliente** mantiene nombre, logotipo, permisos y datos aislados por empresa; Family Power conserva su identidad propia.
+- Identificadores técnicos históricos como `eurevector`, `look-social-media-lead-capture` y rutas anteriores siguen operativos donde renombrarlos perjudicaría compatibilidad. No son la identidad comercial.
 
 ## Stack
+
 - Next.js App Router + TypeScript
-- Supabase Auth/Postgres/RLS
-- Recharts
-- Vercel
-- Odoo como ERP externo por tenant cuando aplique
+- Supabase Auth / PostgreSQL / RLS
+- Vercel para frontend
+- Recharts, PayPal para facturas e integración de suscripciones en desarrollo
+- Dolibarr como motor ERP a integrar; MariaDB persistente en su propio servicio
 
-## Arquitectura
-- `/platform-admin`: administración global de clientes, planes, módulos e integraciones.
-- `/agency`: operación comercial interna de Look Social Media.
-- `/crm`: workspace CRM aislado por tenant.
-- `/look-social-media`: presencia comercial pública de Look Social Media.
+## Rutas
 
-Los identificadores técnicos históricos pueden conservarse internamente cuando cambiarlos implique riesgo de compatibilidad. La identidad visible y comercial de la plataforma es Look Social Media.
+- `/empresia`: presentación comercial oficial
+- `/empresia/start`: vista previa / onboarding
+- `/platform-admin`: administración global
+- `/agency`: operación comercial interna de Empresia
+- `/crm`: área multiempresa de clientes
+- `/look-social-media` y `/look-social-media/start`: redirecciones de compatibilidad
 
 ## Seguridad
-El frontend usa únicamente la publishable key de Supabase. El aislamiento de datos depende de RLS/RBAC por tenant. No se expone service role en el navegador.
+
+- La marca visible no determina permisos.
+- La autenticación se realiza con Supabase Auth; el acceso a datos está sujeto a RLS/RBAC por tenant.
+- Ninguna migración de marca cambia `tenant_id`, `tenant_slug`, políticas o credenciales de integraciones.
+- La entidad jurídica y el nombre comercial requieren documentación distinta de la identidad visual. Confirmar disponibilidad registral con ONAPI antes de presentar la marca como registrada.

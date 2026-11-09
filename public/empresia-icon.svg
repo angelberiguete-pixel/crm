@@ -1,0 +1,6 @@
+<svg role="img" aria-label="Empresia" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="eblue" x1="0%" x2="100%" y1="0%" y2="0%"><stop stop-color="#3385FF"/><stop offset="100%" stop-color="#315BFF"/></linearGradient><linearGradient id="emint" x1="0%" x2="100%" y1="0%" y2="0%"><stop stop-color="#32E6C2"/><stop offset="100%" stop-color="#35D9B7"/></linearGradient><linearGradient id="bannerGlow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#213A85"/><stop offset="1" stop-color="#0B1428"/></linearGradient></defs><rect x="0" y="0" width="1024" height="1024" rx="245" fill="#0B1428"/><rect x="9" y="9" width="1006" height="1006" rx="238" fill="none" stroke="#233B69" stroke-width="8"/><g transform="translate(185 182) scale(3.27)">
+     <g transform="rotate(-20 100 100)">
+      <rect x="56" y="16" width="128" height="36" rx="16" fill="url(#eblue)"/>
+      <rect x="16" y="82" width="128" height="36" rx="16" fill="url(#emint)"/>
+      <rect x="56" y="148" width="128" height="36" rx="16" fill="url(#eblue)"/>
+     </g></g><title>Empresia</title></svg>

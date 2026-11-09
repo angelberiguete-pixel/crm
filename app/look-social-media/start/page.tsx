@@ -1,10 +1,10 @@
-import { AiOnboarding } from "../../aurevector/start/ai-onboarding";
+import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Configura tu sistema comercial | Look Social Media",
+  title: "Empresia",
   description: "Configura una vista previa de tu CRM y seguimiento comercial antes de activar integraciones o servicios."
 };
 
 export default function LookSocialMediaStartPage() {
-  return <AiOnboarding />;
+  redirect("/empresia/start");
 }

@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Look Social Media CRM",
-    template: "%s | Look Social Media"
+    default: "Empresia",
+    template: "%s | Empresia"
   },
-  description: "CRM multiempresa LOOK SOCIAL MEDIA: ventas, seguimiento, automatización y atención al cliente.",
-  icons: { icon: [{ url: "/look-social-media-logo.svg", type: "image/svg+xml" }] }
+  description: "Empresia: plataforma empresarial con CRM, ARM, automatizaciones e integración progresiva de ERP para gestionar clientes y operaciones.",
+  icons: { icon: [{ url: "/empresia-icon.svg", type: "image/svg+xml" }] }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

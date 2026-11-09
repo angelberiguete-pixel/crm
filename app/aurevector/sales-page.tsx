@@ -1,3 +1,4 @@
+import Image from "next/image";
 import LeadForm from "./lead-form";
 import AurevectorPricing from "./pricing";
 import styles from "./aurevector.module.css";
@@ -13,7 +14,7 @@ export default function AurevectorSalesPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="#inicio" aria-label="LOOK SOCIAL MEDIA inicio">LOOK SOCIAL MEDIA</a>
+        <a className={styles.brand} href="#inicio" aria-label="Empresia, inicio"><Image src="/empresia-logo.svg" alt="Empresia" width={190} height={39} className={styles.brandLogo} priority unoptimized /></a>
         <nav className={styles.nav} aria-label="Navegación principal">
           <a href="#sistema">Cómo funciona</a>
           <a href="#planes">Planes</a>
@@ -24,16 +25,16 @@ export default function AurevectorSalesPage() {
 
       <section className={styles.hero} id="inicio">
         <div className={styles.heroCopy}>
-          <span className={styles.kicker}>CRM + AUTOMATIZACIÓN + IA + GROWTH</span>
-          <h1>Convierte más oportunidades sin perseguir leads a mano.</h1>
-          <p className={styles.lead}>LOOK SOCIAL MEDIA organiza captación, seguimiento y ventas en un mismo sistema. Prueba cómo se configuraría para tu negocio antes de hablar con ventas.</p>
+          <span className={styles.kicker}>CRM · ARM · AUTOMATIZACIÓN · IA</span>
+          <h1>Tu negocio, todo conectado.</h1>
+          <p className={styles.lead}>Conecta tus clientes, ventas y operaciones en un mismo lugar. Organiza el seguimiento y descubre las capacidades de automatización e IA supervisada de Empresia. La integración ERP está en desarrollo.</p>
           <div className={styles.heroActions}>
-            <a className={styles.primary} href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a>
+            <a className={styles.primary} href="/empresia/start">Probar EMPRESIA</a>
             <a className={styles.secondary} href="#sistema">Ver cómo funciona</a>
           </div>
           <div className={styles.micro}>Vista previa sin pago · No conecta WhatsApp ni activa automatizaciones externas durante la prueba</div>
         </div>
-        <aside className={styles.heroPanel} aria-label="Qué prepara LOOK SOCIAL MEDIA">
+        <aside className={styles.heroPanel} aria-label="Qué prepara EMPRESIA">
           <span className={styles.panelLabel}>Tu operación comercial, conectada</span>
           <ul>
             <li>Contactos y empresas centralizados.</li>
@@ -42,7 +43,7 @@ export default function AurevectorSalesPage() {
             <li>Automatizaciones y recuperación de oportunidades.</li>
             <li>IA y servicios de crecimiento según plan y activación.</li>
           </ul>
-          <a className={styles.primary} href="/look-social-media/start">Crear mi vista previa</a>
+          <a className={styles.primary} href="/empresia/start">Crear mi vista previa</a>
         </aside>
       </section>
 
@@ -50,7 +51,7 @@ export default function AurevectorSalesPage() {
         <div className={styles.sectionHeading}>
           <span className={styles.kicker}>DE CONVERSACIÓN A INGRESO</span>
           <h2>Un sistema para saber quién llegó, qué necesita y qué debe ocurrir después.</h2>
-          <p>Describe tu negocio y tus objetivos. LOOK SOCIAL MEDIA prepara una vista previa del sistema comercial recomendado para que puedas entender el flujo antes de activarlo.</p>
+          <p>Describe tu negocio y tus objetivos. EMPRESIA prepara una vista previa del sistema comercial recomendado para que puedas entender el flujo antes de activarlo.</p>
         </div>
         <div className={styles.grid}>
           {outcomes.map(([title, text], index) => (
@@ -62,7 +63,7 @@ export default function AurevectorSalesPage() {
           ))}
         </div>
         <div className={styles.heroActions}>
-          <a className={styles.primary} href="/look-social-media/start">Configurar mi sistema</a>
+          <a className={styles.primary} href="/empresia/start">Configurar mi sistema</a>
         </div>
       </section>
 
@@ -73,7 +74,7 @@ export default function AurevectorSalesPage() {
           <span className={styles.kicker}>SERVICIO + TECNOLOGÍA</span>
           <h2>No te entregamos otra herramienta para que la resuelvas solo.</h2>
         </div>
-        <p>Según el plan, LOOK SOCIAL MEDIA combina plataforma, configuración, automatización y ejecución de crecimiento. Primero entendemos el proceso comercial; después activamos únicamente el alcance acordado.</p>
+        <p>Según el plan, EMPRESIA combina plataforma, configuración, automatización y ejecución de crecimiento. Primero entendemos el proceso comercial; después activamos únicamente el alcance acordado.</p>
       </section>
 
       <section className={styles.diagnostic} id="diagnostico">
@@ -81,7 +82,7 @@ export default function AurevectorSalesPage() {
           <span className={styles.kicker}>SIGUIENTE PASO</span>
           <h2>Prueba primero. Habla con nosotros cuando quieras activarlo.</h2>
           <p>Puedes generar una vista previa ahora mismo o enviarnos tu contexto para revisar encaje, alcance e implementación.</p>
-          <div className={styles.heroActions}><a className={styles.primary} href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a></div>
+          <div className={styles.heroActions}><a className={styles.primary} href="/empresia/start">Probar EMPRESIA</a></div>
           <div className={styles.promise}>
             <strong>Qué ocurre después</strong>
             <span>1. Entendemos tu negocio y objetivo.</span>
@@ -93,9 +94,9 @@ export default function AurevectorSalesPage() {
       </section>
 
       <footer className={styles.footer}>
-        <strong>LOOK SOCIAL MEDIA</strong>
-        <span>CRM + automatización + IA + growth para convertir con control.</span>
-        <a href="/look-social-media/start">Probar LOOK SOCIAL MEDIA</a>
+        <strong>Empresia</strong>
+        <span>CRM, ARM e integración ERP para hacer crecer tu empresa con control.</span>
+        <a href="/empresia/start">Probar EMPRESIA</a>
         <a href="/acceso-crm">Acceso al CRM</a>
       </footer>
     </main>

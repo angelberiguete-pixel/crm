@@ -19,7 +19,7 @@ const token=[Buffer.from("{}").toString("base64url"),
   Buffer.from(JSON.stringify({sub:user.id,role:"authenticated",exp})).toString("base64url"),"fixture"].join(".");
 const tenants=[
   {tenant_id:family,tenant_name:"Family Power",tenant_slug:"family-power",member_count:1,plan_code:"starter"},
-  {tenant_id:look,tenant_name:"Look Social Media",tenant_slug:"eurevector",member_count:1,plan_code:"starter"},
+  {tenant_id:look,tenant_name:"Empresia",tenant_slug:"eurevector",member_count:1,plan_code:"starter"},
 ];
 
 async function prepare(role){
@@ -76,29 +76,29 @@ try{
   catch{}
   await new Promise(resolve=>setTimeout(resolve,500));
  }
- assert.ok(ready,"Look access gateway available");
+ assert.ok(ready,"Empresia access gateway available");
  browser=await chromium.launch({headless:true,
   ...(process.env.CRM_TEST_CHROMIUM_PATH?
    {executablePath:process.env.CRM_TEST_CHROMIUM_PATH,args:["--no-sandbox","--disable-dev-shm-usage"]}:{channel:"chromium"})});
 
  const owner=await prepare("owner");
  const page=await owner.context.newPage();
- await page.goto(base+"/look-social-media");
+ await page.goto(base+"/empresia");
  await page.getByRole("link",{name:"Acceso CRM",exact:true}).click();
  await page.waitForURL(url=>url.pathname==="/mis-empresas",{timeout:20000});
  await page.getByRole("heading",{name:"Mis empresas",exact:true}).waitFor();
  const cards=page.locator('button[aria-label^="Entrar como administrador en "]');
  await cards.first().waitFor();
- assert.match((await cards.first().getAttribute("aria-label"))||"",/Look Social Media/,
-  "the global owner sees Look first despite previously selected Family Power");
+ assert.match((await cards.first().getAttribute("aria-label"))||"",/Empresia/,
+  "the global owner sees Empresia first despite previously selected Family Power");
  assert.equal(owner.calls.join.length,0,"landing alone must never join Family Power");
  assert.equal(owner.calls.setActive,0,"landing alone must never change selected client");
  assert.ok(owner.calls.platform>=1,"platform authority must be checked");
  assert.equal(await page.evaluate(()=>sessionStorage.getItem("crm:login-intent")),null,
-  "Look public entry clears stale Family Power login intent");
+  "Empresia public entry clears stale Family Power login intent");
  await cards.first().click();
  await page.waitForURL(url=>url.pathname==="/crm",{timeout:20000});
- assert.deepEqual(owner.calls.join,[look],"Look card joins only Look tenant");
+ assert.deepEqual(owner.calls.join,[look],"Empresia card joins only the platform-owned tenant");
  await owner.context.close();
 
  const signedIn=await prepare("owner");
@@ -119,11 +119,11 @@ try{
  const unauthenticated=await guest.context.newPage();
  await unauthenticated.goto(base+"/acceso-crm");
  await unauthenticated.waitForURL(url=>url.pathname==="/login",{timeout:20000});
- await unauthenticated.getByRole("img",{name:"LOOK SOCIAL MEDIA"}).waitFor();
+ await unauthenticated.getByRole("img",{name:"Empresia"}).waitFor();
  assert.notEqual(new URL(unauthenticated.url()).pathname,"/family-power/login");
  await guest.context.close();
 
- console.log("PASS: LOOK landing and login open owner portfolio despite stale Family Power; explicit Look card joins Look; members and guests remain in correct authorization flow.");
+ console.log("PASS: Empresia landing and login open owner portfolio despite stale Family Power; explicit platform card joins the correct tenant; members and guests remain authorized.");
 }finally{
  if(browser)await browser.close();
  if(server)server.kill("SIGTERM");
