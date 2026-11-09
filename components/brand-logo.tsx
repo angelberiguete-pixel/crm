@@ -8,13 +8,13 @@ export default function BrandLogo({size="sidebar",label=true,surface="dark"}:{si
   const officialLogo=!tenantBrand||(tenantBrand.officialLookBrand&&!tenantBrand.logoUrl);
   const selectedLogo=surface==="dark"?tenantBrand?.logoOnDarkUrl:tenantBrand?.logoOnLightUrl;
   if(officialLogo)return <span className={"look-brand-logo look-brand-logo--"+size}>
-    <Image src="/look-social-media-logo.svg" alt={label?"LOOK SOCIAL MEDIA":""}
-      width={220} height={182} priority={size==="login"} unoptimized/>
+    <Image src="/empresia-logo.svg" alt={label?"Empresia":""}
+      width={220} height={55} priority={size==="login"} unoptimized/>
   </span>;
   return <span className={"look-brand-logo tenant-customer-logo look-brand-logo--"+size}>
     {selectedLogo?<Image src={selectedLogo}
       alt={label?"Logo de "+tenantBrand.name:""}
-      width={220} height={182} priority={size==="login"} unoptimized/>:
+      width={220} height={55} priority={size==="login"} unoptimized/>:
     <span className="tenant-customer-initials" role={label?"img":undefined}
       aria-label={label?"Logo de "+tenantBrand.name:undefined} aria-hidden={!label}
       style={{backgroundColor:tenantBrand.primaryColor}}>
