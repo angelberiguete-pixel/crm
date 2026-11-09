@@ -54,3 +54,17 @@ test("the client and central owner see DOP balance and verified installments",()
  assert.match(ledger,/Historial de abonos confirmados/);
  assert.match(ledger,/transferencia o efectivo/);
 });
+
+test("Family Power pricing is USD-first but does not silently rewrite the DOP contract",()=>{
+ const display=read("supabase/migrations/20261109033000_implementation_usd_display_reference.sql");
+ assert.match(display,/60\.7601/);
+ assert.match(display,/BCRD, tasa de venta/);
+ assert.match(display,/usd_reference_total_cents/);
+ assert.match(display,/usd_reference_remaining_cents/);
+ assert.match(display,/private\.crm_active_tenant_matches\(p_tenant_id\)/);
+ assert.match(ledger,/usdReference\(contract\.usd_reference_total_cents\)/);
+ assert.match(ledger,/usdReference\(contract\.usd_reference_remaining_cents\)/);
+ assert.match(banner,/usd_reference_remaining_cents/);
+ assert.match(checkout,/US\$493\.75/);
+ assert.match(checkout,/RD\$30,000/);
+});
