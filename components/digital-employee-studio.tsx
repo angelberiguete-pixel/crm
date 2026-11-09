@@ -195,6 +195,30 @@ export default function DigitalEmployeeStudio(){
           <button type="submit" className="button primary" disabled={busy}><Save size={16}/> {busy?"Guardando…":"Guardar borrador"}</button>
         </form>
       </section>}
+      {selectedId&&active&&<section className="card section-gap" aria-label="Prueba segura de IA para Family Power" style={{marginTop:16}}>
+        <div className="eyebrow">Family Power · Laboratorio privado</div>
+        <h2>Probar respuesta con OpenAI</h2>
+        <div className="notice"><ShieldCheck size={17}/> Esta prueba genera únicamente un borrador interno sujeto a aprobación humana. No contacta clientes ni envía WhatsApp.</div>
+        <p className="muted">Primero guarda los servicios reales y verificados del negocio. La cuenta debe ser propietaria o administradora. No introduzcas información personal de clientes.</p>
+        {validateEmployeeKnowledge(active.settings?.knowledge)&&
+          <div className="notice" role="status">Para habilitar la prueba, completa el nombre de Family Power y los servicios verificados, luego pulsa «Guardar borrador».</div>}
+        <form className="stack gap-12" onSubmit={generate}>
+          <label>Consulta ficticia de prueba
+            <textarea value={sample} minLength={3} maxLength={1200} required rows={3}
+              onChange={e=>setSample(e.target.value)}/>
+          </label>
+          <button type="submit" className="button primary"
+            disabled={testing||busy||!!validateEmployeeKnowledge(active.settings?.knowledge)||sample.trim().length<3}>
+            <Sparkles size={16}/> {testing?"Consultando OpenAI…":"Generar borrador para aprobación"}
+          </button>
+        </form>
+        {draft&&<div className="card section-gap" role="status" style={{marginTop:12}}>
+          <strong>Respuesta de IA: pendiente de revisión humana</strong>
+          {insight&&<p className="muted">Intención: {insight.intent} · Siguiente paso: {insight.next_step.replaceAll("_"," ")} · Coste estimado: US${(insight.estimated_cost_micros/1000000).toFixed(4)}.</p>}
+          <p style={{whiteSpace:"pre-wrap"}}>{draft}</p>
+          <p className="muted">El borrador se registra en la bandeja de aprobaciones. No se envió ni aprobó automáticamente.</p>
+        </div>}
+      </section>}
       {tenantId&&<DigitalEmployeeReviewQueue tenantId={tenantId} compact/>}
     </main>;
   }
