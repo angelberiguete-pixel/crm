@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 128" role="img" aria-labelledby="title desc">
+  <title id="title">EMPRESIA</title>
+  <desc id="desc">Identidad provisional de Empresia, plataforma empresarial unificada</desc>
+  <rect width="560" height="128" fill="none"/>
+  <g transform="translate(12 18)">
+    <rect x="0" y="0" width="90" height="90" rx="24" fill="#102938"/>
+    <rect x="20" y="22" width="50" height="10" rx="5" fill="#22D3BE"/>
+    <rect x="20" y="40" width="38" height="10" rx="5" fill="#D9FFF7"/>
+    <rect x="20" y="58" width="50" height="10" rx="5" fill="#22D3BE"/>
+    <circle cx="74" cy="45" r="6" fill="#22D3BE"/>
+  </g>
+  <text x="122" y="83" font-family="Inter,Arial,sans-serif" font-size="62" letter-spacing="-2.5" font-weight="800" fill="#F5FFFD">EMPRESIA</text>
+</svg>
