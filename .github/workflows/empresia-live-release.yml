@@ -1,0 +1,17 @@
+name: Empresia live release gate
+on:
+  pull_request:
+    paths:
+      - 'tests/empresia-live-release-check.mjs'
+      - '.github/workflows/empresia-live-release.yml'
+  workflow_dispatch:
+jobs:
+  public-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/empresia-live-release-check.mjs
