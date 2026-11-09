@@ -49,6 +49,12 @@ try {
   const page = await context.newPage();
   await page.goto(base+'/platform-admin');
   await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  const openMenu=page.getByRole('button',{name:'Abrir menú'});
+  await openMenu.click();
+  await page.getByRole('navigation',{name:'Navegación de Empresia'}).getByRole('link',{name:'Prospección comercial'}).waitFor();
+  await page.getByRole('button',{name:'Cerrar navegación'}).click();
+  assert.equal(await page.getByRole('navigation',{name:'Navegación de Empresia'}).isVisible(),false,'mobile drawer closes without overlay trapping the dashboard');
+
   const row=page.locator('button[aria-pressed]').filter({hasText:'QA A'});
   const rowB=page.locator('button[aria-pressed]').filter({hasText:'QA B'});
   await row.click();
@@ -94,5 +100,12 @@ try {
   await page.getByText('Usuario vinculado a esta empresa. No se ha enviado correo; necesita sus credenciales existentes.').waitFor();
   await page.getByText('qa-client@example.invalid',{exact:true}).waitFor();
   assert.equal(linkedCalls,1,'exactly one user account linked under selected tenant');
+
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(base+'/platform-admin');
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  assert.ok(await page.getByRole('navigation',{name:'Navegación de Empresia'}).isVisible(),'desktop owner sidebar remains visible');
+  const desktopSize=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
+  assert.ok(desktopSize.scroll<=desktopSize.viewport+1,'Super Admin desktop page does not overflow');
   console.log('PASS: UUID onboarding, exact-email role assignment, evidence checklist, region, mobile support entry and isolation (mocked API; separate real SQL rollback proof).');
 } finally { if(browser)await browser.close(); if(server)server.kill(); }
