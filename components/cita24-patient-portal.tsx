@@ -3,7 +3,7 @@ import Script from "next/script";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CRM_SUPABASE_URL, CRM_SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase";
 
-type PortalConfig = {ok:boolean;clinic_name:string;services:string[];timezone:string;note:string};
+type PortalConfig = {ok:boolean;clinic_name:string;services:string[];privacy_url:string;timezone:string;note:string};
 type TurnstileWidget = {
  render: (element: HTMLElement, config: Record<string, unknown>) => string;
  remove: (id:string)=>void;
@@ -131,7 +131,7 @@ export default function Cita24PatientPortal({slug}:{slug:string}){
        <label>Horario preferido<select required style={field} value={windowName} onChange={e=>setWindowName(e.target.value)}>
         {windows.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
       </div>
-      <label><input type="checkbox" required checked={privacy} onChange={e=>setPrivacy(e.target.checked)}/> Autorizo que la clínica utilice estos datos exclusivamente para responder y administrar mi solicitud.</label>
+      <label><input type="checkbox" required checked={privacy} onChange={e=>setPrivacy(e.target.checked)}/> Autorizo que la clínica utilice estos datos exclusivamente para responder y administrar mi solicitud. <a href={clinic.privacy_url} target="_blank" rel="noopener noreferrer">Leer aviso de privacidad</a>.</label>
       <label><input type="checkbox" checked={whatsapp} onChange={e=>setWhatsapp(e.target.checked)}/> Acepto recibir mensajes administrativos sobre esta solicitud por WhatsApp. (Opcional)</label>
       <div aria-hidden="true" style={{position:"absolute",left:"-99999px"}}>
        <label>No completar<input tabIndex={-1} autoComplete="off" value={website} onChange={e=>setWebsite(e.target.value)}/></label>
