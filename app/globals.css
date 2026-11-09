@@ -343,6 +343,8 @@ textarea{min-height:96px;resize:vertical}
 .platform-company-shortcut{display:inline-flex;align-items:center;flex:0 0 auto;padding:0 8px}
 .platform-company-shortcut a{display:inline-flex;gap:6px;align-items:center;color:var(--text);font-size:13px;text-decoration:none;font-weight:600}
 .platform-company-shortcut a:hover{text-decoration:underline}
+/* Avoid an empty, dark, fixed-position badge when a tenant cannot access the platform shortcut. */
+.platform-company-shortcut:empty{display:none!important}
 @media(max-width:560px){.platform-company-shortcut{padding:0 4px}.platform-company-shortcut a{font-size:12px}}
 
 /* Compact owner shortcut stays visible without changing the CRM grid layout. */
