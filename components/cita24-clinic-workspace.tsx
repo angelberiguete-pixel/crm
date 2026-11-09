@@ -266,7 +266,7 @@ export default function Cita24ClinicWorkspace() {
     finally { setBusy(false); }
   }
 
-  if (!tenantId || tenant?.tenant_slug === "family-power") {
+  if (!tenant || !tenantId || tenant.tenant_slug === "family-power") {
     return <section className="card"><h2>Cita-24 · Empresia</h2>
       <p className="muted">Selecciona un workspace autorizado para clínicas. Family Power mantiene su aplicación independiente.</p>
       <Link href="/crm" className="button">Volver al CRM</Link></section>;
