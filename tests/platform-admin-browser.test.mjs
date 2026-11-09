@@ -48,19 +48,19 @@ try {
   });
   const page = await context.newPage();
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
-  const row=page.getByRole('row').filter({has:page.getByText('QA A',{exact:true})});
-  const rowB=page.getByRole('row').filter({has:page.getByText('QA B',{exact:true})});
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  const row=page.locator('button[aria-pressed]').filter({hasText:'QA A'});
+  const rowB=page.locator('button[aria-pressed]').filter({hasText:'QA B'});
+  await row.click();
   for(let i=0;i<60&&!delayedAStarted;i++)await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(delayedAStarted,true,'QA A request must start before switching');
-  await rowB.getByRole('button',{name:'Gestionar',exact:true}).click();
+  await rowB.click();
   await page.getByLabel('Marca',{exact:true}).waitFor();
   await page.waitForFunction(()=>document.querySelector('input')!==null);
   await page.getByLabel('Marca',{exact:true}).fill('Marca B');
   await page.waitForTimeout(1000);
   assert.equal(await page.getByLabel('Marca',{exact:true}).inputValue(),'Marca B','late QA A must not overwrite client B branding');
-  await row.getByRole('button',{name:'Gestionar',exact:true}).click(); // no force: catches overlapping cells
+  await row.click(); // no force: catches overlapping cells
   await page.getByRole('heading',{name:'QA A',exact:true}).waitFor();
   await page.getByLabel('País (ISO, 2 letras)').fill('DO');
   await page.getByLabel('Moneda (ISO, 3 letras)').fill('DOP');
@@ -78,11 +78,11 @@ try {
   assert.deepEqual(supportEntries,[A],'support entry uses the explicitly selected client');
   assert.equal(await page.getByLabel('Empresa activa').inputValue(),A);
   await page.goto(base+'/platform-admin');
-  await page.getByRole('heading',{name:'Administración de empresas'}).waitFor();
-  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Agregar empresa cliente'})});
-  await onboarding.getByLabel('Nombre').fill('Nuevo Cliente QA');
+  await page.getByRole('heading',{name:/Tu empresa, todas las operaciones/}).waitFor();
+  const onboarding=page.locator('form').filter({has:page.getByRole('heading',{name:'Incorporar nueva empresa'})});
+  await onboarding.getByLabel('Nombre de la empresa').fill('Nuevo Cliente QA');
   await onboarding.getByLabel('Identificador interno').fill('nuevo-cliente-qa');
-  await onboarding.getByRole('button',{name:'Crear cliente'}).click();
+  await onboarding.getByRole('button',{name:'Crear empresa'}).click();
   await page.getByRole('heading',{name:'Nuevo Cliente QA',exact:true}).waitFor();
   await page.getByText('Cliente creado; abre su verificación de activación y completa los pendientes.').waitFor();
   await page.getByTestId('client-readiness-status').getByText('Configuraciones comprobadas: 2').waitFor();
