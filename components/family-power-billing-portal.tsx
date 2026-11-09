@@ -12,10 +12,21 @@ type Invoice = {
   amount_paid_cents:number; hosted_invoice_url:string|null; invoice_number:string|null;
   metadata:Record<string,unknown>|null; period_start:string|null; period_end:string|null;
 };
-type Subscription = {custom_monthly_price_cents:number|null;current_period_start:string|null;current_period_end:string|null;provider:string;provider_subscription_id:string|null};
+type Subscription = {custom_monthly_price_cents:number|null;current_period_start:string|null;current_period_end:string|null;provider:string;provider_subscription_id:string|null;provider_plan_id:string|null;provider_approval_url:string|null;provider_approval_state:string;status:string};
 type Report = {id:string;invoice_id:string;status:string;payment_method:string;created_at:string};
 type Method = "paypal" | "transfer" | "cash";
 const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(cents||0)/100);
+
+// Never redirect a paying customer to a URL unless it belongs to PayPal.
+function trustedPaypalAuthorizationUrl(raw:string|null|undefined):string|null{
+  if(!raw)return null;
+  try{
+    const url=new URL(raw);
+    if(url.protocol!=="https:"||url.username||url.password)return null;
+    if(!["www.paypal.com","www.sandbox.paypal.com"].includes(url.hostname))return null;
+    return url.toString();
+  }catch{return null;}
+}
 
 export default function FamilyPowerBillingPortal(){
   const tenant=useActiveTenant();
@@ -42,7 +53,7 @@ export default function FamilyPowerBillingPortal(){
         .select("id,provider,status,currency,total_cents,amount_due_cents,amount_paid_cents,hosted_invoice_url,invoice_number,metadata,period_start,period_end")
         .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(50),
       supabase.from("tenant_subscriptions")
-        .select("custom_monthly_price_cents,current_period_start,current_period_end,provider,provider_subscription_id")
+        .select("custom_monthly_price_cents,current_period_start,current_period_end,provider,provider_subscription_id,provider_plan_id,provider_approval_url,provider_approval_state,status")
         .eq("tenant_id",tenantId).maybeSingle(),
       supabase.from("billing_payment_reports")
         .select("id,invoice_id,status,payment_method,created_at")
@@ -59,6 +70,14 @@ export default function FamilyPowerBillingPortal(){
   const monthly=useMemo(()=>invoices.filter(x=>x.metadata?.billing_stage!=="initial" && x.amount_due_cents>0 && x.status==="open"),[invoices]);
   const due=initial&&initial.amount_due_cents>0&&initial.status==="open"?initial:monthly[0]??null;
   const pendingReport=due?reports.find(r=>r.invoice_id===due.id && r.status==="submitted"):null;
+  // Initial invoice payment must be verified before requesting recurring authorization.
+  // An approval URL alone never establishes an active subscription.
+  const approvalUrl=useMemo(()=>{
+    if(initial?.status!=="paid"||subscription?.provider!=="paypal"||
+       subscription.provider_approval_state!=="awaiting_buyer"||
+       subscription.custom_monthly_price_cents!==8000||!subscription.provider_plan_id)return null;
+    return trustedPaypalAuthorizationUrl(subscription.provider_approval_url);
+  },[initial,subscription]);
   async function reportPayment(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
     if(!tenantId||!allowed||!due||busy)return;
@@ -125,7 +144,9 @@ export default function FamilyPowerBillingPortal(){
           <h2>{isFamilyPower?usd(8000):subscription?.custom_monthly_price_cents?usd(subscription.custom_monthly_price_cents):"Por definir"}/mes</h2>
           <p className="muted">{isFamilyPower&&initial?.status!=="paid"?"La mensualidad de US$80 empieza después de confirmar la implementación inicial, según el acuerdo comercial.":subscription?.provider_subscription_id?"Suscripción identificada en el proveedor. Verifica su estado en PayPal.":"Aún no hay un mandato de cobro automático aprobado en PayPal."}</p>
           {subscription?.current_period_end&&<div className="muted">Referencia de siguiente período: {new Date(subscription.current_period_end).toLocaleDateString("es-DO")}</div>}
-          <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal.</p>
+          {approvalUrl&&<a className="button primary" href={approvalUrl} target="_blank" rel="noopener noreferrer" style={{display:"flex",marginTop:14}}><CreditCard size={16}/> Autorizar suscripción en PayPal</a>}
+          {subscription?.provider_subscription_id&&subscription.provider_approval_state==="approved"&&subscription.status==="active"&&<div className="pill" style={{marginTop:10}}>Suscripción autorizada · verificar cada cobro en PayPal</div>}
+          <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal. La autorización por sí sola no confirma el cobro de una cuota.</p>
         </article>
       </section>
       {monthly.length>0&&<section className="section-gap card"><h2>Cuotas mensuales pendientes</h2>
