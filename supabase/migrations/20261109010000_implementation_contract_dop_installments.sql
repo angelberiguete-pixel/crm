@@ -187,7 +187,7 @@ begin
     select * into v_invoice from public.billing_invoices
      where id=p_invoice_id and tenant_id=v_contract.tenant_id for update;
     if not found or v_invoice.status<>'paid' or v_invoice.amount_due_cents<>0
-      or v_invoice.metadata->>'contract_code'<>v_contract.contract_code then
+      or (v_invoice.metadata->>'contract_code') is distinct from v_contract.contract_code then
       raise exception 'Invoice not fully paid and verified for this contract';
     end if;
     if exists(select 1 from public.billing_implementation_credits where invoice_id=p_invoice_id) then
@@ -365,7 +365,7 @@ begin
  if not found then raise exception 'Invoice not found'; end if;
  v_credit:=0;v_remaining:=v_invoice.amount_due_cents;
  if p_approve then
-   if v_invoice.status<>'open' or v_remaining<=0 then raise exception 'Invoice not payable'; end if;
+   if v_invoice.status<>'open' or v_remaining<=0 or v_invoice.currency<>'USD' then raise exception 'Invoice not payable'; end if;
    v_credit:=coalesce(p_confirmed_usd_cents,v_remaining);
    if v_credit<=0 or v_credit>v_remaining then raise exception 'Invalid amount'; end if;
    v_remaining:=v_remaining-v_credit;
