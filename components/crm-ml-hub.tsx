@@ -7,6 +7,7 @@ import {
  type MlOpportunity,type MlQuote,type MlQuoteItem,type MlStage,type MlTask,type MlTrainingExample,
 } from "@/lib/tenant-ml";
 import styles from "./crm-ml-hub.module.css";
+import CrmMlGovernance from "@/components/crm-ml-governance";
 
 type Section="ventas"|"cotizaciones"|"seguimiento"|"capacidades";
 const sections:readonly [Section,string][]=[
@@ -162,5 +163,6 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    </section>}
    <p className={styles.disclaimer}>Los modelos se entrenan por empresa y por tarea. No comparten registros entre empresas, no deciden cierres ni ejecutan acciones automáticas.</p>
   </>}
+  <CrmMlGovernance tenantId={tenantId}/>
  </div>;
 }
