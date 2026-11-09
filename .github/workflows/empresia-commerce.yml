@@ -1,0 +1,40 @@
+name: Empresia reusable checkout verification
+on:
+  pull_request:
+    paths:
+      - 'app/empresia/**'
+      - 'app/login/page.tsx'
+      - 'components/eurevector-console.tsx'
+      - 'supabase/functions/empresia-commerce/**'
+      - 'supabase/functions/paypal-billing/**'
+      - 'supabase/migrations/20261109050000_empresia_commercial_checkout.sql'
+      - 'supabase/migrations/20261109053000_empresia_checkout_hardening.sql'
+      - 'tests/empresia-commerce.test.mjs'
+      - '.github/workflows/empresia-commerce.yml'
+  push:
+    branches:
+      - 'feat/empresia-unified-checkout-20261109'
+    paths:
+      - 'app/empresia/**'
+      - 'app/login/page.tsx'
+      - 'components/eurevector-console.tsx'
+      - 'supabase/functions/empresia-commerce/**'
+      - 'supabase/functions/paypal-billing/**'
+      - 'supabase/migrations/20261109050000_empresia_commercial_checkout.sql'
+      - 'supabase/migrations/20261109053000_empresia_checkout_hardening.sql'
+      - 'tests/empresia-commerce.test.mjs'
+      - '.github/workflows/empresia-commerce.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/empresia-commerce.test.mjs
+      - run: npm run build
