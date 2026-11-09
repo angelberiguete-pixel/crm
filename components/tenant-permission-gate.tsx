@@ -215,7 +215,7 @@ export default function TenantPermissionGate({ section, children }: { section: s
   if (state === "allow") return <TenantContextProvider key={tenant?.tenant_id ?? "onboarding"} tenant={tenant}>
     {tenant ? <TenantBrandProvider key={tenant.tenant_id} tenant={tenant}>
       <TenantSessionPresence tenantId={tenant.tenant_id}/>
-      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><FamilyPowerTaskAlerts/><TenantSessionExit/><MobileTenantNavigation /></div>
+      <div className="workspace-header"><span className="tenant-mobile-brand"><BrandLogo size="compact" /></span><div className="workspace-switcher"><TenantSwitcher /></div>{tenant.tenant_slug!=="family-power"&&<span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span>}<FamilyPowerTaskAlerts/><TenantSessionExit/><MobileTenantNavigation /></div>
       <FamilyPowerBillingBanner />
       {children}
     </TenantBrandProvider> : children}
