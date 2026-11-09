@@ -15,6 +15,8 @@ on:
       - 'supabase/functions/paypal-subscriptions/**'
       - 'supabase/functions/paypal-billing/**'
       - 'tests/shared-billing.test.mjs'
+      - 'tests/family-power-billing.test.mjs'
+      - 'tests/paypal-api-integration.test.mjs'
       - '.github/workflows/shared-billing.yml'
   pull_request:
     paths:
@@ -24,6 +26,8 @@ on:
       - 'supabase/functions/paypal-subscriptions/**'
       - 'supabase/functions/paypal-billing/**'
       - 'tests/shared-billing.test.mjs'
+      - 'tests/family-power-billing.test.mjs'
+      - 'tests/paypal-api-integration.test.mjs'
       - '.github/workflows/shared-billing.yml'
 jobs:
   verify:
