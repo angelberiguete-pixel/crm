@@ -17,6 +17,7 @@ type Campaign = { id: string; name: string; subject: string; preview_text: strin
 type Contact = { id: string; display_name: string | null; email: string | null; source: string | null };
 type Consent = { contact_id: string; status: string; source: string; evidence: string; verified_at: string | null };
 type ConsentStatus = "unknown" | "opted_in" | "opted_out" | "bounced" | "complained";
+type SenderPreferences = { display_name: string; outreach_address: string; personal_followup_address: string; delivery_status: string; sends_enabled: boolean };
 const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const number = (v: number | undefined) => new Intl.NumberFormat("es-DO").format(v ?? 0);
 const formatDate = (v: string) => new Date(v).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" });
@@ -30,6 +31,7 @@ export default function CrmEmailCampaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [consents, setConsents] = useState<Consent[]>([]);
+  const [sender, setSender] = useState<SenderPreferences | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,7 +52,7 @@ export default function CrmEmailCampaigns() {
 
   useEffect(() => {
     let live = true;
-    setOverview(null); setCampaigns([]); setContacts([]); setConsents([]);
+    setOverview(null); setCampaigns([]); setContacts([]); setConsents([]); setSender(null);
     setError(""); setLoading(true);
     if (!tenantId || !allowed) { setLoading(false); return () => { live = false; }; }
     void Promise.all([
@@ -64,9 +66,12 @@ export default function CrmEmailCampaigns() {
       supabase.from("marketing_email_consents")
         .select("contact_id,status,source,evidence,verified_at")
         .eq("tenant_id", tenantId).limit(500),
-    ]).then(([summary, campaignData, contactData, consentData]) => {
+      supabase.from("marketing_email_sender_preferences")
+        .select("display_name,outreach_address,personal_followup_address,delivery_status,sends_enabled")
+        .eq("tenant_id", tenantId).maybeSingle(),
+    ]).then(([summary, campaignData, contactData, consentData, senderData]) => {
       if (!live) return;
-      const failure = [summary, campaignData, contactData, consentData].find(x => x.error);
+      const failure = [summary, campaignData, contactData, consentData, senderData].find(x => x.error);
       if (failure?.error) {
         setError("No se pudo cargar el módulo de email. Verifica que la migración se haya aplicado: " + failure.error.message);
         return;
@@ -80,6 +85,7 @@ export default function CrmEmailCampaigns() {
       setCampaigns((campaignData.data ?? []) as Campaign[]);
       setContacts(((contactData.data ?? []) as Contact[]).filter(c => validEmail.test(c.email ?? "")));
       setConsents((consentData.data ?? []) as Consent[]);
+      setSender((senderData.data as SenderPreferences | null) ?? null);
     }).catch(() => { if (live) setError("Error al consultar las campañas."); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
@@ -185,6 +191,16 @@ export default function CrmEmailCampaigns() {
       <div><ShieldCheck size={20}/><strong>Modo seguro: preparación de campañas</strong></div>
       <p>Proveedor recomendado: Brevo. No hay cuenta remitente autenticada ni API de envío conectada. Los borradores no se distribuyen hasta verificar dominio, destinatarios y mecanismo de baja.</p>
       <div className={styles.statusActions}><a href="https://app.brevo.com/" target="_blank" rel="noopener noreferrer">Configurar Brevo</a><span>Envío masivo: desactivado</span></div>
+    </section>
+
+    <section className={styles.panel} aria-label="Identidades de correo comercial">
+      <h2>Correos comerciales seleccionados</h2>
+      {sender ? <>
+        <p><strong>Contacto comercial:</strong> {sender.outreach_address}</p>
+        <p><strong>Seguimiento personal:</strong> {sender.personal_followup_address}</p>
+        <p className={styles.hint}>Ambas direcciones son preferencias administrativas. Que estén conectadas a ChatGPT no significa que Gmail esté conectado a Empresia. No se alternarán para aumentar límites ni se enviarán campañas desde estas direcciones por Brevo.</p>
+      </> : <p className={styles.hint}>Todavía no hay correos comerciales configurados para esta empresa.</p>}
+      <p className={styles.hint}>Campañas masivas: pendiente de dominio propio autenticado, proveedor conectado y audiencia autorizada. Envío: {sender?.sends_enabled ? "Requiere verificación" : "desactivado"}.</p>
     </section>
 
     {error && <p role="alert" className={styles.error}>{error}</p>}
