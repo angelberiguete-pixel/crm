@@ -237,7 +237,7 @@ export default function DigitalEmployeeStudio(){
             <strong>{readiness.ready_for_trial?"Preparado para solicitar una prueba supervisada":"Faltan requisitos para el ensayo"}</strong>
             {!readiness.verified_knowledge_present&&<p>Guarda el nombre del negocio y los servicios reales verificados.</p>}
             {!readiness.agent_safe_draft&&<p>El agente debe estar en borrador OpenAI, con aprobación humana y sin herramientas.</p>}
-            {!readiness.supabase_edge_openai_key_present&&<p>Falta OPENAI_API_KEY en Supabase Edge Functions → Secrets. La clave de Vercel no se comparte automáticamente.</p>}
+            {!readiness.supabase_edge_openai_key_present&&<p>Falta la clave del proveedor en Supabase Edge Functions → Secrets. La clave de Vercel no se comparte automáticamente.</p>}
             {!readiness.model_configured&&<p>El modelo configurado no coincide con el modelo aprobado para este piloto.</p>}
             {!readiness.budget_configured&&<p>Revisa los límites de gasto del piloto en el servidor.</p>}
             <small>{readiness.note}</small>
