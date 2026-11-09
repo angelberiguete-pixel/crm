@@ -118,7 +118,7 @@ create table if not exists public.marketing_email_events (
  unique(tenant_id,provider_event_id)
 );
 create or replace function private.crm_email_validate_provider_event()
-returns trigger language plpgsql set search_path='' as $
+returns trigger language plpgsql set search_path='' as $email_event$
 begin
  if not exists (select 1 from public.marketing_email_campaigns c
    where c.id=new.campaign_id and c.tenant_id=new.tenant_id) then
@@ -132,7 +132,7 @@ begin
  end if;
  return new;
 end;
-$;
+$email_event$;
 drop trigger if exists crm_email_validate_event on public.marketing_email_events;
 create trigger crm_email_validate_event before insert or update on public.marketing_email_events
  for each row execute function private.crm_email_validate_provider_event();
