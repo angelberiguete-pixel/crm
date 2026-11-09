@@ -493,3 +493,51 @@ textarea{min-height:96px;resize:vertical}
     right:12px!important;width:auto!important;max-height:70vh!important;
   }
 }
+
+
+/* Family Power: prevent persistent floating header controls from covering screens.
+   Keep task alerts and session options inside the authorized workspace header. */
+@media (min-width:701px) {
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header {
+    display:flex;
+    position:relative;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    min-height:60px;
+    padding:10px 20px;
+    background:#f6f7f9;
+    border-bottom:1px solid #d9dce3;
+  }
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header .family-power-task-alerts,
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header .tenant-session-exit {
+    position:relative;
+    top:auto;
+    right:auto;
+    left:auto;
+    bottom:auto;
+  }
+}
+@media (max-width:700px) {
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header {
+    background:#17191e;
+  }
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header .family-power-task-alerts > button.button {
+    width:47px;
+    min-width:47px;
+    height:44px;
+    padding:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#bd1426;
+    border:1px solid #9f101f;
+    color:#fff;
+    border-radius:10px;
+  }
+  .tenant-brand-scope[data-tenant-brand="family-power"] .workspace-header .family-power-task-alerts > button.button svg {
+    display:block;
+    color:#fff;
+    opacity:1;
+  }
+}
