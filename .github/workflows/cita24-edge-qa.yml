@@ -20,6 +20,11 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Node dependencies required by npm: Supabase imports
+        run: npm ci --no-audit --no-fund
       - name: Check patient portal public intake Edge Function
         run: deno check supabase/functions/cita24-public-request/index.ts
       - name: Check authenticated AI reception draft Edge Function
