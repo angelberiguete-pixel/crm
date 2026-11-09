@@ -24,6 +24,6 @@ export type ArmExecutionContext={authorizedTenantId:string;approvedActions:reado
 /** No side effects: executor must enforce permissions again at DB/API boundary. */
 export function canExecuteArmStep(plan:ArmPlan,step:ArmStep,context:ArmExecutionContext):boolean{
  return plan.tenantId===context.authorizedTenantId&&
-   plan.steps.some(s=>s.action===step.action&&s.role===step.role)&&
+   plan.steps.some(s=>s.action===step.action&&s.role===step.role&&s.requiresHumanApproval===step.requiresHumanApproval)&&
    (!step.requiresHumanApproval||context.approvedActions.includes(step.action));
 }
