@@ -8,6 +8,7 @@ import DigitalEmployeeStudio from "@/components/digital-employee-studio";
 import FamilyPowerArmCockpit from "@/components/family-power-arm-cockpit";
 import CrmIntegrationCenter from "@/components/crm-integration-center";
 import CrmMarketingPerformance from "@/components/crm-marketing-performance";
+import CrmEmailCampaigns from "@/components/crm-email-campaigns";
 import CrmWebAnalytics from "@/components/crm-web-analytics";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 import TenantSessionReport from "@/components/tenant-session-report";
@@ -32,6 +33,8 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
               ? <CrmIntegrationCenter />
             : section === "marketing"
               ? <CrmMarketingPerformance />
+            : section === "email"
+              ? <CrmEmailCampaigns />
             : section === "web-analytics"
               ? <CrmWebAnalytics />
             : section === "arm"

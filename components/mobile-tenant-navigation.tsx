@@ -8,7 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["inbox", "Conversaciones"], ["ml", "Inteligencia ML"], ["marketing", "Marketing"], ["web-analytics", "Analítica web"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
+const links = [["inbox", "Conversaciones"], ["ml", "Inteligencia ML"], ["marketing", "Marketing"], ["email", "Campañas email"], ["web-analytics", "Analítica web"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -29,7 +29,7 @@ export default function MobileTenantNavigation() {
         const permissions=(p.data??{}) as Record<string,unknown>;
         const modules=(m.data??[]) as Array<{module_key:string;enabled:boolean}>;
         const permissionKey=(name:string)=>(
-          ["channels","integrations","marketing","web-analytics","sessions","settings"].includes(name)?"settings":
+          ["channels","integrations","marketing","email","web-analytics","sessions","settings"].includes(name)?"settings":
           ["files","arm","reports"].includes(name)?"dashboard":name==="tasks"?"operations":name==="ml"?"pipeline":name
         );
         setAllowed(links.filter(([path])=>{

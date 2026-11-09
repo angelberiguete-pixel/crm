@@ -64,6 +64,8 @@ jobs:
         run: node --experimental-strip-types --test tests/tenant-white-label.test.mjs
       - name: WhatsApp marketing events, tenant KPI safety and quote buttons
         run: node --test tests/marketing-conversation-events.test.mjs
+      - name: Tenant-isolated email campaigns and opt-in safety contracts
+        run: node --test tests/crm-email-campaigns.test.mjs
       - name: YCloud signed webhooks, CTWA referrals, reply controls and guarded human sender
         run: node --experimental-strip-types --test tests/ycloud-whatsapp-webhook.test.mjs tests/ycloud-whatsapp-send.test.mjs
       - name: YCloud integrations status and onboarding safeguards

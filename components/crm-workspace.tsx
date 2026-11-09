@@ -13,6 +13,7 @@ import {
   FileText,
   Gauge,
   Inbox,
+  Mail,
   LogOut,
   Package,
   RefreshCw,
@@ -61,6 +62,7 @@ const nav = [
   ["", "Inicio", Gauge],
   ["companies", "Empresas", Building2],
   ["marketing", "Marketing", BarChart3],
+  ["email", "Campañas email", Mail],
   ["web-analytics", "Analítica web", BarChart3],
   ["contacts", "Contactos", Users],
   ["revenue", "Oportunidades", Target],
@@ -92,7 +94,7 @@ const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
- integrations:"settings",sessions:"settings",settings:"settings","web-analytics":"settings",pagos:"dashboard"
+ integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
 const isoFromLocal = (value: string) => (value ? new Date(value).toISOString() : null);

@@ -86,7 +86,7 @@ export default function CrmMarketingPerformance(){
  ];
  return <main className={styles.page}>
   <header className={styles.top}><div><div className={styles.kicker}><BarChart3 size={17}/> Marketing y conversión · {tenant?.tenant_name}</div><h1>Rendimiento de conversaciones</h1><p>Datos reales de los últimos 30 días, por empresa. Las oportunidades, aprobaciones y cobros son etapas diferentes.</p></div>
-  <div className={styles.actions}><Link href="/crm">Volver al CRM</Link><button onClick={()=>setRevision(v=>v+1)}><RefreshCw size={15}/> Actualizar</button></div></header>
+  <div className={styles.actions}><Link href="/crm/email">Campañas email</Link><Link href="/crm">Volver al CRM</Link><button onClick={()=>setRevision(v=>v+1)}><RefreshCw size={15}/> Actualizar</button></div></header>
   {error&&<p className={styles.warning} role="alert">{error}</p>}
   {notice&&<p className={styles.notice} role="status">{notice}</p>}
   {loading?<p role="status">Consultando indicadores…</p>:overview&&<>
