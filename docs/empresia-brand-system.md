@@ -1,61 +1,64 @@
-# Empresia · Sistema de identidad (versión provisional v0.1)
+# Empresia — Sistema de identidad corporativa oficial (V3, 9 de noviembre de 2026)
 
 ## Decisión de marca
 
-**EMPRESIA** es la **única marca comercial** de la plataforma. CRM, ARM, ERP, IA, facturación y automatizaciones son capacidades o módulos: no son empresas ni marcas independientes.
+**Empresia** es la marca visible y comercial única de la plataforma empresarial principal. El nombre **AXIOM** fue un código de propuesta descartado y no integra la identidad. No utilizar **Look Social Media** en nuevas páginas públicas, pantallas de acceso, portadas, cotizaciones o redes.
 
-- Nombre en interfaz, redes y comunicación: **Empresia**
-- Handle comunicado por el propietario: **@empresia.rd**
-- Descripción breve: **Plataforma inteligente de gestión empresarial**
-- Propuesta de valor: **Conecta clientes, ventas y operaciones en una sola plataforma**
-- Slogan de campaña opcional: **Tu empresa conectada. Tus decisiones más claras.**
-- Público: pymes y negocios con equipos que requieren centralizar ventas, clientes y tareas, con integración de operaciones ERP por fases.
-- Voz: práctica, transparente, directa; no prometer automatizaciones, ERP, facturación electrónica ni IA autónoma antes de tenerlas probadas.
+- Nombre: **Empresia** (capitalización preferida).
+- Usuario social: **@empresia.rd**.
+- Lema: **Tu negocio, todo conectado.**
+- Posicionamiento: software y servicios para organizar clientes, ventas, relaciones, operaciones y automatizaciones, con IA supervisada y módulos habilitados según su implementación.
+- Mercado inicial: República Dominicana y Latinoamérica.
+- Voz: clara, profesional, precisa y cercana; no atribuir resultados, cifras, autorizaciones o capacidades no verificadas.
 
-## Sistema visual original
+## Identidad visual aprobada
 
-**Paleta base**
-- Azul petróleo / base: `#102938` — confianza, fondo de barra lateral, titulares sobre claro.
-- Verde azulado / interacción: `#117D82` — enlaces, botones, selección.
-- Menta / acento: `#22D3BE` — símbolo, indicadores activos, énfasis puntual.
-- Blanco frío: `#F6FAF9` — fondos de presentación.
-- Gris oscuro: `#20303B` — texto principal.
-- Blanco: `#FFFFFF`.
+La identidad aprobada es **la del primer diseño original refinado V3**, no los conceptos AXIOM, ATLAS o FORMA.
 
-**Tipografía**
-- Inter o sans-serif equivalente para interfaz y piezas comerciales.
-- Titulares en semibold/bold; evitar mayúsculas excesivas en párrafos.
-- Espaciado amplio, tarjetas limpias, gráficos legibles en móvil.
+### Construcción del símbolo
+Tres trazos diagonales redondeados dispuestos como una E abstracta: **azul · menta · azul**. La marca denominativa es **Empresia**, no todo en mayúsculas por defecto.
 
-**Marca gráfica provisional**
-- SVG claro: `/empresia-logo.svg`.
-- SVG oscuro: `/empresia-logo-light.svg`.
-- Favicon: `/empresia-icon.svg`.
-- El símbolo se diseñó desde cero como una «E» de tres trazos y un punto de conexión; no tomar referencias de las marcas internacionales coincidentes.
-- Estos activos son provisionales hasta la revisión comercial y verificación legal.
+### Colores
+| Rol | Token | HEX |
+| --- | --- | --- |
+| Azul medianoche / tinta | `--brand-ink` | `#101828` |
+| Azul eléctrico | `--brand-blue` | `#315BFF` |
+| Verde menta | `--brand-cyan` | `#35D9B7` |
+| Azul secundario | `--brand-violet` (alias técnico heredado) | `#3385FF` |
+| Gris nieve | fondo editorial | `#F7F9FC` |
+| Blanco | `--brand-white` | `#FFFFFF` |
 
-## Arquitectura de navegación
+Los nombres internos de variables CSS pueden conservarse para compatibilidad. El símbolo y la paleta no deben sustituirse por los SVG provisionales petróleo/turquesa.
 
-`Empresia` (plataforma) → `Clientes/CRM`, `Relaciones y agentes/ARM`, `Operaciones/ERP`, `Facturación`, `Análisis`, `Configuración`.
+### Tipografía
+**Inter Display** para titulares y **Inter** para interfaz y textos, con alternativas sans-serif del sistema cuando no estén disponibles. No se distribuyen archivos de fuentes de terceros.
 
-Las secciones deben aparecer según permiso, habilitación y estado de integración. Nunca mostrar ERP operativo ni cobros automáticos reales si falta su verificación.
+### Recursos en el proyecto
+- `/empresia-logo.svg`: logo oscuro, para fondo claro.
+- `/empresia-logo-light.svg`: logo blanco, para fondo oscuro.
+- `/empresia-icon.svg`: isotipo sobre fondo de marca, para favicon o icono.
 
-## Perfiles sociales
+Los SVG de este repositorio proceden de los activos aprobados del proyecto guardados en Google Drive:
+[Identidad oficial](https://drive.google.com/drive/folders/16iJ8VYxf9XoHxWWuyDSHlZnYwUNst7w2).
+Se mantienen el símbolo y sus proporciones de origen.
 
-**Bio sugerida**
-«Software de gestión empresarial. CRM, automatización y herramientas de IA para conectar ventas y operaciones. República Dominicana | Próximamente ERP integrado.»
+## Arquitectura comercial
 
-No usar “marca registrada”, “Empresa SRL” u otras afirmaciones legales no verificadas. Mantener mensajes claros sobre funcionalidad disponible.
+**Empresia** es marca matriz; CRM, ARM, ERP, Flow, IA y Pagos son capacidades o módulos. Solo anunciar un módulo como operativo cuando haya validación funcional y comercial. ERP/Dolibarr permanece en integración progresiva.
 
-## Relación con los clientes
+Cada cliente, incluidos Family Power y otras empresas, conserva sus marcas, logotipos, permisos y datos aislados. No cambiar slugs, claves, rutas internas de webhook, políticas RLS ni credenciales por un cambio cosmético.
 
-- Family Power y otras empresas conservan sus identidades, logos, colores, credenciales y accesos.
-- El proveedor de la plataforma y los contratos pueden identificar a la persona física titular de los servicios, según la documentación real.
-- No cambiar identificadores internos, rutas webhook, secretos, políticas RLS o PayPal REST App por motivos de marca.
-- El motor Dolibarr se integra como infraestructura ERP, no se comercializa bajo una segunda marca.
+## Reglas para Instagram
 
-## Protección legal y lanzamiento
+- Nombre visible sugerido: **Empresia | Software Empresarial**.
+- Usuario existente: **@empresia.rd**.
+- Foto de perfil: `08_Avatar_Instagram_1080.png` de la carpeta oficial.
+- Biografía: **Software para conectar clientes, ventas y operaciones. CRM, automatización e IA supervisada. 🇩🇴 Tu negocio, todo conectado.**
+- Primera publicación: presentación de la marca y qué problema resuelve; no indicar empresas/clientes, resultados o funciones no comprobados.
+- Link de la biografía: solo la página comercial cuando esté publicada y verificada.
 
-El nombre **Empresia** fue elegido por el propietario, y ya se utiliza para la identidad social; su disponibilidad como signo registral en República Dominicana requiere confirmación ante ONAPI. No interpretar la disponibilidad de Instagram como titularidad de marca.
+## Estado de aplicación
 
-Antes de un lanzamiento irreversible: validar búsqueda de antecedentes fonéticos y clases 9/35/42, confirmar dominio, revisar identidad gráfica en fondos claros/oscuros y probar accesibilidad y navegación.
+El paquete gráfico y la rama de código son distintos de producción. No atribuir un despliegue o cambio en Instagram al código hasta comprobarlo. La actualización del nombre visible, biografía y foto dentro de Instagram requiere la sesión del propietario o una integración autorizada.
+
+**Nota legal:** no usar ® ni declarar marca registrada mientras ONAPI no haya confirmado la situación registral. No presentar Empresia como SRL si presta servicios una persona física y no está constituida así.
