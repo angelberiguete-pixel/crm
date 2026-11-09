@@ -12,7 +12,7 @@ type Invoice = {
   amount_paid_cents:number; hosted_invoice_url:string|null; invoice_number:string|null;
   metadata:Record<string,unknown>|null; period_start:string|null; period_end:string|null;
 };
-type Subscription = {custom_monthly_price_cents:number|null;current_period_start:string|null;current_period_end:string|null;provider:string;provider_subscription_id:string|null};
+type Subscription = {custom_monthly_price_cents:number|null;current_period_start:string|null;current_period_end:string|null;provider:string;provider_subscription_id:string|null;provider_plan_id:string|null;provider_approval_state:string;provider_approval_url:string|null};
 type Report = {id:string;invoice_id:string;status:string;payment_method:string;created_at:string};
 type Method = "paypal" | "transfer" | "cash";
 const usd=(cents:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(cents||0)/100);
@@ -27,6 +27,7 @@ export default function FamilyPowerBillingPortal(){
   const [reports,setReports]=useState<Report[]>([]);
   const [busy,setBusy]=useState(false);
   const [syncing,setSyncing]=useState(false);
+  const [subscriptionBusy,setSubscriptionBusy]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
@@ -42,7 +43,7 @@ export default function FamilyPowerBillingPortal(){
         .select("id,provider,status,currency,total_cents,amount_due_cents,amount_paid_cents,hosted_invoice_url,invoice_number,metadata,period_start,period_end")
         .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(50),
       supabase.from("tenant_subscriptions")
-        .select("custom_monthly_price_cents,current_period_start,current_period_end,provider,provider_subscription_id")
+        .select("custom_monthly_price_cents,current_period_start,current_period_end,provider,provider_subscription_id,provider_plan_id,provider_approval_state,provider_approval_url")
         .eq("tenant_id",tenantId).maybeSingle(),
       supabase.from("billing_payment_reports")
         .select("id,invoice_id,status,payment_method,created_at")
@@ -99,6 +100,44 @@ export default function FamilyPowerBillingPortal(){
       setError("No se pudo contactar al verificador PayPal.");
     }finally{setSyncing(false);}
   }
+  async function startPayPalSubscription(){
+    if(!isFamilyPower||!tenantId||initial?.status!=="paid"||subscriptionBusy)return;
+    setSubscriptionBusy(true);setError("");setNotice("");
+    try{
+      const {data,error:invokeError}=await supabase.functions.invoke("paypal-subscriptions",{
+        body:{action:"start_subscription",tenant_id:tenantId}
+      });
+      if(invokeError||!data||data.error){
+        setError("No se pudo iniciar la autorización PayPal. Verifica que el plan US$80 esté creado y que la implementación inicial esté conciliada.");
+      }else if(typeof data.approval_url==="string"&&data.approval_url.startsWith("https://www.paypal.com/")){
+        window.location.assign(data.approval_url);
+        return;
+      }else{
+        setNotice("Estado de suscripción: "+String(data.status??"en revisión")+".");
+        await load();
+      }
+    }catch{
+      setError("No se pudo consultar el servicio de suscripciones.");
+    }finally{setSubscriptionBusy(false);}
+  }
+  async function checkPayPalSubscription(){
+    if(!tenantId||subscriptionBusy)return;
+    setSubscriptionBusy(true);setNotice("");setError("");
+    try{
+      const {data,error:invokeError}=await supabase.functions.invoke("paypal-subscriptions",{
+        body:{action:"check_subscription",tenant_id:tenantId}
+      });
+      if(invokeError||!data||data.error)
+        setError("No se pudo verificar la suscripción en PayPal.");
+      else {
+        setNotice(data.status==="ACTIVE"
+          ?"PayPal confirmó una suscripción activa."
+          :"PayPal informa el estado: "+String(data.status??"desconocido")+".");
+        await load();
+      }
+    }catch{setError("No se pudo consultar PayPal.");}
+    finally{setSubscriptionBusy(false);}
+  }
   if(!allowed)return <div className="notice" role="alert">Facturación: solo propietario o administración autorizada de la empresa.</div>;
   return <div className="content" style={{maxWidth:1000,margin:"0 auto"}}>
     <header className="topbar"><div><div className="eyebrow">{tenant?.tenant_name??"Tu empresa"} · Cuenta comercial</div>
@@ -128,6 +167,26 @@ export default function FamilyPowerBillingPortal(){
           <p className="muted" style={{fontSize:12,marginTop:13}}>No se activa un cargo recurrente automático sin autorizar una suscripción en PayPal.</p>
         </article>
       </section>
+      {isFamilyPower&&<section className="section-gap card" aria-label="Autorización de suscripción PayPal">
+        <div className="eyebrow">Plan Family Power ARM</div>
+        <h2>Suscripción de US$80/mes</h2>
+        {initial?.status!=="paid"
+          ?<p className="muted">Primero necesitamos la confirmación real del pago inicial de US$197. Después podrás autorizar tu mensualidad en PayPal.</p>
+          :<>
+            <p className="muted">Los pagos recurrentes requieren tu consentimiento dentro de PayPal. No se activan al registrarte ni al pulsar pagar después.</p>
+            {subscription?.provider_approval_state==="approved"
+              ?<div className="notice" role="status">Suscripción aprobada. Revisa tu próximo vencimiento en PayPal.</div>
+              :<>
+                {subscription?.provider_approval_state==="awaiting_buyer"&&<p className="muted">Autorización pendiente de completar en PayPal.</p>}
+                <button className="button primary" type="button" onClick={()=>void startPayPalSubscription()} disabled={subscriptionBusy}>
+                  {subscriptionBusy?"Preparando autorización…":"Autorizar US$80 mensuales en PayPal"}
+                </button>
+              </>}
+            {subscription?.provider_subscription_id&&<button type="button" className="button" style={{marginLeft:8}} disabled={subscriptionBusy} onClick={()=>void checkPayPalSubscription()}>
+              <RefreshCw size={15}/> Verificar estado en PayPal
+            </button>}
+          </>}
+      </section>}
       {monthly.length>0&&<section className="section-gap card"><h2>Cuotas mensuales pendientes</h2>
         {monthly.map(row=><div key={row.id} className="priority-item"><strong>{row.invoice_number??"Mensualidad"} · {usd(row.amount_due_cents)}</strong>
           {row.hosted_invoice_url?<a href={row.hosted_invoice_url} target="_blank" rel="noopener noreferrer" className="button small">Pagar con PayPal</a>:<span className="muted">Link por habilitar</span>}
