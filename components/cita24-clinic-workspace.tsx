@@ -217,7 +217,8 @@ export default function Cita24ClinicWorkspace() {
         : "Cita registrada y tarea de confirmación creada. No se envió un mensaje externo.");
       setRefreshKey((v) => v + 1);
     } catch (error) {
-      setNotice("Error al programar: " + safeError(error));
+      const code = (error as { code?: string } | null)?.code;
+      setNotice(code === "23P01" ? "Horario ocupado. Selecciona otra hora." : "Error al programar: " + safeError(error));
     } finally { setBusy(false); }
   }
 
@@ -229,7 +230,8 @@ export default function Cita24ClinicWorkspace() {
         ? { metadata: { ...(appointment.metadata ?? {}), confirmed: true, confirmed_at: new Date().toISOString() } }
         : { status: action };
       const updated = await supabase.from("calendar_events").update(values)
-        .eq("tenant_id", tenantId).eq("id", appointment.id).select("id").single();
+        .eq("tenant_id", tenantId).eq("id", appointment.id)
+        .eq("status", "scheduled").select("id").single();
       if (updated.error) throw updated.error;
       if (action === "no_show" && appointment.status !== "no_show") {
         const followup = await supabase.from("tasks").insert({
