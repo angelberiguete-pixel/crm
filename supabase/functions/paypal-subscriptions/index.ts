@@ -4,7 +4,7 @@ const url=Deno.env.get("SUPABASE_URL")??"";
 const adminKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")??"";
 const clientKey=Deno.env.get("SUPABASE_ANON_KEY")??"";
 const allowedOrigin="https://crm-revenue-os.vercel.app";
-const headers={"Content-Type":"application/json","Cache-Control":"no-store"};
+const headers={"Content-Type":"application/json","Cache-Control":"no-store","Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const result=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 const safeUuid=(v:unknown):v is string=>typeof v==="string" && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 const admin=createClient(url,adminKey,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -59,6 +59,7 @@ type TenantSub={
 type PaypalLink={rel:string;href:string};
 
 Deno.serve(async(req:Request)=>{
+  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
   if(req.method!=="POST")return result({error:"method_not_allowed"},405);
   try{
     if(!url||!adminKey||!clientKey)throw Error("supabase_config_missing");
