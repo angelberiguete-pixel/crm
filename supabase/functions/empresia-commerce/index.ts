@@ -282,12 +282,40 @@ Deno.serve(async(req:Request)=>{
    }
   }
 
-  if(action==="sync"||action==="capture"){
+  if(action==="sync"||action==="capture"||action==="cancel_subscription"){
    if(!uuid(input.order_id))return reply({error:"invalid_order"},400);
    const {data:raw}=await admin.from("empresia_checkout_orders")
     .select("*").eq("id",input.order_id).eq("buyer_id",buyer.id).maybeSingle();
    if(!raw)return reply({error:"order_not_found"},404);
    const order=raw as Order;
+   if(action==="cancel_subscription"){
+     if(order.kind!=="monthly"||!order.paypal_subscription_id)
+       return reply({error:"not_a_subscription"},422);
+     const token=await paypalToken();
+     const path="/v1/billing/subscriptions/"+encodeURIComponent(order.paypal_subscription_id);
+     const before=await paypal<{id:string;status:string;custom_id?:string;plan_id?:string}>(token,path);
+     const {data:offer}=await admin.from("empresia_offers")
+       .select("paypal_plan_id").eq("id",order.offer_id).single();
+     if(before.id!==order.paypal_subscription_id||before.custom_id!==order.id
+       ||before.plan_id!==offer?.paypal_plan_id)
+       throw Error("paypal_subscription_mismatch");
+     if(!["CANCELLED","EXPIRED"].includes(before.status)){
+       if(!["ACTIVE","SUSPENDED"].includes(before.status))
+         return reply({error:"not_yet_active"},409);
+       await paypal(token,path+"/cancel","POST",
+         {reason:"Cancellation requested by the authenticated subscriber"});
+     }
+     const latest=await paypal<{id:string;status:string}>(token,path);
+     if(latest.id!==order.paypal_subscription_id)throw Error("paypal_subscription_mismatch");
+     if(latest.status==="CANCELLED"||latest.status==="EXPIRED"){
+       const {data,error}=await admin.rpc("empresia_confirm_subscription_state",{
+         p_subscription_id:latest.id,p_paypal_state:latest.status
+       });
+       if(error)throw Error("subscription_reconciliation_failed");
+       return reply({status:data?.status??"cancelled",order_id:order.id});
+     }
+     return reply({status:"cancellation_pending",order_id:order.id});
+   }
    if(["paid","cancelled","active"].includes(order.status))
      return reply({status:order.status,order_id:order.id});
    if(order.status!=="awaiting_approval")
