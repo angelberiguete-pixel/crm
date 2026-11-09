@@ -1,4 +1,4 @@
-// Contract: LOOK public CTA opens platform portfolio even when Family Power was
+// Contract: Empresia public CTA opens platform dashboard even when Family Power was
 // the previous active tenant. Fake sessions only; never uses real credentials.
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
@@ -85,7 +85,9 @@ try{
  const page=await owner.context.newPage();
  await page.goto(base+"/empresia");
  await page.getByRole("link",{name:"Acceso CRM",exact:true}).click();
- await page.waitForURL(url=>url.pathname==="/mis-empresas",{timeout:20000});
+ await page.waitForURL(url=>url.pathname==="/platform-admin",{timeout:20000});
+ await page.getByRole("heading",{name:/Tu empresa, todas las operaciones/}).waitFor();
+ await page.goto(base+"/mis-empresas");
  await page.getByRole("heading",{name:"Mis empresas",exact:true}).waitFor();
  const cards=page.locator('button[aria-label^="Entrar como administrador en "]');
  await cards.first().waitFor();
@@ -104,7 +106,7 @@ try{
  const signedIn=await prepare("owner");
  const login=await signedIn.context.newPage();
  await login.goto(base+"/login");
- await login.waitForURL(url=>url.pathname==="/mis-empresas",{timeout:20000});
+ await login.waitForURL(url=>url.pathname==="/platform-admin",{timeout:20000});
  assert.equal(signedIn.calls.setActive,0,"owner login must not activate prior customer tenant");
  await signedIn.context.close();
 
@@ -123,7 +125,7 @@ try{
  assert.notEqual(new URL(unauthenticated.url()).pathname,"/family-power/login");
  await guest.context.close();
 
- console.log("PASS: Empresia landing and login open owner portfolio despite stale Family Power; explicit platform card joins the correct tenant; members and guests remain authorized.");
+ console.log("PASS: Empresia landing and login open owner dashboard despite stale Family Power; explicit platform card joins the correct tenant; members and guests remain authorized.");
 }finally{
  if(browser)await browser.close();
  if(server)server.kill("SIGTERM");
