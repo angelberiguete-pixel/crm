@@ -7,7 +7,7 @@ import BrandLogo from "@/components/brand-logo";
 import {supabase} from "@/lib/supabase";
 
 /**
- * Punto de entrada público de LOOK SOCIAL MEDIA.
+ * Punto de entrada público de Empresia.
  * /crm es una vista de la empresa activa: nunca sirve como puerta global
  * para el propietario, pues podría mostrar Family Power u otro cliente.
  * Las autorizaciones vienen exclusivamente de Supabase, no de la URL.
@@ -17,7 +17,7 @@ export default function AccesoCrmPage(){
   const [error,setError]=useState("");
   useEffect(()=>{
     let alive=true;
-    // Abrir desde LOOK no debe heredar la intención de inicio de sesión Family Power.
+    // Abrir desde Empresia no debe heredar la intención de inicio de sesión Family Power.
     try{window.sessionStorage.removeItem("crm:login-intent");}catch{}
     void (async()=>{
       try{
@@ -43,11 +43,11 @@ export default function AccesoCrmPage(){
   return <main className="auth-shell">
     <section className="auth-panel">
       <BrandLogo size="login"/>
-      <div className="eyebrow">Look Social Media · Acceso seguro</div>
+      <div className="eyebrow">Empresia · Acceso seguro</div>
       <h1>Entrar al CRM</h1>
       {error?<><p role="alert" className="notice">{error}</p>
         <Link className="button primary" href="/login">Iniciar sesión</Link>
-        <Link className="button" href="/look-social-media">Volver al sitio</Link>
+        <Link className="button" href="/empresia">Volver al sitio</Link>
       </>:<p role="status" className="muted">Comprobando tu acceso a la plataforma…</p>}
     </section>
   </main>;
