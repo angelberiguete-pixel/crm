@@ -53,6 +53,7 @@ try {
   await openMenu.click();
   await page.getByRole('navigation',{name:'Navegación de Empresia'}).getByRole('link',{name:'Prospección comercial'}).waitFor();
   await page.getByRole('button',{name:'Cerrar navegación'}).click();
+  await page.getByRole('navigation',{name:'Navegación de Empresia',includeHidden:true}).waitFor({state:'hidden',timeout:5000});
   assert.equal(await page.getByRole('navigation',{name:'Navegación de Empresia'}).isVisible(),false,'mobile drawer closes without overlay trapping the dashboard');
 
   const row=page.locator('button[aria-pressed]').filter({hasText:'QA A'});
