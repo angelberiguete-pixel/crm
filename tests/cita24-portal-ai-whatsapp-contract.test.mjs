@@ -11,6 +11,7 @@ const reception=read("supabase/functions/cita24-reception-draft/index.ts");
 const dispatch=read("supabase/functions/cita24-reminder-dispatch/index.ts");
 const schema=read("supabase/migrations/20261109110350_cita24_patient_portal_private_requests_and_ai_quota.sql");
 const reminders=read("supabase/migrations/20261109110824_cita24_privacy_and_verified_whatsapp_reminder_queue.sql");
+const privacyFix=read("supabase/migrations/20261109111841_cita24_privacy_null_fail_closed_fix.sql");
 
 test("Public portal receives REQUESTS only, explicitly not confirmed bookings",()=>{
  assert.match(route,/Cita24PatientPortal/);
@@ -31,6 +32,8 @@ test("Intake is clinic-specific, turnstile verified, rate limited and private",(
  assert.match(schema,/alter table public\.cita24_visit_requests enable row level security/);
  assert.match(schema,/revoke all on public\.cita24_visit_requests from anon/);
  assert.match(reminders,/cita24_privacy_required_for_public/);
+ assert.match(privacyFix,/coalesce\(/);
+ assert.match(privacyFix,/privacy_url/);
 });
 test("AI only drafts administrative answers with auth, cost flag and review",()=>{
  for(const keyword of ["CITA24_AI_DRAFT_ENABLED","OPENAI_API_KEY",
