@@ -11,11 +11,32 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
+ const [planStatus,setPlanStatus]=useState<string>("unknown");
+ const [planBusy,setPlanBusy]=useState(false);
  const [reload,setReload]=useState(0);
  const [reference,setReference]=useState("");
  const [method,setMethod]=useState<Method>("paypal");
  const [amount,setAmount]=useState("");
  const [activeInvoiceId,setActiveInvoiceId]=useState("");
+ useEffect(()=>{
+   let alive=true;
+   void supabase.from("billing_gateway_plans").select("status,provider_plan_id")
+     .eq("plan_key","family-power-arm-usd80-month").maybeSingle().then(({data,error})=>{
+       if(alive)setPlanStatus(error?"unavailable":data?.status??"missing");
+     });
+   return()=>{alive=false;};
+ },[reload]);
+ async function provisionMonthlyPlan(){
+   if(planBusy||planStatus!=="pending")return;
+   if(!window.confirm("¿Crear el producto y plan PayPal para cobrar US$80 cada mes? Esta operación NO cobra a ningún cliente, pero crea recursos en la cuenta PayPal configurada."))return;
+   setPlanBusy(true);setError("");setNotice("");
+   try{
+     const {data,error}=await supabase.functions.invoke("paypal-subscriptions",{body:{action:"provision_plan"}});
+     if(error||!data?.ok){setError("PayPal no confirmó la creación del plan. Revisa credenciales y estado del proveedor antes de reintentar.");setPlanStatus("error");}
+     else{setPlanStatus(data.status);setNotice("Plan PayPal verificado y guardado; pendiente de autorización de cada comprador.");}
+   }catch{setError("No se pudo comunicar con la integración de suscripciones.");}
+   finally{setPlanBusy(false);}
+ }
  useEffect(()=>{
    let live=true;setInvoices([]);setReports([]);setActiveInvoiceId("");setError("");
    void (async()=>{
@@ -68,6 +89,11 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
  return <section className="card section-gap">
   <div className="eyebrow">Control financiero · Propietario</div><h2>Conciliación de pagos de clientes</h2>
   <p className="muted">Un reporte no confirma ingreso. Verifica el movimiento en PayPal o en tu banco antes de aprobar. Los importes abonados se registran en USD.</p>
+  <div className="section-gap"><h3>Plan PayPal · Family Power US$80/mes</h3>
+    <p className="muted">Estado del producto y plan recurrente: {planStatus}. Crear el plan no cobra ni autoriza al cliente.</p>
+    {planStatus==="pending"&&<button className="button" type="button" disabled={planBusy} onClick={()=>void provisionMonthlyPlan()}>{planBusy?"Configurando PayPal…":"Crear plan mensual en PayPal"}</button>}
+    {planStatus==="error"&&<p className="muted">Revisar los productos del comerciante y el registro del plan antes de reintentar; no se realizan duplicados automáticamente.</p>}
+  </div>
   {error&&<div className="notice" role="alert">{error}</div>}
   {notice&&<div className="notice" role="status">{notice}</div>}
   <h3>Facturas pendientes</h3>
