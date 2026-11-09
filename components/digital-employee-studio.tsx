@@ -200,7 +200,7 @@ export default function DigitalEmployeeStudio(){
         <h2>Probar respuesta con OpenAI</h2>
         <div className="notice"><ShieldCheck size={17}/> Esta prueba genera únicamente un borrador interno sujeto a aprobación humana. No contacta clientes ni envía WhatsApp.</div>
         <p className="muted">Primero guarda los servicios reales y verificados del negocio. La cuenta debe ser propietaria o administradora. No introduzcas información personal de clientes.</p>
-        {validateEmployeeKnowledge(knowledge)&&
+        {validateEmployeeKnowledge(active.settings?.knowledge)&&
           <div className="notice" role="status">Para habilitar la prueba, completa el nombre de Family Power y los servicios verificados, luego pulsa «Guardar borrador».</div>}
         <form className="stack gap-12" onSubmit={generate}>
           <label>Consulta ficticia de prueba
@@ -208,7 +208,7 @@ export default function DigitalEmployeeStudio(){
               onChange={e=>setSample(e.target.value)}/>
           </label>
           <button type="submit" className="button primary"
-            disabled={testing||busy||!!validateEmployeeKnowledge(knowledge)||sample.trim().length<3}>
+            disabled={testing||busy||!!validateEmployeeKnowledge(active.settings?.knowledge)||sample.trim().length<3}>
             <Sparkles size={16}/> {testing?"Consultando OpenAI…":"Generar borrador para aprobación"}
           </button>
         </form>
