@@ -1,0 +1,29 @@
+name: Family Power implementation installments DOP
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261109010000_implementation_contract_dop_installments.sql'
+      - 'supabase/functions/paypal-subscriptions/index.ts'
+      - 'components/implementation-contract-ledger.tsx'
+      - 'components/family-power-billing-portal.tsx'
+      - 'components/family-power-billing-banner.tsx'
+      - 'components/platform-admin.tsx'
+      - 'app/family-power/pagos/**'
+      - 'tests/implementation-contract-installments.test.mjs'
+      - 'tests/family-power-billing.test.mjs'
+      - 'tests/shared-billing.test.mjs'
+      - '.github/workflows/implementation-installments.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/implementation-contract-installments.test.mjs tests/family-power-billing.test.mjs tests/shared-billing.test.mjs tests/paypal-api-integration.test.mjs
+      - run: npm run build

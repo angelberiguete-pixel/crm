@@ -2,7 +2,7 @@
 
 import {useEffect,useState,type FormEvent} from "react";
 import {supabase} from "@/lib/supabase";
-type Invoice={id:string;invoice_number:string|null;status:string;amount_due_cents:number;total_cents:number;currency:string;metadata:Record<string,unknown>|null};
+type Invoice={id:string;provider:string;invoice_number:string|null;status:string;amount_due_cents:number;total_cents:number;currency:string;metadata:Record<string,unknown>|null};
 type Report={id:string;invoice_id:string;payment_method:string;reference_text:string|null;customer_note:string|null;created_at:string;status:string};
 type Method="paypal"|"transfer"|"cash";
 export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
@@ -20,7 +20,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
    let live=true;setInvoices([]);setReports([]);setActiveInvoiceId("");setError("");
    void (async()=>{
      const [i,r]=await Promise.all([
-       supabase.from("billing_invoices").select("id,invoice_number,status,amount_due_cents,total_cents,currency,metadata")
+       supabase.from("billing_invoices").select("id,provider,invoice_number,status,amount_due_cents,total_cents,currency,metadata")
          .eq("tenant_id",tenantId).order("created_at",{ascending:false}).limit(50),
        supabase.from("billing_payment_reports")
          .select("id,invoice_id,payment_method,reference_text,customer_note,created_at,status")
@@ -33,12 +33,14 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
    return()=>{live=false;};
  },[tenantId,reload]);
  const payable=invoices.filter(i=>i.status==="open"&&i.amount_due_cents>0);
- const selected=payable.find(i=>i.id===activeInvoiceId)??payable[0]??null;
+ const externallyReconciled=payable.filter(i=>i.provider!=="paypal");
+ const selected=externallyReconciled.find(i=>i.id===activeInvoiceId)??externallyReconciled[0]??null;
  const usd=(c:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(c/100);
  async function reviewReport(report:Report,approve:boolean){
   if(busy)return;
   const invoice=invoices.find(i=>i.id===report.invoice_id);
   if(!invoice)return setError("No existe una factura asociada al reporte.");
+  if(approve&&invoice.provider==="paypal")return setError("Las facturas PayPal se confirman por su API, no mediante reportes manuales. Para efectivo o transferencia registra el abono en pesos en el contrato de implementación.");
   if(!window.confirm(approve?`Confirmaste fuera del CRM que recibiste ${usd(invoice.amount_due_cents)} por ${report.payment_method} y deseas abonarlo a la factura?`:"¿Rechazar este reporte sin registrar dinero?"))return;
   setBusy(true);setError("");setNotice("");
   const {error}=await supabase.rpc("platform_review_client_payment_report",{
@@ -52,6 +54,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
  }
  async function confirmDirect(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!selected||busy)return;
+  if(selected.provider==="paypal")return setError("Usa la verificación PayPal API, no un abono manual de factura.");
   const cents=Math.round(Number(amount||selected.amount_due_cents/100)*100);
   if(!Number.isSafeInteger(cents)||cents<=0||cents>selected.amount_due_cents)return setError("Verifica el importe recibido en USD.");
   if(reference.trim().length<4)return setError("Introduce una referencia única del comprobante recibido.");
@@ -81,7 +84,9 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
       <div><strong>{report.payment_method.toUpperCase()}</strong> · {report.reference_text??"Sin referencia"}</div>
       {report.customer_note&&<p className="muted">{report.customer_note}</p>}
       <div className="top-actions" style={{marginTop:10}}>
-        <button className="button primary" disabled={busy} onClick={()=>void reviewReport(report,true)}>Confirmar recibido</button>
+        {invoices.find(i=>i.id===report.invoice_id)?.provider==="paypal"
+          ?<span className="muted">Pago PayPal: comprobar desde el portal; abonos en pesos desde el contrato</span>
+          :<button className="button primary" disabled={busy} onClick={()=>void reviewReport(report,true)}>Confirmar recibido</button>}
         <button className="button" disabled={busy} onClick={()=>void reviewReport(report,false)}>Rechazar reporte</button>
       </div>
     </div>)}
@@ -91,7 +96,7 @@ export default function PlatformBillingReviews({tenantId}:{tenantId:string}){
     <p className="muted">Úsalo cuando el cliente pagó directamente y tú ya verificaste el ingreso. No sirve para cobrar ni para crear transacciones PayPal.</p>
     <label htmlFor="billing-admin-invoice">Factura</label>
     <select id="billing-admin-invoice" value={selected.id} onChange={e=>setActiveInvoiceId(e.target.value)}>
-      {payable.map(i=><option key={i.id} value={i.id}>#{i.invoice_number??i.id.slice(0,8)} · {usd(i.amount_due_cents)}</option>)}
+      {externallyReconciled.map(i=><option key={i.id} value={i.id}>#{i.invoice_number??i.id.slice(0,8)} · {usd(i.amount_due_cents)}</option>)}
     </select>
     <label htmlFor="billing-admin-method">Medio confirmado</label>
     <select id="billing-admin-method" value={method} onChange={e=>setMethod(e.target.value as Method)}>

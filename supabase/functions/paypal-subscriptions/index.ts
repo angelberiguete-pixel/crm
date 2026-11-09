@@ -176,13 +176,13 @@ Deno.serve(async(req:Request)=>{
           approval_url:current.provider_approval_state==="awaiting_buyer"?current.provider_approval_url:null});
       }
 
-      const {data:invoices}=await admin.from("billing_invoices")
-        .select("status,amount_due_cents,metadata").eq("tenant_id",tenantId).limit(100);
-      const paidInitial=(invoices??[]).some((entry)=>{
-        const meta=entry.metadata as Record<string,unknown>|null;
-        return meta?.billing_stage==="initial" && entry.status==="paid" && entry.amount_due_cents===0;
-      });
-      if(!paidInitial)return result({error:"initial_fee_not_verified"},409);
+      // The USD197 invoice is just installment 1. NEVER authorize recurring
+      // billing until the DOP 30,000 implementation contract is fully settled.
+      const {data:contract,error:contractError}=await admin.from("billing_implementation_contracts")
+        .select("id,status,total_dop_cents").eq("tenant_id",tenantId).maybeSingle();
+      if(contractError||!contract||contract.status!=="settled"
+        ||contract.total_dop_cents!==3000000)
+        return result({error:"implementation_contract_not_settled"},409);
 
       const token=await paypalToken();
       const start=Date.parse(current.current_period_end??"");

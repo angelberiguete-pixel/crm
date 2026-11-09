@@ -40,12 +40,12 @@ test("PayPal recurring plan is fixed to $80 and only owner can provision it",()=
   assert.match(planApi,/value:"80\.00",currency_code:"USD"/);
   assert.match(planApi,/PayPal-Request-Id/);
 });
-test("recurring subscription requires initial paid and buyer approval",()=>{
-  assert.match(planApi,/initial_fee_not_verified/);
+test("recurring subscription requires full DOP implementation and buyer approval",()=>{
+  assert.match(planApi,/implementation_contract_not_settled/);
   assert.match(planApi,/status:"awaiting_buyer"/);
   assert.match(planApi,/rel==="approve"/);
   assert.match(portal,/Autorizar US\$80 mensuales en PayPal/);
-  assert.match(portal,/initial\?\.status!=="paid"/);
+  assert.match(portal,/implementationStatus!=="settled"/);
   assert.doesNotMatch(portal,/PAYPAL_CLIENT_SECRET/);
 });
 test("webhook signatures and official PayPal lookups precede recorded recurring revenue",()=>{
