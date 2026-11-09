@@ -60,7 +60,7 @@ try{
   });
   const page=await context.newPage();
   await page.goto(base+"/crm");
-  await page.getByRole("heading",{name:"Portal de Look Social Media"}).waitFor();
+  await page.getByRole("heading",{name:"Portal de Empresia"}).waitFor();
   assert.ok(await page.getByRole("img",{name:"Empresia"}).isVisible(),"official logo stays on its own tenant");
   assert.equal(await page.locator(".tenant-brand-scope").getAttribute("data-tenant-brand"),"eurevector");
   assert.equal((await page.locator(".tenant-brand-scope").evaluate(e=>getComputedStyle(e).getPropertyValue("--accent"))).trim().toLowerCase(),"#102938");
