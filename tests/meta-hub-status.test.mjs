@@ -53,7 +53,7 @@ test("CRM Meta Hub is read-only, scoped to tenant and does not affect Family Pow
   const center = readFileSync(new URL("../components/crm-integration-center.tsx", import.meta.url), "utf8");
   const panel = readFileSync(new URL("../components/meta-hub-panel.tsx", import.meta.url), "utf8");
   assert.match(center, /if\(tenant\.tenant_slug==="family-power"\)return/);
-  assert.match(center, /<MetaHubPanel tenantId=\{id\}/);
+  assert.match(center, /<MetaHubPanel tenantId=\{tenant\.tenant_id\}/);
   assert.match(panel, /openreply_bridge_status/);
   assert.match(panel, /data\.tenant_id !== tenantId/);
   assert.doesNotMatch(panel, /service_role|access_token|api_secret|sendMessage\(|\.insert\(|\.update\(/);
