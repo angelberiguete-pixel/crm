@@ -23,7 +23,7 @@ export default function LoginPage() {
     const access = await supabase.rpc("platform_current_access");
     if(access.error){setMessage("La sesión es válida, pero no pudimos comprobar tu acceso. Intenta entrar nuevamente.");return;}
     const value = (access.data ?? {}) as { is_platform_admin?: boolean };
-    router.replace(value.is_platform_admin ? "/mis-empresas" : "/crm");
+    router.replace(value.is_platform_admin ? "/platform-admin" : "/crm");
   }
 
   useEffect(() => {
