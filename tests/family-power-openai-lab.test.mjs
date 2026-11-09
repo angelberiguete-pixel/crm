@@ -15,7 +15,7 @@ test("Family Power ARM exposes its own controlled OpenAI laboratory",()=>{
  assert.match(panel,/onSubmit=\{generate\}/);
  assert.match(panel,/value=\{sample\}/);
  assert.match(panel,/validateEmployeeKnowledge\(active\.settings\?\.knowledge\)/);
- assert.match(panel,/disabled=\{testing\|\|busy\|\|!!validateEmployeeKnowledge\(active\.settings\?\.knowledge\)/);
+ assert.match(panel,/disabled=\{testing\|\|busy\|\|!readiness\?\.ready_for_trial\|\|!!validateEmployeeKnowledge\(active\.settings\?\.knowledge\)/);
  assert.match(panel,/DigitalEmployeeReviewQueue tenantId=\{tenantId\} compact/);
  assert.match(panel,/No contacta clientes ni envía WhatsApp/);
  assert.doesNotMatch(panel,/signInWithPassword|service_role|OPENAI_API_KEY/);
