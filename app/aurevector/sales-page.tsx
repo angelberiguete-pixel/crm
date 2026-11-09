@@ -1,3 +1,4 @@
+import Image from "next/image";
 import LeadForm from "./lead-form";
 import AurevectorPricing from "./pricing";
 import styles from "./aurevector.module.css";
@@ -13,7 +14,7 @@ export default function AurevectorSalesPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="#inicio" aria-label="EMPRESIA inicio">EMPRESIA</a>
+        <a className={styles.brand} href="#inicio" aria-label="Empresia, inicio"><Image src="/empresia-logo.svg" alt="Empresia" width={190} height={39} className={styles.brandLogo} priority unoptimized /></a>
         <nav className={styles.nav} aria-label="Navegación principal">
           <a href="#sistema">Cómo funciona</a>
           <a href="#planes">Planes</a>
@@ -24,9 +25,9 @@ export default function AurevectorSalesPage() {
 
       <section className={styles.hero} id="inicio">
         <div className={styles.heroCopy}>
-          <span className={styles.kicker}>CRM + ARM + IA + ERP</span>
-          <h1>Convierte más oportunidades sin perseguir leads a mano.</h1>
-          <p className={styles.lead}>Empresia centraliza captación, ventas y relaciones con clientes, con IA supervisada y un ERP en proceso de integración. Prueba cómo se configuraría para tu negocio antes de hablar con ventas.</p>
+          <span className={styles.kicker}>CRM · ARM · AUTOMATIZACIÓN · IA</span>
+          <h1>Tu negocio, todo conectado.</h1>
+          <p className={styles.lead}>Conecta tus clientes, ventas y operaciones en un mismo lugar. Organiza el seguimiento y descubre las capacidades de automatización e IA supervisada de Empresia. La integración ERP está en desarrollo.</p>
           <div className={styles.heroActions}>
             <a className={styles.primary} href="/empresia/start">Probar EMPRESIA</a>
             <a className={styles.secondary} href="#sistema">Ver cómo funciona</a>
@@ -93,7 +94,7 @@ export default function AurevectorSalesPage() {
       </section>
 
       <footer className={styles.footer}>
-        <strong>EMPRESIA</strong>
+        <strong>Empresia</strong>
         <span>CRM, ARM e integración ERP para hacer crecer tu empresa con control.</span>
         <a href="/empresia/start">Probar EMPRESIA</a>
         <a href="/acceso-crm">Acceso al CRM</a>
