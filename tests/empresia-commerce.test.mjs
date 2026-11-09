@@ -77,3 +77,11 @@ test("Frontend has public catalog, authenticated checkout and purchase history",
  assert.match(purchases,/Mis compras y suscripciones/);
  assert.match(login,/^.*next && .*empresia.*\(checkout\|mis-compras\)/m);
 });
+
+test("recurring activation alone cannot unlock a digital product without a verified sale",()=>{
+ const paid=read("supabase/migrations/20261109054000_empresia_subscription_paid_entitlements.sql");
+ assert.match(paid,/values\(v_order\.id,v_order\.offer_id,v_order\.buyer_id,'provisioning'\)/);
+ assert.match(paid,/Only the verified first payment/);
+ assert.match(paid,/fulfillment='entitlement' then 'active'/);
+ assert.match(paid,/from public\.empresia_offers f/);
+});
