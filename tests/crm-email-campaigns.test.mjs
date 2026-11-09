@@ -47,3 +47,17 @@ test("email performance only counts recorded provider events", () => {
     assert.match(sql, new RegExp("event_type='"+k+"'"));
   assert.match(ui, /Una apertura no prueba que el mensaje fue leído/);
 });
+
+test("preferred Gmail accounts are tenant-scoped metadata, not a mail transport", () => {
+  const senderSql = read("../supabase/migrations/20261109073000_marketing_email_sender_preferences.sql");
+  const labels = read("../components/crm-email-campaigns.tsx");
+  assert.match(senderSql, /marketing_email_sender_preferences enable row level security/);
+  assert.match(senderSql, /revoke all on public\.marketing_email_sender_preferences from public,anon,authenticated/);
+  assert.match(senderSql, /private\.crm_is_tenant_admin\(tenant_id\)/);
+  assert.match(senderSql, /delivery_status='not_connected'/);
+  assert.match(senderSql, /sends_enabled=false/);
+  assert.match(labels, /Correos comerciales seleccionados/);
+  assert.match(labels, /no significa que Gmail esté conectado a Empresia/);
+  assert.match(labels, /no se alternarán para aumentar límites/);
+  assert.match(labels, /\.eq\("tenant_id", tenantId\)\.maybeSingle\(\)/);
+});
