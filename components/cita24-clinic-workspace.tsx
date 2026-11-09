@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
+import { CITA24_TIMEZONE, normalizeContactPhone, parseClinicLocalDateTime } from "@/lib/cita24-contract";
 
 type Contact = {
   id: string;
@@ -27,7 +28,7 @@ type Task = {
   due_at: string | null;
   contact_id: string | null;
 };
-const ZONE = "America/Santo_Domingo";
+const ZONE = CITA24_TIMEZONE;
 const appointmentTime = new Intl.DateTimeFormat("es-DO", {
   timeZone: ZONE, dateStyle: "medium", timeStyle: "short",
 });
@@ -39,9 +40,6 @@ const statuses: Record<Appointment["status"], string> = {
 };
 function safeError(error: unknown) {
   return error instanceof Error ? error.message : "La operación no se pudo completar.";
-}
-function numericPhone(value: string) {
-  return value.replace(/[^0-9+]/g, "").slice(0, 24);
 }
 function isCita24Appointment(appointment: Appointment) {
   return appointment.metadata?.module === "cita24";
@@ -127,7 +125,7 @@ export default function Cita24ClinicWorkspace() {
     event.preventDefault();
     if (!tenantId || busy || loadedTenantId !== tenantId) return;
     const name = patientName.trim();
-    const phone = numericPhone(patientPhone);
+    const phone = normalizeContactPhone(patientPhone);
     if (name.length < 2 || phone.length < 8) {
       setNotice("Escribe un nombre y un teléfono válido para gestionar citas.");
       return;
@@ -161,14 +159,12 @@ export default function Cita24ClinicWorkspace() {
     event.preventDefault();
     if (!tenantId || busy || loadedTenantId !== tenantId) return;
     const contact = contacts.find((p) => p.id === selectedContact);
-    // Dominican clinics use Atlantic Standard Time year-round (UTC-04:00).
-    const starts = new Date(startLocal.length === 16 ? startLocal + ":00-04:00" : startLocal + "-04:00");
-    const ends = new Date(starts.getTime() + minutes * 60000);
-    if (!contact || !startLocal || !Number.isFinite(starts.getTime()) ||
-        minutes < 10 || minutes > 240 || !service.trim()) {
+    const starts = parseClinicLocalDateTime(startLocal);
+    if (!contact || !starts || minutes < 10 || minutes > 240 || !service.trim()) {
       setNotice("Selecciona un contacto, servicio administrativo, fecha y duración válida.");
       return;
     }
+    const ends = new Date(starts.getTime() + minutes * 60000);
     if (starts.getTime() < Date.now() - 60000) {
       setNotice("No puedes registrar una cita en una fecha pasada.");
       return;
