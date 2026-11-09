@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Node dependencies required by npm: Supabase imports
+      - name: Install npm dependencies for Supabase Edge imports
         run: npm ci --no-audit --no-fund
       - name: Check patient portal public intake Edge Function
         run: deno check supabase/functions/cita24-public-request/index.ts
