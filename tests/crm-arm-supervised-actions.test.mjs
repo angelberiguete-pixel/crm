@@ -62,9 +62,9 @@ test("outcomes depend on CRM evidence, not user-supplied conversion labels",()=>
 test("privileged functions live in private schema behind invoker API wrappers",()=>{
  for(const name of ["crm_arm_propose_intervention","crm_arm_review_intervention",
    "crm_arm_execute_intervention","crm_arm_complete_intervention_task","crm_arm_measure_intervention"]){
-  assert.match(rpcGate,new RegExp("alter function public\\\\."+name+"\\\\("));
-  assert.match(rpcGate,new RegExp("create function public\\\\."+name+"\\\\("));
-  assert.match(rpcGate,new RegExp("select private\\\\."+name+"\\\\("));
+  assert.ok(rpcGate.includes("alter function public."+name+"("));
+  assert.ok(rpcGate.includes("create function public."+name+"("));
+  assert.ok(rpcGate.includes("select private."+name+"("));
  }
  assert.match(rpcGate,/language sql security invoker set search_path=''/);
  assert.match(rpcGate,/revoke all on function public\\.crm_arm_execute_intervention\\(uuid,uuid\\) from public,anon,authenticated/);
