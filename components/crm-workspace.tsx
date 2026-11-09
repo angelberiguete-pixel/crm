@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bot,
+  Boxes,
   BarChart3,
   BrainCircuit,
   Building2,
@@ -27,6 +28,7 @@ import { signOutOfTenant, tenantLogoutDestination } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
+import EmpresiaErpOverview from "@/components/empresia-erp-overview";
 import CrmMlHub from "@/components/crm-ml-hub";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
@@ -69,6 +71,7 @@ const nav = [
   ["ml", "Inteligencia ML", BrainCircuit],
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
+  ["erp", "ERP", Boxes],
   ["quotations", "Cotizaciones", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
@@ -92,7 +95,7 @@ const familyLabels:Record<string,string>={
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
- products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
+ products:"products",quotations:"quotations",operations:"operations",erp:"settings",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
@@ -182,6 +185,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const permittedNav=nav.filter(([key])=>{
     const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
+    if(key==="erp"&&(member.tenant_slug!=="eurevector"||!["owner","admin"].includes(member.role)))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
       &&familyMenuPermissions!==null
@@ -229,6 +233,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "ml" && <CrmMlHub tenantId={tenantId} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
+        {section === "erp" && <EmpresiaErpOverview />}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
