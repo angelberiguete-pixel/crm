@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bot,
+  Boxes,
   BarChart3,
   BrainCircuit,
   Building2,
@@ -27,6 +28,7 @@ import { signOutOfTenant, tenantLogoutDestination } from "@/lib/tenant-session";
 import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
+import EmpresiaErpOverview from "@/components/empresia-erp-overview";
 import CrmMlHub from "@/components/crm-ml-hub";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
@@ -69,6 +71,7 @@ const nav = [
   ["ml", "Inteligencia ML", BrainCircuit],
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
+  ["erp", "ERP", Boxes],
   ["quotations", "Cotizaciones", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
@@ -92,7 +95,7 @@ const familyLabels:Record<string,string>={
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
- products:"products",quotations:"quotations",operations:"operations",calendar:"calendar",
+ products:"products",quotations:"quotations",operations:"operations",erp:"settings",calendar:"calendar",
  automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
@@ -182,6 +185,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const permittedNav=nav.filter(([key])=>{
     const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
+    if(key==="erp"&&(member.tenant_slug!=="eurevector"||!["owner","admin"].includes(member.role)))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
       &&familyMenuPermissions!==null
@@ -229,6 +233,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "ml" && <CrmMlHub tenantId={tenantId} />}
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
+        {section === "erp" && <EmpresiaErpOverview />}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
@@ -415,6 +420,7 @@ function InboxPanel({ tenantId, reloadKey, notice }: { tenantId: string; reloadK
 }
 
 function Products({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
+  const isEmpresia=useActiveTenant()?.tenant_slug==="eurevector";
   const [rows, setRows] = useState<Product[]>([]);
   const [publications,setPublications]=useState<ProductPublication[]>([]);
   const [erp,setErp]=useState<ErpStatus|null>(null);
@@ -432,17 +438,18 @@ function Products({ tenantId, reloadKey, refresh, notice }: { tenantId: string; 
   })(); }, [tenantId, reloadKey, notice]);
   const pubMap=useMemo(()=>new Map(publications.map(p=>[p.product_id,p])),[publications]);
   async function add(e: FormEvent) { e.preventDefault(); const r = await supabase.from("products").insert({ tenant_id: tenantId, sku, name, sale_price: Number(price) || 0, currency: "DOP", status: "active", source_system: "crm" }); if (r.error) return notice(r.error.message); setSku(""); setName(""); setPrice(""); refresh(); }
-  async function syncFromOdoo(){ const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error) return notice(r.error.message); notice("Sincronización de productos e inventario Odoo encolada."); refresh(); }
+  async function syncFromOdoo(){ if(isEmpresia)return notice("Dolibarr aún no está conectado. No se ha enviado ninguna sincronización."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error) return notice(r.error.message); notice("Sincronización de productos e inventario Odoo encolada."); refresh(); }
   async function togglePublication(product:Product){ const current=pubMap.get(product.id); if(current?.is_published){ const r=await supabase.from("product_publication").update({is_published:false,updated_at:new Date().toISOString()}).eq("tenant_id",tenantId).eq("product_id",product.id); if(r.error)return notice(r.error.message); } else { const r=await supabase.from("product_publication").upsert({tenant_id:tenantId,product_id:product.id,is_published:true,show_exact_stock:true,show_price:true},{onConflict:"tenant_id,product_id"}); if(r.error)return notice(r.error.message); } notice(current?.is_published?"Producto retirado del catálogo web.":"Producto publicado para consumo seguro desde la web."); refresh(); }
   return <div className="stack gap-16">
-    <section className="card"><div className="topbar" style={{marginBottom:0}}><div><div className="eyebrow">Fuente de inventario</div><h2>{erp?.status==="connected"?"Odoo conectado":"Odoo no conectado"}</h2><p className="muted">{erp ? ("Estado "+erp.status+" · "+Number(erp.odoo_products??0)+" productos Odoo · última sync "+(erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"sin sincronizar")) : "Cuando conectes Odoo, productos, precios e inventario sincronizados serán la fuente oficial."}</p></div><button className="button" type="button" onClick={syncFromOdoo} disabled={erp?.status!=="connected"}><RefreshCw size={14}/> Sincronizar Odoo</button></div></section>
-    <form className="card" onSubmit={add}><h2>Producto local / previo a Odoo</h2><p className="muted">Úsalo solo cuando aún no exista en Odoo. Una vez mapeado, Odoo pasa a ser la fuente de precio e inventario.</p><div className="form-grid"><label>SKU<input value={sku} onChange={(e) => setSku(e.target.value)} required /></label><label>Nombre<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Precio RD$<input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></label></div><div className="section-gap"><button className="button primary">Guardar producto</button></div></form>
-    <div className="table-wrap"><table className="data-table"><thead><tr><th>SKU</th><th>Producto</th><th>Precio</th><th>Stock</th><th>Fuente</th><th>Web</th></tr></thead><tbody>{rows.map((r) => { const pub=pubMap.get(r.id); return <tr key={r.id}><td>{r.sku}</td><td><strong>{r.name}</strong><div className="muted">{r.stock_synced_at?("Actualizado "+date.format(new Date(r.stock_synced_at))):"Sin fecha de sync"}</div></td><td>{money.format(r.sale_price)}</td><td>{r.stock_snapshot ?? "—"}</td><td><span className="pill">{r.source_system==="odoo"?"Odoo":"CRM"}</span></td><td><button type="button" className="button small" onClick={()=>togglePublication(r)}>{pub?.is_published?"Publicado":"Publicar"}</button></td></tr>; })}</tbody></table>{rows.length === 0 && <Empty title="Sin productos" text="Conecta Odoo o crea temporalmente un producto local." />}</div>
+    <section className="card"><div className="topbar" style={{marginBottom:0}}><div><div className="eyebrow">Fuente de inventario</div><h2>{isEmpresia?"ERP en preparación":erp?.status==="connected"?"Odoo conectado":"Odoo no conectado"}</h2><p className="muted">{isEmpresia?"Dolibarr se integrará como motor ERP. No existen sincronizaciones ERP verificadas para Empresia.":erp ? ("Estado "+erp.status+" · "+Number(erp.odoo_products??0)+" productos Odoo · última sync "+(erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"sin sincronizar")) : "Cuando conectes Odoo, productos, precios e inventario sincronizados serán la fuente oficial."}</p></div>{!isEmpresia&&<button className="button" type="button" onClick={syncFromOdoo} disabled={erp?.status!=="connected"}><RefreshCw size={14}/> Sincronizar Odoo</button>}</div></section>
+    <form className="card" onSubmit={add}><h2>{isEmpresia?"Producto del CRM (sin sincronizar al ERP)":"Producto local / previo a Odoo"}</h2><p className="muted">{isEmpresia?"El producto queda registrado solo en el CRM. No actualiza inventario de Dolibarr ni emite documentos ERP.":"Úsalo solo cuando aún no exista en Odoo. Una vez mapeado, Odoo pasa a ser la fuente de precio e inventario."}</p><div className="form-grid"><label>SKU<input value={sku} onChange={(e) => setSku(e.target.value)} required /></label><label>Nombre<input value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Precio RD$<input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></label></div><div className="section-gap"><button className="button primary">Guardar producto</button></div></form>
+    <div className="table-wrap"><table className="data-table"><thead><tr><th>SKU</th><th>Producto</th><th>Precio</th><th>Stock</th><th>Fuente</th><th>Web</th></tr></thead><tbody>{rows.map((r) => { const pub=pubMap.get(r.id); return <tr key={r.id}><td>{r.sku}</td><td><strong>{r.name}</strong><div className="muted">{r.stock_synced_at?("Actualizado "+date.format(new Date(r.stock_synced_at))):"Sin fecha de sync"}</div></td><td>{money.format(r.sale_price)}</td><td>{r.stock_snapshot ?? "—"}</td><td><span className="pill">{r.source_system==="odoo"?"Odoo":"CRM"}</span></td><td><button type="button" className="button small" onClick={()=>togglePublication(r)}>{pub?.is_published?"Publicado":"Publicar"}</button></td></tr>; })}</tbody></table>{rows.length === 0 && <Empty title="Sin productos" text={isEmpresia?"Registra productos en el CRM; el ERP todavía no está conectado.":"Conecta Odoo o crea temporalmente un producto local."} />}</div>
   </div>;
 }
 function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string; reloadKey: number; refresh: () => void; notice: (s: string) => void }) {
   const activeTenant=useActiveTenant(),brand=useTenantBrand();
   const family=activeTenant?.tenant_slug==="family-power";
+  const isEmpresia=activeTenant?.tenant_slug==="eurevector";
   const [rows, setRows] = useState<Quotation[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts,setContacts]=useState<Array<{id:string;display_name:string}>>([]);
@@ -510,7 +517,7 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
     setProductId(""); setQuantity("1"); refresh();
   }
 
-  async function syncQuotationToOdoo(q:Quotation) { if(q.total<=0) return notice("La cotización necesita artículos y total antes de enviarse a Odoo."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"quotation",p_entity_id:q.id}); if(r.error)return notice(r.error.message); notice("Cotización encolada para sincronizar con Odoo. Odoo será la fuente del documento/PDF definitivo."); }
+  async function syncQuotationToOdoo(q:Quotation) { if(isEmpresia)return notice("Dolibarr aún no está conectado: la cotización continúa solo en el CRM."); if(q.total<=0) return notice("La cotización necesita artículos y total antes de enviarse a Odoo."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"quotation",p_entity_id:q.id}); if(r.error)return notice(r.error.message); notice("Cotización encolada para sincronizar con Odoo. Odoo será la fuente del documento/PDF definitivo."); }
 
   async function setQuoteStatus(q:Quotation,status:string) {
     if(status==="accepted" && q.total<=0) return notice("No puedes aceptar una cotización sin artículos y total.");
@@ -553,7 +560,7 @@ function Quotations({ tenantId, reloadKey, refresh, notice }: { tenantId: string
             {selected.status==="draft"&&<button className="button" onClick={()=>setQuoteStatus(selected,"sent")}>Marcar enviada</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button primary" onClick={()=>setQuoteStatus(selected,"accepted")}>Aceptar</button>}
             {["draft","sent"].includes(selected.status)&&<button className="button danger" onClick={()=>setQuoteStatus(selected,"rejected")}>Rechazar</button>}
-            {!family&&<button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>}
+            {!family&&!isEmpresia&&<button className="button primary" onClick={()=>syncQuotationToOdoo(selected)}>Enviar / actualizar en Odoo</button>}
             <button className="button" onClick={()=>printQuote(selected)}>Vista previa interna</button>
           </div>
           {approvedProducts.length===0&&<div className="notice">Sin productos con precio verificado.</div>}
@@ -577,6 +584,7 @@ function Automations({ tenantId, reloadKey, refresh, notice }: { tenantId: strin
 }
 
 function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; reloadKey: number; notice: (s: string) => void }) {
+  const isEmpresia=useActiveTenant()?.tenant_slug==="eurevector";
   const [settings,setSettings]=useState<TenantSettings|null>(null);
   const activeBrand=useTenantBrand();
   const [erp,setErp]=useState<ErpStatus|null>(null);
@@ -691,7 +699,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
         </div>
       </div>
     </div>
-    <section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>
-    <section className="card"><h2>Catálogo web conectado</h2><p className="muted">Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo.</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
+    {isEmpresia?<section className="card"><div className="eyebrow">ERP en Empresia</div><h2>Motor Dolibarr en integración</h2><p className="muted">No existe una instancia ERP operativa y validada. La integración histórica de Odoo no equivale a Dolibarr.</p><Link href="/crm/erp" className="button">Ver estado del módulo ERP</Link></section>:<section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>}
+    <section className="card"><h2>Catálogo web conectado</h2><p className="muted">{isEmpresia?"La publicación del catálogo CRM no implica sincronización ERP. Solo representa los datos registrados por el CRM.":"Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo."}</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
   </div>;
 }

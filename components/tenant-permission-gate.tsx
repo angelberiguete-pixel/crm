@@ -39,6 +39,7 @@ const sectionPermission: Record<string, string> = {
   reports: "dashboard",
   products: "products",
   quotations: "quotations",
+  erp: "settings",
   operations: "operations",
   calendar: "calendar",
   automations: "automations",
@@ -147,7 +148,9 @@ export default function TenantPermissionGate({ section, children }: { section: s
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
            (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
-      if (hasPermission && moduleEnabled && !familyPowerRestriction) {
+      const restrictedErp = section === "erp" && (activeTenant.tenant_slug !== "eurevector" ||
+        !["owner", "admin"].includes(activeTenant.membership_role));
+      if (hasPermission && moduleEnabled && !familyPowerRestriction && !restrictedErp) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
         setValidatedSection(section);

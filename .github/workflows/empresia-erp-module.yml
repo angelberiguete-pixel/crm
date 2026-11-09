@@ -1,0 +1,26 @@
+name: Empresia ERP module contract
+on:
+  pull_request:
+    paths:
+      - 'components/empresia-erp-overview.tsx'
+      - 'components/crm-workspace.tsx'
+      - 'components/tenant-permission-gate.tsx'
+      - 'tests/empresia-erp-module.test.mjs'
+      - '.github/workflows/empresia-erp-module.yml'
+  push:
+    branches:
+      - 'feat/empresia-erp-workspace-20261109'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/empresia-erp-module.test.mjs tests/empresia-unified-brand.test.mjs tests/tenant-white-label.test.mjs
+      - run: npm run typecheck
+      - run: npm run build
