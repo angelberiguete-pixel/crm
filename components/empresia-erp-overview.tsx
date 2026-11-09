@@ -57,10 +57,10 @@ export default function EmpresiaErpOverview() {
       const [dolibarr,legacy,bridge] = await Promise.all([
         supabase.from("tenant_dolibarr_status")
           .select("provider,status,sync_direction,last_healthcheck_at")
-          .eq("tenant_id",tenantId).maybeSingle(),
+          .eq("tenant_id", tenantId).maybeSingle(),
         supabase.from("tenant_erp_status")
           .select("provider,status,sync_direction,last_healthcheck_at,inventory_synced_at")
-          .eq("tenant_id",tenantId).maybeSingle(),
+          .eq("tenant_id", tenantId).maybeSingle(),
         supabase.functions.invoke("empresia-dolibarr",{
           body:{action:"status",tenant_id:tenantId}
         })
