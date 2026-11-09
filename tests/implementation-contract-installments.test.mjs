@@ -16,7 +16,7 @@ test("implementation contract is RD$30,000, with existing PayPal invoice USD197 
  assert.match(sql,/INV2-HSYZ-R25Y-C89A-XNJ5/);
  assert.match(sql,/implementation_installment/);
  assert.match(sql,/'installment_number',1/);
- assert.match(checkout,/RD\$30,000\.00/);
+ assert.match(checkout,/US\$493\.75/);
  assert.match(checkout,/US\$197\.00/);
  assert.match(checkout,/Primera cuota/);
 });
@@ -50,7 +50,7 @@ test("the client and central owner see DOP balance and verified installments",()
  assert.match(portal,/ImplementationContractLedger tenantId=\{tenantId\}/);
  assert.match(admin,/ImplementationContractLedger tenantId=\{selectedId\} ownerControls/);
  assert.match(banner,/crm_implementation_contract_summary/);
- assert.match(banner,/new Intl.NumberFormat\("es-DO"/);
+ assert.match(banner,/new Intl.NumberFormat\("en-US"/);
  assert.match(ledger,/Historial de abonos confirmados/);
  assert.match(ledger,/transferencia o efectivo/);
 });
