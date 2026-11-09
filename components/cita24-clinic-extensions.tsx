@@ -34,6 +34,9 @@ export default function Cita24ClinicExtensions({
  const [servicesText,setServicesText]=useState("Evaluación inicial\nConsulta de información");
  const [portalEnabled,setPortalEnabled]=useState(false);
  const [aiEnabled,setAiEnabled]=useState(false);
+ const [privacyUrl,setPrivacyUrl]=useState("");
+ const [remindersEnabled,setRemindersEnabled]=useState(false);
+ const [templateName,setTemplateName]=useState("");
  const [question,setQuestion]=useState("¿Cómo solicito una evaluación y quién confirma la cita?");
  const [draft,setDraft]=useState("");
  const [reload,setReload]=useState(0);
