@@ -238,6 +238,8 @@
 }
 @media (max-width: 840px) {
   .platformShell { display: block; }
+  /* Global CRM styles hide .sidebar on phones; owner drawer must remain mountable. */
+  .platformShell .platformSidebar { display: flex; }
   .platformSidebar {
     position: fixed;
     top: 0;
