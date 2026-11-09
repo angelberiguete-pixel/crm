@@ -37,7 +37,7 @@ create policy marketing_email_campaign_admin_edit_drafts on public.marketing_ema
    private.crm_is_tenant_admin(tenant_id) and status='draft'
  ) with check (
    private.crm_is_tenant_admin(tenant_id) and status='draft'
-   and provider_campaign_id is null and created_by=auth.uid()
+   and provider_campaign_id is null
  );
 -- Important: immutable attribution via trigger, even if an admin edits someone else's draft.
 create or replace function private.crm_email_keep_campaign_identity()
@@ -117,6 +117,27 @@ create table if not exists public.marketing_email_events (
  received_at timestamptz not null default now(),
  unique(tenant_id,provider_event_id)
 );
+create or replace function private.crm_email_validate_provider_event()
+returns trigger language plpgsql set search_path='' as $
+begin
+ if not exists (select 1 from public.marketing_email_campaigns c
+   where c.id=new.campaign_id and c.tenant_id=new.tenant_id) then
+   raise exception 'Event campaign does not belong to this company' using errcode='42501';
+ end if;
+ if new.contact_id is not null and not exists (
+   select 1 from public.contacts c where c.id=new.contact_id and c.tenant_id=new.tenant_id
+ ) then raise exception 'Event contact does not belong to this company' using errcode='42501'; end if;
+ if tg_op='UPDATE' then
+   raise exception 'Provider events are append-only' using errcode='42501';
+ end if;
+ return new;
+end;
+$;
+drop trigger if exists crm_email_validate_event on public.marketing_email_events;
+create trigger crm_email_validate_event before insert or update on public.marketing_email_events
+ for each row execute function private.crm_email_validate_provider_event();
+revoke all on function private.crm_email_validate_provider_event() from public,anon,authenticated;
+
 create index if not exists marketing_email_events_tenant_campaign
  on public.marketing_email_events(tenant_id,campaign_id,occurred_at desc);
 alter table public.marketing_email_events enable row level security;
