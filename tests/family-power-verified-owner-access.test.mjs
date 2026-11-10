@@ -9,7 +9,7 @@ test("Family Power only offers owner signup to preapproved mailbox",()=>{
   assert.match(signup,/email\.trim\(\)\.toLowerCase\(\)!==RESERVED_OWNER_EMAIL/);
   assert.match(signup,/email:RESERVED_OWNER_EMAIL/);
   assert.match(signup,/readOnly/);
-  assert.match(signup,/minLength=\\{12\\}/);
+  assert.match(signup,/minLength=\{12\}/);
   assert.doesNotMatch(signup,/family-power\/pagos/);
   assert.doesNotMatch(signup,/platform_add_member/);
 });
