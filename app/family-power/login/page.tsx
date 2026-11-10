@@ -8,6 +8,9 @@ import {LockKeyhole,LogIn,ShieldCheck,UsersRound} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {notifyTenantContextChanged} from "@/lib/tenant-context-events";
 import {familyPowerMembership,FAMILY_POWER_SLUG} from "@/lib/family-power-access";
+import {authEmailActionMessage,authSignInMessage} from "@/lib/auth-entry-feedback";
+
+const OWNER_EMAIL="familypower1@hotmail.com";
 import styles from "./family-login.module.css";
 
 type TenantAccess={
@@ -25,6 +28,8 @@ export default function FamilyPowerLogin(){
  const [busy,setBusy]=useState(false);
  const [checking,setChecking]=useState(true);
  const [resetting,setResetting]=useState(false);
+ const [resending,setResending]=useState(false);
+ const [needsConfirmation,setNeedsConfirmation]=useState(false);
  const [message,setMessage]=useState("");
  const [otherSession,setOtherSession]=useState(false);
 
@@ -65,15 +70,30 @@ export default function FamilyPowerLogin(){
  async function signIn(e:FormEvent){
    e.preventDefault();
    if(busy||checking)return;
-   setBusy(true);setMessage("");setOtherSession(false);
+   setBusy(true);setMessage("");setOtherSession(false);setNeedsConfirmation(false);
    try{
      const result=await supabase.auth.signInWithPassword({email:email.trim(),password});
      if(result.error||!result.data.session){
-       setMessage("No pudimos iniciar sesión. Revisa tu correo y contraseña.");return;
+       setMessage(authSignInMessage(result.error?.code));
+       setNeedsConfirmation(result.error?.code==="email_not_confirmed" && email.trim().toLowerCase()===OWNER_EMAIL);
+       return;
      }
      await authorize(true);
    }catch{setMessage("No se pudo completar el acceso seguro. Inténtalo nuevamente.");}
    finally{setBusy(false);}
+ }
+ async function resendOwnerConfirmation(){
+   if(resending||email.trim().toLowerCase()!==OWNER_EMAIL)return;
+   setResending(true);setMessage("");
+   try{
+     const result=await supabase.auth.resend({
+       type:"signup",email:OWNER_EMAIL,
+       options:{emailRedirectTo:new URL("/family-power/login",window.location.origin).toString()}
+     });
+     if(result.error)setMessage(authEmailActionMessage(result.error.code));
+     else setMessage("Solicitamos otro correo de confirmación. Revisa Recibidos, Correo no deseado y abre el enlace más reciente.");
+   }catch{setMessage("No pudimos solicitar otro mensaje de confirmación. Intenta nuevamente.");}
+   finally{setResending(false);}
  }
  async function recover(){
    const target=email.trim();
@@ -85,7 +105,7 @@ export default function FamilyPowerLogin(){
        // The existing recovery flow stays shared and secure; no extra allowlisted URL.
        redirectTo:new URL("/reset-password",window.location.origin).toString(),
      });
-     if(result.error)setMessage("No pudimos procesar la solicitud. Intenta nuevamente.");
+     if(result.error)setMessage(authEmailActionMessage(result.error.code));
      else setMessage("Si la cuenta existe, recibirás instrucciones de recuperación en el correo registrado.");
    }catch{setMessage("No se pudo procesar la recuperación.");}
    finally{setResetting(false);}
@@ -124,12 +144,19 @@ export default function FamilyPowerLogin(){
            autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}
            placeholder="Introduce tu contraseña"/>
          {message&&<div role="status" className={styles.notice}>{message}</div>}
+         {(needsConfirmation||email.trim().toLowerCase()===OWNER_EMAIL)&&<button type="button" className={styles.recovery} disabled={resending}
+           onClick={()=>void resendOwnerConfirmation()}>
+           {resending?"Solicitando correo…":"Reenviar confirmación a familypower1@hotmail.com"}
+         </button>}
          <button className={styles.submit} type="submit" disabled={busy||checking}>
            {busy||checking?"Verificando acceso…":<><LogIn size={18}/> Entrar a Family Power</>}
          </button>
        </form>
        <button type="button" className={styles.recovery} disabled={resetting}
          onClick={()=>void recover()}>{resetting?"Enviando instrucciones…":"¿Olvidaste tu contraseña?"}</button>
+       <div className={styles.ownerRegistration}>
+  <Link className={styles.ownerRegistrationLink} href="/login">Soy administrador de Empresia: acceder al panel general</Link>
+       </div>
        <div className={styles.ownerRegistration}>
   <Link className={styles.ownerRegistrationLink} href="/family-power/registro">
     ¿Es tu primera vez? Solicitar registro

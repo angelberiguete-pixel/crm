@@ -11,8 +11,10 @@ const router=get("../app/crm/[[...slug]]/page.tsx");
 const admin=get("../components/platform-billing-reviews.tsx");
 const sql=get("../supabase/migrations/20261107081500_family_power_billing_portal.sql");
 
-test("signup points to optional payment step and never approves user automatically",()=>{
- assert.match(registration,/window.location.assign\("\/family-power\/pagos"\)/);
+test("owner signup requires confirmed email, without a payment gate or client-granted roles",()=>{
+ assert.match(registration,/email_confirmed_at/);
+ assert.match(registration,/set_active_tenant/);
+ assert.doesNotMatch(registration,/window.location.assign\("\/family-power\/pagos"\)/);
  assert.doesNotMatch(registration,/platform_add_member|platform_review_family_power_registration/);
  assert.match(step,/href="\/family-power\/login"/);
  assert.match(step,/Pagar más tarde/);

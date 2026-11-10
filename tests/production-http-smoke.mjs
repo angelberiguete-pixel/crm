@@ -2,15 +2,15 @@
 // This proves routes respond over HTTPS; it does NOT prove authenticated CRM flows.
 import assert from "node:assert/strict";
 
-const base=process.env.CRM_PRODUCTION_URL || "https://crm-revenue-os.vercel.app";
-const routes=["/login","/reset-password","/accept-invite","/look-social-media","/platform-admin","/crm","/crm/inbox","/crm/channels","/family-power/registro"];
+const base=process.env.CRM_PRODUCTION_URL || "https://portal-empresia.vercel.app";
+const routes=["/login","/reset-password","/platform-admin","/crm","/crm/inbox","/family-power/login","/family-power/registro"];
 for(const route of routes){
  let finalError=null,passed=false;
  for(let attempt=1;attempt<=3;attempt++){
   try{
    const response=await fetch(new URL(route,base),{
     method:"GET",redirect:"follow",
-    headers:{"User-Agent":"LOOK-SOCIAL-MEDIA-readonly-qa/1.0","Accept":"text/html"},
+    headers:{"User-Agent":"Empresia-readonly-qa/1.0","Accept":"text/html"},
     signal:AbortSignal.timeout(14000)
    });
    const finalUrl=new URL(response.url);
@@ -18,7 +18,7 @@ for(const route of routes){
    assert.equal(finalUrl.protocol,"https:","must stay on HTTPS");
    assert.equal(response.status,200,`${route} should return HTTP 200, actual ${response.status}`);
    assert.match(response.headers.get("content-type")??"",/text\/html/i,"HTML required");
-   assert.match(body,/(look social media|crm)/i,"branded application response expected");
+   assert.match(body,/(Empresia|Family Power|CRM)/i,"branded application response expected");
    assert.ok(!/localhost:3000/i.test(response.url),"public route must not resolve to localhost");
    console.log(`PASS ${route} -> ${response.status} ${finalUrl.pathname} (${body.length} chars)`);
    passed=true;break;
@@ -28,8 +28,8 @@ for(const route of routes){
 }
 console.log("PASS: production public HTTPS/HTML routes. Credentials, tenants, Storage and password emails NOT tested.");
 
-// Verify the customer-facing hostname separately from the canonical platform hostname.
-const familyUrl="https://crm-look.vercel.app/family-power/registro";
+// Verify the customer-facing registration path on the same canonical production host.
+const familyUrl=new URL("/family-power/registro",base).toString();
 let familyError=null,familyPassed=false;
 for(let attempt=1;attempt<=4;attempt++){
  try{
@@ -37,7 +37,7 @@ for(let attempt=1;attempt<=4;attempt++){
   const body=await response.text();
   assert.equal(response.status,200,"Family Power owner registration must return HTTP 200");
   assert.match(body,/Crea tu cuenta/i,"new Family Power registration content must be published");
-  assert.match(body,/Solicitar registro/i,"registration button must be published");
+  assert.match(body,/Crear cuenta de propietario/i,"verified owner registration button must be published");
   console.log("PASS Family Power owner registration published at "+familyUrl);
   familyPassed=true;break;
  }catch(error){familyError=error;if(attempt<4)await new Promise(resolve=>setTimeout(resolve,2500*attempt));}
