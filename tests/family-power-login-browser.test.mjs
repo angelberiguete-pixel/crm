@@ -38,7 +38,7 @@ try{
  await page.locator('#fp-register-name').waitFor();
  assert.equal(await page.locator('#fp-register-email').count(),1);
  assert.equal(await page.locator('#fp-register-password').count(),1);
- assert.equal(await page.getByRole("button",{name:"Solicitar registro"}).count(),1);
+ assert.equal(await page.getByRole("button",{name:"Crear cuenta de propietario"}).count(),1);
 
  await context.close();
 
@@ -64,7 +64,7 @@ try{
  });
  const wrong=await disallowed.newPage();
  await wrong.goto(base+"/family-power/login",{waitUntil:"domcontentloaded"});
- await wrong.getByText(/todavía no está autorizado/i).waitFor({timeout:12000});
+ await wrong.getByText(/aún no tiene acceso/i).waitFor({timeout:12000});
  assert.ok(called.includes("list_my_tenants"));
  assert.equal(called.includes("set_active_tenant"),false,"must NEVER activate Family Power without membership");
  assert.ok(new URL(wrong.url()).pathname==="/family-power/login");
