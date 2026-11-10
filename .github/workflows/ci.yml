@@ -84,6 +84,8 @@ jobs:
         run: node --test tests/family-power-verified-owner-access.test.mjs
       - name: Empresia and Family Power authentication recovery experience
         run: node --experimental-strip-types --test tests/empresia-auth-recovery-experience.test.mjs
+      - name: Empresia direct email-only access safety and mobile entry
+        run: node --test tests/empresia-email-only-entry.test.mjs
       - name: Family Power branded login and private Drive evidence library contracts
         run: node --test tests/family-power-drive-library.test.mjs
       - name: Family Power quotation PDF and client workflow regressions
