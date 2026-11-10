@@ -144,7 +144,7 @@ export default function FamilyPowerLogin(){
            autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}
            placeholder="Introduce tu contraseña"/>
          {message&&<div role="status" className={styles.notice}>{message}</div>}
-         {needsConfirmation&&<button type="button" className={styles.recovery} disabled={resending}
+         {(needsConfirmation||email.trim().toLowerCase()===OWNER_EMAIL)&&<button type="button" className={styles.recovery} disabled={resending}
            onClick={()=>void resendOwnerConfirmation()}>
            {resending?"Solicitando correo…":"Reenviar confirmación a familypower1@hotmail.com"}
          </button>}
