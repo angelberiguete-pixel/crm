@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {useState,type FormEvent} from "react";
 import {supabase} from "@/lib/supabase";
+import {authEmailActionMessage} from "@/lib/auth-entry-feedback";
 import styles from "../login/family-login.module.css";
 
 const RESERVED_OWNER_EMAIL="familypower1@hotmail.com";
@@ -15,6 +16,22 @@ export default function FamilyPowerRegistration(){
   const [busy,setBusy]=useState(false);
   const [done,setDone]=useState(false);
   const [error,setError]=useState("");
+  const [resending,setResending]=useState(false);
+  const [mailNotice,setMailNotice]=useState("");
+  async function resendConfirmation(){
+    if(resending)return;
+    setResending(true);setMailNotice("");
+    try{
+      const {error:sendError}=await supabase.auth.resend({
+        type:"signup",
+        email:RESERVED_OWNER_EMAIL,
+        options:{emailRedirectTo:new URL("/family-power/login",window.location.origin).toString()}
+      });
+      if(sendError)setMailNotice(authEmailActionMessage(sendError.code));
+      else setMailNotice("Solicitamos otro correo de confirmación. Comprueba Recibidos y Correo no deseado.");
+    }catch{setMailNotice("No pudimos solicitar el correo. Inténtalo más tarde.");}
+    finally{setResending(false);}
+  }
   async function submit(e:FormEvent){
     e.preventDefault();
     if(busy)return;
@@ -39,7 +56,9 @@ export default function FamilyPowerRegistration(){
         }
       });
       if(result.error){
-        setError("No pudimos registrar la solicitud. Verifica los datos o utiliza otro correo.");return;
+        setError(result.error.code==="user_already_exists"
+          ?"Esta cuenta ya existe. Entra al portal o recupera su contraseña."
+          :"No pudimos completar el registro. Si ya creaste la cuenta, utiliza el inicio de sesión.");return;
       }
       setPassword("");
       // Owner role is granted server-side only after the reserved mailbox is verified.
@@ -83,8 +102,13 @@ export default function FamilyPowerRegistration(){
         <div className={styles.panelTop}>FAMILY POWER · ALTA DE PROPIETARIO</div>
         {done?<div role="status">
           <h2>Cuenta creada</h2>
-          <p>Revisa el correo de {RESERVED_OWNER_EMAIL} y confirma la dirección si recibiste el enlace. No se requiere una segunda aprobación manual.</p>
-          <Link className={styles.submit} href="/family-power/login">Entrar a Family Power</Link>
+          <p>La cuenta de {RESERVED_OWNER_EMAIL} necesita confirmar su correo antes de acceder al CRM. Abre el enlace enviado por Supabase. No se necesita una segunda aprobación manual.</p>
+          <button type="button" className={styles.recovery} disabled={resending}
+            onClick={()=>void resendConfirmation()}>
+            {resending?"Solicitando correo…":"Reenviar correo de confirmación"}
+          </button>
+          {mailNotice&&<div role="status" className={styles.notice}>{mailNotice}</div>}
+          <Link className={styles.submit} href="/family-power/login">Entrar después de confirmar</Link>
         </div>:<>
           <h2>Crea tu cuenta</h2>
           <p>Usa el único correo autorizado para crear el acceso propietario de Family Power.</p>
