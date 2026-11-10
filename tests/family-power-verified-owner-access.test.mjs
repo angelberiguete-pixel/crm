@@ -32,6 +32,9 @@ test("DB grants only to real server-verified email; admin account preserved",()=
   assert.match(sql,/auth\.users/);
   assert.match(sql,/family_power_preapproved_owner_on_auth/);
   assert.match(sql,/new\.email_confirmed_at is null/);
+  const proof=read("supabase/migrations/20261110111500_family_power_email_confirmation_proof.sql");
+  assert.match(proof,/new\.confirmation_sent_at is null/);
+  assert.match(proof,/new\.email_confirmed_at < new\.confirmation_sent_at/);
   assert.match(sql,/v_email<>'familypower1@hotmail\.com'/);
   assert.match(sql,/insert into public\.memberships\(tenant_id,user_id,role,status\)/);
   assert.match(sql,/values\(v_tenant,new\.id,'owner','active'\)/);
