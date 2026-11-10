@@ -91,6 +91,7 @@ export default function LoginPage() {
       <div className="eyebrow">Acceso seguro al CRM</div>
       <h1>Iniciar sesión</h1>
       <p className="muted">Cada empresa y cada vendedor accede a su propio espacio de trabajo. El administrador de plataforma gestiona a sus clientes por separado.</p>
+      <p className="muted"><Link href="/acceso-correo">¿Te rechaza la contraseña? Entrar con un enlace enviado a tu correo</Link></p>
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
