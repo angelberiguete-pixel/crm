@@ -57,8 +57,8 @@ export default function FamilyPowerEvidenceLibrary(){
     {library.documents.map(p=><button type="button" className="family-evidence-tile" key={p.filename}
      aria-pressed={selected?.filename===p.filename} onClick={()=>setSelected(p)}>
       <span className="family-evidence-photo"><FileText size={42}/></span>
-      <span>{p.filename.includes("V4")?"Ficha V4 · Revisión":"Ficha V2 · Histórico"}</span>
-      <small>{p.filename.includes("V4")?"Datos por verificar":"Versión anterior"}</small>
+      <span>Ficha V5 · Revisión técnica</span>
+      <small>Datos por verificar con Family Power</small>
     </button>)}
    </div>
    {selected&&<div className="family-evidence-preview">
