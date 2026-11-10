@@ -5,9 +5,12 @@ import {useState,type FormEvent} from "react";
 import {supabase} from "@/lib/supabase";
 import styles from "../login/family-login.module.css";
 
+const RESERVED_OWNER_EMAIL="familypower1@hotmail.com";
+const FAMILY_TENANT_SLUG="family-power";
+
 export default function FamilyPowerRegistration(){
   const [fullName,setFullName]=useState("");
-  const [email,setEmail]=useState("");
+  const [email,setEmail]=useState(RESERVED_OWNER_EMAIL);
   const [password,setPassword]=useState("");
   const [busy,setBusy]=useState(false);
   const [done,setDone]=useState(false);
@@ -22,19 +25,41 @@ export default function FamilyPowerRegistration(){
     if(password.length<12||password.length>128){
       setError("Tu contraseña debe tener entre 12 y 128 caracteres.");return;
     }
+    if(email.trim().toLowerCase()!==RESERVED_OWNER_EMAIL){
+      setError("El registro de propietario está reservado al correo aprobado por Empresia.");return;
+    }
     setError("");setBusy(true);
     try{
       const result=await supabase.auth.signUp({
-        email:email.trim().toLowerCase(),
+        email:RESERVED_OWNER_EMAIL,
         password,
-        options:{data:{full_name:name,registration_source:"family-power"}}
+        options:{
+          emailRedirectTo:new URL("/family-power/login",window.location.origin).toString(),
+          data:{full_name:name,registration_source:"family-power"}
+        }
       });
       if(result.error){
         setError("No pudimos registrar la solicitud. Verifica los datos o utiliza otro correo.");return;
       }
-      // Access approval remains separate. Payment may be skipped without granting a tenant role.
-      setDone(true);setPassword("");
-      window.location.assign("/family-power/pagos");
+      setPassword("");
+      // Owner role is granted server-side only after the reserved mailbox is verified.
+      if(result.data.session){
+        const identity=await supabase.auth.getUser();
+        if(!identity.error &&
+           identity.data.user?.email?.trim().toLowerCase()===RESERVED_OWNER_EMAIL &&
+           identity.data.user.email_confirmed_at){
+          const membership=await supabase.rpc("list_my_tenants");
+          const family=Array.isArray(membership.data)
+            ? membership.data.find(t=>t.tenant_slug===FAMILY_TENANT_SLUG &&
+              t.membership_role==="owner")
+            : null;
+          if(!membership.error && family){
+            const selected=await supabase.rpc("set_active_tenant",{p_tenant_id:family.tenant_id});
+            if(!selected.error){window.location.assign("/crm");return;}
+          }
+        }
+      }
+      setDone(true);
     }catch{setError("No se pudo completar el registro. Inténtalo nuevamente.");}
     finally{setBusy(false);}
   }
@@ -48,21 +73,21 @@ export default function FamilyPowerRegistration(){
         </div>
         <p className={styles.eyebrow}>Family Power · Registro privado</p>
         <h1>Comienza con tu cuenta.</h1>
-        <p>Crea tus propias credenciales de acceso. Tu solicitud será revisada desde la administración central antes de habilitar los permisos de propietario.</p>
+        <p>Crea tus propias credenciales de acceso. El correo propietario ya está autorizado. Verifica tu dirección si el sistema lo solicita y podrás entrar al CRM sin aprobación manual.</p>
         <div className={styles.features}>
           <span>Tu correo será tu usuario de acceso</span>
-          <span>Solo el administrador central puede aprobar tu solicitud</span>
+          <span>Permisos de propietario activados al confirmar la identidad</span>
         </div>
       </header>
       <section className={styles.panel} aria-label="Registro de propietario Family Power">
-        <div className={styles.panelTop}>FAMILY POWER · SOLICITAR ACCESO</div>
+        <div className={styles.panelTop}>FAMILY POWER · ALTA DE PROPIETARIO</div>
         {done?<div role="status">
-          <h2>Solicitud recibida</h2>
-          <p>Si se requiere confirmar tu correo, revisa tu bandeja de entrada. Tu acceso a Family Power permanecerá pendiente hasta que la administración central lo apruebe.</p>
-          <Link className={styles.submit} href="/family-power/pagos">Continuar al paso de pago (opcional)</Link>
+          <h2>Cuenta creada</h2>
+          <p>Revisa el correo de {RESERVED_OWNER_EMAIL} y confirma la dirección si recibiste el enlace. No se requiere una segunda aprobación manual.</p>
+          <Link className={styles.submit} href="/family-power/login">Entrar a Family Power</Link>
         </div>:<>
           <h2>Crea tu cuenta</h2>
-          <p>Usarás este correo y esta contraseña para entrar cada vez que tu acceso esté autorizado.</p>
+          <p>Usa el único correo autorizado para crear el acceso propietario de Family Power.</p>
           <form className={styles.form} onSubmit={submit}>
             <label htmlFor="fp-register-name">Nombre completo</label>
             <input id="fp-register-name" type="text" required minLength={3} maxLength={120}
@@ -71,19 +96,20 @@ export default function FamilyPowerRegistration(){
             <label htmlFor="fp-register-email">Correo electrónico</label>
             <input id="fp-register-email" type="email" required maxLength={254}
               autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}
-              placeholder="correo@empresa.com"/>
+              readOnly aria-describedby="fp-email-note" placeholder={RESERVED_OWNER_EMAIL}/>
+            <small id="fp-email-note">Correo de propietario reservado previamente por Empresia.</small>
             <label htmlFor="fp-register-password">Crea tu contraseña</label>
             <input id="fp-register-password" type="password" required minLength={12} maxLength={128}
               autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}
               placeholder="Mínimo 12 caracteres"/>
             {error&&<div role="alert" className={styles.notice}>{error}</div>}
             <button type="submit" className={styles.submit} disabled={busy}>
-              {busy?"Registrando solicitud…":"Solicitar registro"}
+              {busy?"Creando cuenta…":"Crear cuenta de propietario"}
             </button>
           </form>
           <div className={styles.invite}>
-            El registro no habilita automáticamente el CRM. Si ya tienes cuenta,
-            <Link className={styles.ownerRegistrationLink} href="/family-power/login">Inicia sesión aquí</Link>.
+            El acceso solo se habilita cuando se confirma la identidad del correo reservado. Si ya tienes cuenta,
+            <Link className={styles.ownerRegistrationLink} href="/family-power/login">inicia sesión aquí</Link>.
           </div>
         </>}
       </section>

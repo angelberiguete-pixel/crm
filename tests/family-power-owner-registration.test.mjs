@@ -18,7 +18,9 @@ test("registration captures name, email and password without client-side tenant 
  assert.match(signup,/Crea tu contraseña/);
  assert.match(signup,/supabase\.auth\.signUp/);
  assert.match(signup,/registration_source:"family-power"/);
- assert.doesNotMatch(signup,/platform_add_member|set_active_tenant/);
+ assert.doesNotMatch(signup,/platform_add_member/);
+ assert.match(signup,/email_confirmed_at/);
+ assert.match(signup,/set_active_tenant/);
 });
 test("pending requests require an audited platform-owner decision",()=>{
  assert.match(sql,/after insert on auth\.users/);
