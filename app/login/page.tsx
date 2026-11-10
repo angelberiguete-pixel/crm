@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
+import {authEmailActionMessage,authSignInMessage} from "@/lib/auth-entry-feedback";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,10 +42,10 @@ export default function LoginPage() {
     if (!target) return setMessage("Escribe tu correo para enviarte el enlace de recuperación.");
     setResetBusy(true);
     setMessage("");
-    const redirectTo = "https://crm-revenue-os.vercel.app/reset-password";
+    const redirectTo = new URL("/reset-password",window.location.origin).toString();
     const { error } = await supabase.auth.resetPasswordForEmail(target, { redirectTo });
     setResetBusy(false);
-    if (error) return setMessage(error.message);
+    if (error) return setMessage(authEmailActionMessage(error.code));
     setMessage("Te enviamos un enlace para establecer una nueva contraseña. Revisa tu correo.");
   }
 
@@ -55,7 +57,7 @@ export default function LoginPage() {
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
     setBusy(false);
-    if (result.error) return setMessage(result.error.message);
+    if (result.error) return setMessage(mode === "login" ? authSignInMessage(result.error.code) : authEmailActionMessage(result.error.code));
     if (result.data.session) await routeAuthenticatedUser();
     else setMessage("Cuenta creada. Revisa tu correo si la confirmación está habilitada.");
   }
@@ -73,6 +75,7 @@ export default function LoginPage() {
         <button className="button primary" disabled={busy}>{busy ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
       {mode === "login" && <button type="button" className="text-button" disabled={resetBusy} onClick={requestPasswordReset}>{resetBusy ? "Enviando…" : "Olvidé mi contraseña"}</button>}
+      <Link href="/family-power/login" className="text-button">¿Acceso de Family Power? Entrar a su portal</Link>
       <button type="button" className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
         {mode === "login" ? "¿Primera vez? Crear cuenta" : "Ya tengo cuenta"}
       </button>
