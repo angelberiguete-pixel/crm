@@ -80,6 +80,8 @@ jobs:
         run: node --experimental-strip-types --test tests/family-power-brand-admin.test.mjs
       - name: Family Power new-owner login language contract
         run: node --test tests/family-power-owner-login-copy.test.mjs tests/family-power-owner-registration.test.mjs
+      - name: Family Power verified owner preauthorization and instant access contracts
+        run: node --test tests/family-power-verified-owner-access.test.mjs
       - name: Family Power branded login and private Drive evidence library contracts
         run: node --test tests/family-power-drive-library.test.mjs
       - name: Family Power quotation PDF and client workflow regressions
