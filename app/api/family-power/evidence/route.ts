@@ -12,12 +12,9 @@ const PHOTOS=[
  {filename:"1000080107.jpg",url:"https://drive.google.com/file/d/1GaTy8TeOExFWNjK2mBHU1qMVophBPvRk/view?usp=drivesdk"}
 ];
 const DOCUMENTS=[
- {filename:"Family Power - INDUETRONIC 1.5kW 12V - Ficha Diseno Original Foto Fondo Blanco - V4 Revision.pdf",
-  url:"https://drive.google.com/file/d/1l4ZhUawgK9YCx7dk-lP5f7fSa2gvY4ac/view?usp=drivesdk",
-  status:"V4 - borrador para revisión, pendiente de comprobar contra placa y manual"},
- {filename:"FamilyPower_INDUETRONIC_1-5kW_12V_V2_Fondo_Blanco.pdf",
-  url:"https://drive.google.com/file/d/1_FieR9-H0XVxplrfs1roE-nNGOLgRIxr/view?usp=drivesdk",
-  status:"V2 - versión anterior conservada como referencia"}
+ {filename:"Family Power - INDUETRONIC 1.5kW 12V - Ficha V5 - REVISION TECNICA.pdf",
+  url:"https://drive.google.com/file/d/1MjNh9jmsTZgYEYsvp9wDO7HUzrgfngfl/view?usp=drivesdk",
+  status:"Ficha comercial revisada: datos técnicos pendientes de cotejar y aprobación del propietario"}
 ];
 const fail=(status:number)=>NextResponse.json({error:"No se pudo validar el acceso a la biblioteca privada."},
  {status,headers:{"Cache-Control":"private, no-store"}});
