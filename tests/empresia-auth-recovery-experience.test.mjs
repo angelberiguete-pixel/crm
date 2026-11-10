@@ -13,6 +13,16 @@ test("distinguishes password errors from unconfirmed email and rate limits",()=>
  assert.doesNotMatch(authSignInMessage("invalid_credentials"),/service_role|SUPABASE|stack trace/);
 });
 
+test("passwordless login proves mailbox ownership without creating users or elevating roles",()=>{
+ const login=source("app/login/page.tsx");
+ assert.match(login,/supabase\.auth\.signInWithOtp\(/);
+ assert.match(login,/shouldCreateUser: false/);
+ assert.match(login,/emailRedirectTo: new URL\("\/login", window\.location\.origin\)/);
+ assert.match(login,/Entrar sin contraseña por correo/);
+ assert.match(login,/if \(data\.session\) await routeAuthenticatedUser\(\)/);
+ assert.doesNotMatch(login,/platform_add_member|service_role|setUserClaims/);
+});
+
 test("global Empresia login recovers password using current host and routes admins separately",()=>{
  const login=source("app/login/page.tsx");
  assert.match(login,/new URL\("\/reset-password",window\.location\.origin\)/);
