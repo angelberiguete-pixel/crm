@@ -35,7 +35,7 @@ export default function FamilyPowerLogin(){
    const access=familyPowerMembership(list.data as TenantAccess[]|null);
    if(!access){
      if(newSignIn)await supabase.auth.signOut({scope:"local"});
-     setMessage("Tu acceso a Family Power todavía no está autorizado. Si te registraste, espera la aprobación del administrador central.");
+     setMessage("Tu cuenta aún no tiene acceso. Si eres el propietario, verifica el correo autorizado y vuelve a entrar.");
      setOtherSession(!newSignIn);
      return;
    }
@@ -83,7 +83,7 @@ export default function FamilyPowerLogin(){
    try{
      const result=await supabase.auth.resetPasswordForEmail(target,{
        // The existing recovery flow stays shared and secure; no extra allowlisted URL.
-       redirectTo:"https://crm-revenue-os.vercel.app/reset-password",
+       redirectTo:new URL("/reset-password",window.location.origin).toString(),
      });
      if(result.error)setMessage("No pudimos procesar la solicitud. Intenta nuevamente.");
      else setMessage("Si la cuenta existe, recibirás instrucciones de recuperación en el correo registrado.");
@@ -110,7 +110,7 @@ export default function FamilyPowerLogin(){
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, crea tu cuenta con tu nombre completo, correo y contraseña. El acceso necesita aprobación de la administración central.</p>
+       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, crea tu cuenta con tu nombre completo, correo y contraseña. El correo propietario preautorizado se habilita al verificar su identidad.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -134,9 +134,9 @@ export default function FamilyPowerLogin(){
   <Link className={styles.ownerRegistrationLink} href="/family-power/registro">
     ¿Es tu primera vez? Solicitar registro
   </Link>
-  <small>La solicitud queda pendiente hasta que el administrador central la apruebe.</small>
+  <small>La cuenta propietaria reservada se activa al verificar el correo.</small>
 </div>
-       <div className={styles.invite}>El propietario crea sus credenciales y solicita aprobación. Vendedores y colaboradores acceden únicamente cuando reciben los permisos autorizados.</div>
+       <div className={styles.invite}>El propietario autorizado crea sus credenciales y confirma su correo. Los colaboradores requieren invitación y permisos específicos.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
