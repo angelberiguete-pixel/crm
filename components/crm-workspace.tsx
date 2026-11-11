@@ -663,6 +663,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
   }
   async function syncProducts(){ if(erp?.status!=="connected")return notice("Conecta y verifica Odoo antes de sincronizar."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error)return notice(r.error.message); notice("Sincronización Odoo encolada."); }
   return <div className="stack gap-16">
+    <section className="card" id="seguridad-cuenta"><div className="eyebrow">Configuración · Mi cuenta</div><h2>Seguridad de la cuenta</h2><p className="muted">Cambia la contraseña de tu usuario sin modificar los permisos ni los datos de las empresas.</p><Link href="/cuenta/seguridad" className="button">Cambiar mi contraseña</Link></section>
     <section className="card"><div className="eyebrow">Configuración · Integraciones</div><h2>WhatsApp, Instagram, correo y empleados digitales</h2><p className="muted">Consulta y prepara las conexiones oficiales de esta empresa sin pegar claves privadas ni activar gastos.</p><Link className="button primary" href="/crm/integrations">Abrir Centro de Integraciones</Link></section>
     <div className="grid two-col">
       <form className="card" onSubmit={save}>
