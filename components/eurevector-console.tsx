@@ -121,7 +121,7 @@ export default function EurevectorConsole(){
      <a href="#modulos"><Layers3 size={17}/> Módulos</a>
      <a href="#odoo"><Database size={17}/> Integración ERP</a>
    </nav>
-   <div className={styles.sidebarEnd}><span>Administración privada · Empresia</span><button type="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login")}}><LogOut size={16}/> Cerrar sesión</button></div>
+   <div className={styles.sidebarEnd}><span>Administración privada · Empresia</span><Link href="/cuenta/seguridad">Configurar contraseña de acceso</Link><button type="button" onClick={async()=>{await supabase.auth.signOut();router.replace("/login")}}><LogOut size={16}/> Cerrar sesión</button></div>
  </aside>
  <main className={`content ${styles.workspace}`} id="inicio">
    <header className={styles.platformTopbar}>
