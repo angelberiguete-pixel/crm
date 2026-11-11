@@ -235,7 +235,7 @@ begin
  -- A change captured twice in the same transaction is still one decision;
  -- distinct transactions and intentional state transitions remain visible.
  v_key:=tg_table_name||':'||v_source_id::text||':'||v_event||':'
-  ||pg_catalog.txid_current()::text||':'||(case when tg_op='UPDATE' then new.status else 'insert' end);
+  ||pg_catalog.txid_current()::text||':'||(case when tg_op='UPDATE' then coalesce(v_evidence->>'status','changed') else 'insert' end);
  insert into public.empresia_brain_events(
   tenant_id,event_type,source_table,source_id,event_key,evidence
  ) values(v_tenant_id,v_event,tg_table_name,v_source_id,v_key,v_evidence)
