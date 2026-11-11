@@ -11,6 +11,7 @@ const modules=[
  ["revenue","Oportunidades","pipeline",Target],
  ["ml","Inteligencia ML","pipeline",BrainCircuit],
  ["products","Productos","products",Package],
+ ["inventory","Inventario","operations",Package],
  ["quotations","Cotizaciones","quotations",FileText],
  ["inbox","Conversaciones","inbox",Inbox],
  ["tasks","Tareas","operations",ClipboardList],

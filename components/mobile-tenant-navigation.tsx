@@ -8,7 +8,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 
 // Los cinco accesos principales están visibles en la barra inferior; este menú muestra el resto.
-const links = [["inbox", "Conversaciones"], ["ml", "Inteligencia ML"], ["marketing", "Marketing"], ["email", "Campañas email"], ["web-analytics", "Analítica web"], ["calendar", "Calendario"], ["products", "Productos"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
+const links = [["inbox", "Conversaciones"], ["ml", "Inteligencia ML"], ["marketing", "Marketing"], ["email", "Campañas email"], ["web-analytics", "Analítica web"], ["calendar", "Calendario"], ["products", "Productos"], ["erp", "ERP"], ["inventory", "Inventario"], ["quotations", "Cotizaciones"], ["operations", "Operación"], ["automations", "Automatizaciones"], ["arm", "Agentes"], ["tasks", "Tareas"], ["reports", "Reportes"], ["files", "Archivos"], ["channels", "Canales"], ["integrations", "Integraciones"], ["sessions", "Sesiones del equipo"], ["settings", "Configuración"]];
 export default function MobileTenantNavigation() {
   const tenant=useActiveTenant(),router=useRouter();
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
@@ -30,10 +30,10 @@ export default function MobileTenantNavigation() {
         const modules=(m.data??[]) as Array<{module_key:string;enabled:boolean}>;
         const permissionKey=(name:string)=>(
           ["channels","integrations","marketing","email","web-analytics","sessions","settings"].includes(name)?"settings":
-          ["files","arm","reports"].includes(name)?"dashboard":name==="tasks"?"operations":name==="ml"?"pipeline":name
+          ["files","arm","reports"].includes(name)?"dashboard":["tasks","erp","inventory"].includes(name)?"operations":name==="ml"?"pipeline":name
         );
         setAllowed(links.filter(([path])=>{
-          const familyKeys=["inbox","ml","products","quotations","arm","tasks","reports","settings","web-analytics"];
+          const familyKeys=["inbox","ml","products","quotations","inventory","erp","arm","tasks","reports","settings","web-analytics"];
           if(tenant.tenant_slug==="family-power"&&!familyKeys.includes(path))return false;
           if(tenant.tenant_slug!=="family-power"&&["arm","tasks","reports"].includes(path))return false;
           if(["settings","web-analytics"].includes(path)&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;
