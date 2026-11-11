@@ -20,6 +20,7 @@ const migrationFiles=[
   'supabase/migrations/20261111050723_erp_native_inventory_transactions.sql',
   'supabase/migrations/20261111050740_erp_native_purchasing.sql',
   'supabase/migrations/20261111050743_erp_native_commercial_sales.sql',
+  'supabase/migrations/20261111052948_erp_native_order_fulfillment.sql',
 ];
 
 test('native ERP on disposable PostgreSQL 17', {skip:!enabled}, async t=>{
@@ -33,6 +34,7 @@ test('native ERP on disposable PostgreSQL 17', {skip:!enabled}, async t=>{
   await t.test('recovered inventory SQL regression',()=>run(file('tests/erp-native-inventory-postgres.sql')));
   await t.test('recovered purchasing SQL regression',()=>run(file('tests/erp-native-purchasing-postgres.sql')));
   await t.test('recovered commercial sales SQL regression',()=>run(file('tests/erp-native-sales-postgres.sql')));
+  await t.test('order allocations, protected reservations and atomic delivery',()=>run(file('tests/erp-native-order-inventory-postgres.sql')));
 
   run(`insert into auth.users(id) values('${user}');
     insert into public.tenants(id,name,slug,owner_user_id) values('${tenant}','Synthetic concurrency','synthetic-concurrency','${user}');

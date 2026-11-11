@@ -187,7 +187,10 @@ begin
     insert into public.purchase_orders(id,tenant_id,supplier_id,order_number,currency,notes,created_by)
     values(v_id,p_tenant_id,v_supplier.id,'OC-' || upper(replace(v_id::text,'-','')),
       p_payload->>'currency',p_payload->>'notes',auth.uid()) returning * into v_order;
-    for v_row in select value from jsonb_array_elements(p_payload->'lines') loop
+    -- The same UUID order as receipt/return and order fulfillment, independent
+    -- of the order in which browser clients submitted their lines.
+    for v_row in select value from jsonb_array_elements(p_payload->'lines')
+      order by (value->>'inventory_item_id')::uuid loop
       if coalesce(v_row->>'quantity','') !~ '^[0-9]+(\.[0-9]{1,6})?$'
         or coalesce(v_row->>'unit_cost','') !~ '^[0-9]+(\.[0-9]{1,4})?$' then
         raise exception 'invalid_purchase_decimal' using errcode='22023';
