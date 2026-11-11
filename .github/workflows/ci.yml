@@ -60,6 +60,8 @@ jobs:
         run: node --test tests/family-power-operational-ux.test.mjs
       - name: Family Power unified tenant and approved brand variants
         run: node --experimental-strip-types --test tests/family-power-unified-tenant.test.mjs
+      - name: Empresia disconnected mobile laboratory isolation and workflow tests
+        run: node --experimental-strip-types --test tests/empresia-mobile-lab.test.mjs
       - name: Empresia Intelligence events, permissions, execution and learning contracts
         run: node --test tests/empresia-intelligence.test.mjs
       - name: Family Power ARM within existing tenant and protected route
