@@ -1,0 +1,25 @@
+
+// CRM events remain separate from native messaging and API service keys.
+model CrmBridgeOutbox {
+  eventId String @id
+  workspaceId String
+  instagramAccountId String
+  payload Json
+  status String @default("PENDING")
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  leaseToken String?
+  lockedUntil DateTime?
+  deliveredAt DateTime?
+  lastErrorCode String?
+  createdAt DateTime @default(now())
+  @@index([status, nextAttemptAt])
+  @@index([workspaceId, instagramAccountId])
+}
+
+model CrmBridgeSourceReceipt {
+  sourceType String
+  sourceId String
+  createdAt DateTime @default(now())
+  @@id([sourceType, sourceId])
+}

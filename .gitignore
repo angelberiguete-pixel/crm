@@ -5,3 +5,7 @@ node_modules
 .vercel
 *.tsbuildinfo
 .DS_Store
+
+# Standalone OpenReply secrets and ephemeral checkout
+services/openreply/runtime.env
+.build/

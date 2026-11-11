@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/diwenne/openreply",
+  "commit": "c78b2d2f68c9764ef7a7dde51dfa5bfa99304a09",
+  "files": {
+    "package-lock.json": "00cd54042264c27a746ce68e382ce98962b50181",
+    "prisma/schema.prisma": "583ad045504ce2d351532a06de513e2de2eea451",
+    "worker/dm-worker.ts": "9b2d1062eda98f7a8ee2939f7e59043c74a4875b"
+  }
+}
