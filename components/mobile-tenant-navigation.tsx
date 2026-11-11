@@ -59,6 +59,7 @@ export default function MobileTenantNavigation() {
   }
   return <details className="mobile-tenant-navigation"><summary aria-label="Abrir todos los módulos">Módulos <span aria-hidden="true">☰</span></summary>
     <div className="mobile-module-panel"><span className="platform-company-shortcut"><PlatformCompaniesShortcut/></span><nav aria-label={`Otros módulos de ${tenant.tenant_name}`}>{links.filter(([path])=>allowed?.includes(path)).map(([path,label])=><Link href={`/crm${path?"/"+path:""}`} key={path} onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>{label}</Link>)}</nav>
+    <Link href="/cuenta/seguridad" className="button" onClick={event=>event.currentTarget.closest("details")?.removeAttribute("open")}>Configurar contraseña de acceso</Link>
     <button type="button" className="button" disabled={busy} onClick={logout}>{busy?"Cerrando sesión…":"Salir"}</button>
     {error&&<p role="alert">{error}</p>}</div>
   </details>;
