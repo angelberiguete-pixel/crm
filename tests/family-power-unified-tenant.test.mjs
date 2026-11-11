@@ -131,10 +131,12 @@ test("Family Power displays an evidence-backed funnel, not synthetic conversion 
  const funnel=read("../components/family-power-funnel.tsx");
  assert.match(home,/<FamilyPowerFunnel\/>/);
  assert.match(reports,/<FamilyPowerFunnel\/>/);
- for(const table of ["marketing_behavior_events","marketing_event_ledger","conversations","contacts","opportunities","quotations","orders","deliveries"])
+ for(const table of ["conversations","contacts","opportunities","quotations","orders","deliveries"])
    assert.match(funnel,new RegExp('count\\("'+table+'"'));
  assert.match(funnel,/\.eq\("tenant_id",tenantId!/);
  assert.match(funnel,/setMetrics\(empty\(\)\)/);
+ assert.match(funnel,/marketing_behavior_overview/);
+ assert.doesNotMatch(funnel,/count\("marketing_behavior_events"|count\("marketing_event_ledger"/);
  assert.match(funnel,/Factura e-CF/);
  assert.match(funnel,/Satisfacci.n a.n sin medici.n/);
  assert.match(funnel,/no equivalen a una tasa de conversi.n/);
