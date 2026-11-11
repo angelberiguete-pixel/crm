@@ -24,6 +24,7 @@ export default function FamilyPowerLogin(){
  const router=useRouter();
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
+ const [showPassword,setShowPassword]=useState(false);
  const [busy,setBusy]=useState(false);
  const [checking,setChecking]=useState(true);
  const [resetting,setResetting]=useState(false);
@@ -123,9 +124,10 @@ export default function FamilyPowerLogin(){
            autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}
            placeholder="tu-correo@empresa.com"/>
          <label htmlFor="family-password">Contraseña</label>
-         <input id="family-password" name="password" type="password" required minLength={8}
+         <input id="family-password" name="password" type={showPassword ? "text" : "password"} required minLength={8}
            autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}
            placeholder="Introduce tu contraseña"/>
+         <button type="button" className={styles.recovery} aria-pressed={showPassword} onClick={() => setShowPassword(current => !current)}>{showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}</button>
          {message&&<div role="status" className={styles.notice}>{message}</div>}
          <button className={styles.submit} type="submit" disabled={busy||checking}>
            {busy||checking?"Verificando acceso…":<><LogIn size={18}/> Entrar a Family Power</>}
