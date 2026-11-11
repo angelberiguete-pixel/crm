@@ -95,7 +95,7 @@ export default function LoginPage() {
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
-        {message && <div className="notice">{message}</div>}
+        {message && <div className="notice" role="status">{message}{mode === "login" && <p><Link href="/cuenta/seguridad">Recuperar mi contraseña y acceder sin más enlaces</Link></p>}</div>}
         <button className="button primary" disabled={busy}>{busy ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
       {mode === "login" && <>
