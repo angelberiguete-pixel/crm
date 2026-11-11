@@ -41,9 +41,10 @@ test("only safe status probe and limited product list, not fake active ERP",()=>
   assert.match(protocol,/provider_response_too_large/);
   assert.match(protocol,/provider_invalid_products/);
   assert.match(protocol,/^export type DolibarrProduct/m);
-  assert.match(panel,/Probar conexión Dolibarr/);
-  assert.match(panel,/Consultar 10 productos/);
-  assert.match(panel,/Sin servidor Dolibarr autorizado/);
+  // The legacy bridge stays isolated; native ERP no longer depends on its UI.
+  assert.doesNotMatch(panel,/functions\.invoke\("empresia-dolibarr"/);
+  assert.match(panel,/href="\/crm\/inventory"/);
+  assert.doesNotMatch(panel,/API Dolibarr verificada/);
 });
 
 test("database compatibility uses RLS-invoker view, no public viewer or invoice changes",()=>{
