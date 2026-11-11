@@ -32,10 +32,13 @@ export function applyStockMovement(stock: Stock, movement: Movement): Stock {
   if (qty === 0) throw new Error("zero_quantity");
   const next = { ...stock };
   integer(next.onHand, "on_hand"); integer(next.reserved, "reserved");
-  if (movement.kind === "receipt") next.onHand += qty;
-  if (movement.kind === "issue") next.onHand -= qty;
-  if (movement.kind === "reserve") next.reserved += qty;
-  if (movement.kind === "release") next.reserved -= qty;
+  switch (movement.kind) {
+    case "receipt": next.onHand += qty; break;
+    case "issue": next.onHand -= qty; break;
+    case "reserve": next.reserved += qty; break;
+    case "release": next.reserved -= qty; break;
+    default: throw new Error("invalid_movement_kind");
+  }
   if (!Number.isSafeInteger(next.onHand) || !Number.isSafeInteger(next.reserved) ||
       next.onHand < 0 || next.reserved < 0 || next.reserved > next.onHand)
     throw new Error("insufficient_stock");
