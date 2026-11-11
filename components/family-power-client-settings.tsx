@@ -35,6 +35,10 @@ export default function FamilyPowerClientSettings(){
      <div className="priority-item"><strong>Correo de contacto</strong><span>{info?.support_email??"Por confirmar"}</span></div>
     </div>
    </section>
+   <section className="card" id="seguridad-cuenta"><h2><ShieldCheck size={19}/> Seguridad de la cuenta</h2>
+    <p className="muted">Cambia tu contraseña personal desde una sesión iniciada. No modifica los accesos ni los datos de Family Power.</p>
+    <Link href="/cuenta/seguridad" className="button">Cambiar mi contraseña</Link>
+   </section>
    <section className="card"><h2><Users size={19}/> Equipo autorizado</h2>
     <p className="muted">Los accesos se gestionan mediante cuentas individuales y permisos autorizados. La consulta de sesiones está pendiente de habilitación segura para esta empresa.</p>
    </section>
