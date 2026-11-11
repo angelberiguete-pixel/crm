@@ -1,0 +1,35 @@
+name: Sync original AI service photography
+on:
+  push:
+    branches:
+      - feat/angel-commerce-platform-20261107
+    paths:
+      - .github/workflows/sync-commerce-images.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/angel-commerce-platform-20261107
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image optimizer
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Download, verify, and optimize six original images
+        run: python .github/scripts/sync-commerce-images.py
+      - name: Verify number and sizes
+        run: |
+          test "$(find commerce/public/art -maxdepth 1 -name 'ai-*.webp' -type f | wc -l)" -eq 6
+          ls -lh commerce/public/art/ai-*.webp
+      - name: Commit images to the dedicated commerce branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add commerce/public/art/ai-*.webp
+          git diff --cached --quiet || git commit -m "assets(commerce): install six original optimized service photos"
+          git push origin HEAD:feat/angel-commerce-platform-20261107
