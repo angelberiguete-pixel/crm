@@ -123,3 +123,20 @@ test("Family Power sidebar hides denied sections and uses Spanish business label
  assert.match(logout,/platform_current_access/);
  assert.match(logout,/return "\/family-power\/login"/);
 });
+
+
+test("Family Power displays an evidence-backed funnel, not synthetic conversion rates",()=>{
+ const home=read("../components/energy-service-dashboard.tsx");
+ const reports=read("../components/family-power-reports.tsx");
+ const funnel=read("../components/family-power-funnel.tsx");
+ assert.match(home,/<FamilyPowerFunnel\/>/);
+ assert.match(reports,/<FamilyPowerFunnel\/>/);
+ for(const table of ["marketing_behavior_events","marketing_event_ledger","conversations","contacts","opportunities","quotations","orders","deliveries"])
+   assert.match(funnel,new RegExp('count\\("'+table+'"'));
+ assert.match(funnel,/\.eq\("tenant_id",tenantId!/);
+ assert.match(funnel,/setMetrics\(empty\(\)\)/);
+ assert.match(funnel,/Factura e-CF/);
+ assert.match(funnel,/Satisfacci.n a.n sin medici.n/);
+ assert.match(funnel,/no equivalen a una tasa de conversi.n/);
+ assert.doesNotMatch(funnel,/Math\.random\(|mockData|fakeData/);
+});
