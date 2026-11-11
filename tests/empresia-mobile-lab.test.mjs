@@ -1,0 +1,60 @@
+import assert from "node:assert/strict";
+import {test} from "node:test";
+import {readFileSync} from "node:fs";
+import {initialLabState,labReduce,labStats} from "../lib/empresia-lab-engine.ts";
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+
+test("the laboratory is explicitly offline and mobile-first, not a hidden production CRM",()=>{
+ const page=read("app/laboratorio-ia/page.tsx");
+ const proxy=read("proxy.ts");
+ const style=read("app/laboratorio-ia/page.module.css");
+ assert.match(page,/Simulación controlada, no producción/);
+ assert.match(page,/No consulta Supabase ni OpenAI/);
+ assert.doesNotMatch(page,/@\/lib\/supabase|createClient|fetch\(|functions\.invoke/);
+ assert.match(proxy,/process\.env\.VERCEL_ENV!=="preview"/);
+ assert.match(proxy,/path\.startsWith\("\/crm\/"\)/);
+ assert.match(proxy,/path\.startsWith\("\/api\/"\)/);
+ assert.match(proxy,/status:403/);
+ assert.match(proxy,/target\.pathname="\/laboratorio-ia"/);
+ assert.match(style,/@media\(max-width:760px\)/);
+});
+test("the brain generates auditable, tenant-local proposals without real side effects",()=>{
+ const first=labReduce(initialLabState,{type:"observe",event:"message.inbound",priceVerified:false});
+ assert.equal(first.tenant,"empresia-lab");
+ assert.equal(first.decisions.length,1);
+ assert.equal(first.decisions[0].status,"proposed");
+ assert.equal(first.decisions[0].risk,"controlled");
+ assert.match(first.decisions[0].reason,/Precio del inversor 3.6 kW sin verificar/);
+ assert.equal(labStats(first).events,1);
+ const seller=labReduce(first,{type:"review",id:1,actor:"seller",approve:true});
+ assert.equal(seller.decisions[0].status,"proposed");
+ assert.match(seller.log[0],/Denegado/);
+ const noApproval=labReduce(seller,{type:"execute",id:1,actor:"owner"});
+ assert.equal(noApproval.decisions[0].taskId,null);
+ assert.match(noApproval.log[0],/Denegado/);
+});
+test("supervised action only executes once and outcome is evidence of task completion, not sale",()=>{
+ const observed=labReduce(initialLabState,{type:"observe",event:"payment.created"});
+ assert.equal(observed.decisions[0].risk,"restricted");
+ const reviewed=labReduce(observed,{type:"review",id:1,actor:"owner",approve:true});
+ assert.equal(reviewed.decisions[0].status,"approved");
+ const task=labReduce(reviewed,{type:"execute",id:1,actor:"admin"});
+ assert.equal(task.decisions[0].taskId,1);
+ const repeated=labReduce(task,{type:"execute",id:1,actor:"owner"});
+ assert.equal(repeated.decisions[0].taskId,1);
+ assert.equal(labStats(repeated).tasks,1);
+ const completed=labReduce(repeated,{type:"complete",id:1,actor:"owner"});
+ assert.equal(completed.decisions[0].status,"observed");
+ assert.equal(completed.decisions[0].outcome,"task_completed");
+ assert.equal(labStats(completed).observed,1);
+ assert.match(completed.log[0],/No equivale a una venta/);
+ assert.deepEqual(labReduce(completed,{type:"reset"}),initialLabState);
+});
+test("rejected decisions cannot be executed",()=>{
+ const observed=labReduce(initialLabState,{type:"observe",event:"quotation.created"});
+ assert.equal(observed.decisions[0].risk,"supervised");
+ const rejected=labReduce(observed,{type:"review",id:1,actor:"owner",approve:false});
+ const noTask=labReduce(rejected,{type:"execute",id:1,actor:"admin"});
+ assert.equal(noTask.decisions[0].taskId,null);
+ assert.equal(noTask.decisions[0].status,"rejected");
+});

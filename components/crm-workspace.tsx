@@ -70,6 +70,7 @@ const nav = [
   ["contacts", "Contactos", Users],
   ["revenue", "Oportunidades", Target],
   ["ml", "Inteligencia ML", BrainCircuit],
+  ["intelligence", "Cerebro IA", BrainCircuit],
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["erp", "ERP", Boxes],
@@ -98,7 +99,7 @@ const familyLabels:Record<string,string>={
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",erp:"operations",inventory:"operations",calendar:"calendar",
- automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
+ automations:"automations",arm:"dashboard",intelligence:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
@@ -185,6 +186,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
+    if(key==="intelligence"&&member.tenant_slug!=="eurevector")return false;
     const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","operations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;

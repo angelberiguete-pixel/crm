@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 
 // Read-only, nonbillable readiness check. The provider key is never returned or used.
-const allowedOrigins=new Set(["https://crm-revenue-os.vercel.app","http://localhost:3000"]);
+const allowedOrigins=new Set(["https://crm-revenue-os.vercel.app","https://portal-empresia.vercel.app","http://localhost:3000"]);
 const headers=(origin:string)=>({
   "Content-Type":"application/json; charset=utf-8",
   "Access-Control-Allow-Origin":origin,
