@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
@@ -71,7 +72,8 @@ export default function LoginPage() {
       <p className="muted">Entra directamente con tu correo y contraseña. No necesitas códigos ni enlaces por email para iniciar sesión.</p>
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
-        <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
+        <label>Contraseña<input type={showPassword ? "text" : "password"} minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
+        <button type="button" className="text-button" aria-pressed={showPassword} onClick={() => setShowPassword(current => !current)}>{showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}</button>
         {message && <div className="notice" role="status">{message}{mode === "login" && <p><Link href="/cuenta/seguridad">Recuperar mi contraseña y acceder sin más enlaces</Link></p>}</div>}
         <button className="button primary" disabled={busy}>{busy ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
