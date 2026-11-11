@@ -10,7 +10,6 @@ import {notifyTenantContextChanged} from "@/lib/tenant-context-events";
 import {familyPowerMembership,FAMILY_POWER_SLUG} from "@/lib/family-power-access";
 import {authEmailActionMessage,authSignInMessage} from "@/lib/auth-entry-feedback";
 
-const OWNER_EMAIL="familypower1@hotmail.com";
 import styles from "./family-login.module.css";
 
 type TenantAccess={
@@ -28,8 +27,6 @@ export default function FamilyPowerLogin(){
  const [busy,setBusy]=useState(false);
  const [checking,setChecking]=useState(true);
  const [resetting,setResetting]=useState(false);
- const [resending,setResending]=useState(false);
- const [needsConfirmation,setNeedsConfirmation]=useState(false);
  const [message,setMessage]=useState("");
  const [otherSession,setOtherSession]=useState(false);
 
@@ -70,30 +67,16 @@ export default function FamilyPowerLogin(){
  async function signIn(e:FormEvent){
    e.preventDefault();
    if(busy||checking)return;
-   setBusy(true);setMessage("");setOtherSession(false);setNeedsConfirmation(false);
+   setBusy(true);setMessage("");setOtherSession(false);
    try{
      const result=await supabase.auth.signInWithPassword({email:email.trim(),password});
      if(result.error||!result.data.session){
        setMessage(authSignInMessage(result.error?.code));
-       setNeedsConfirmation(result.error?.code==="email_not_confirmed" && email.trim().toLowerCase()===OWNER_EMAIL);
        return;
      }
      await authorize(true);
    }catch{setMessage("No se pudo completar el acceso seguro. Inténtalo nuevamente.");}
    finally{setBusy(false);}
- }
- async function resendOwnerConfirmation(){
-   if(resending||email.trim().toLowerCase()!==OWNER_EMAIL)return;
-   setResending(true);setMessage("");
-   try{
-     const result=await supabase.auth.resend({
-       type:"signup",email:OWNER_EMAIL,
-       options:{emailRedirectTo:new URL("/family-power/login",window.location.origin).toString()}
-     });
-     if(result.error)setMessage(authEmailActionMessage(result.error.code));
-     else setMessage("Solicitamos otro correo de confirmación. Revisa Recibidos, Correo no deseado y abre el enlace más reciente.");
-   }catch{setMessage("No pudimos solicitar otro mensaje de confirmación. Intenta nuevamente.");}
-   finally{setResending(false);}
  }
  async function recover(){
    const target=email.trim();
@@ -130,7 +113,7 @@ export default function FamilyPowerLogin(){
      <section className={styles.panel} aria-label="Acceso privado de Family Power">
        <div className={styles.panelTop}><LockKeyhole size={19}/><span>Family Power · Acceso seguro</span></div>
        <h2>Bienvenido a tu espacio</h2>
-       <p>¿Ya tienes contraseña? Entra con tu correo. Si eres el dueño y es tu primera vez, crea tu cuenta con tu nombre completo, correo y contraseña. El correo propietario preautorizado se habilita al verificar su identidad.</p>
+       <p>Entra directamente con tu correo y contraseña. No se envían enlaces ni códigos por email para iniciar sesión.</p>
        {otherSession&&<div className={styles.sessionNote}>
          Si estabas trabajando en otra empresa, puedes regresar a tu <Link href="/crm">CRM habitual</Link>.
        </div>}
@@ -144,10 +127,6 @@ export default function FamilyPowerLogin(){
            autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}
            placeholder="Introduce tu contraseña"/>
          {message&&<div role="status" className={styles.notice}>{message}</div>}
-         {(needsConfirmation||email.trim().toLowerCase()===OWNER_EMAIL)&&<button type="button" className={styles.recovery} disabled={resending}
-           onClick={()=>void resendOwnerConfirmation()}>
-           {resending?"Solicitando correo…":"Reenviar confirmación a familypower1@hotmail.com"}
-         </button>}
          <button className={styles.submit} type="submit" disabled={busy||checking}>
            {busy||checking?"Verificando acceso…":<><LogIn size={18}/> Entrar a Family Power</>}
          </button>
@@ -161,9 +140,9 @@ export default function FamilyPowerLogin(){
   <Link className={styles.ownerRegistrationLink} href="/family-power/registro">
     ¿Es tu primera vez? Solicitar registro
   </Link>
-  <small>La cuenta propietaria reservada se activa al verificar el correo.</small>
+  <small>El acceso requiere una cuenta existente con permisos autorizados.</small>
 </div>
-       <div className={styles.invite}>El propietario autorizado crea sus credenciales y confirma su correo. Los colaboradores requieren invitación y permisos específicos.</div>
+       <div className={styles.invite}>Las cuentas autorizadas acceden con correo y contraseña. Los colaboradores requieren invitación y permisos específicos.</div>
      </section>
    </div>
    <footer className={styles.footer}>Family Power · Portal privado · Energía alternativa sin límites</footer>
