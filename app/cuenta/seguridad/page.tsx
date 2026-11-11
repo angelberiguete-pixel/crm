@@ -8,6 +8,8 @@ export default function AccountSecurityPage() {
   const [checking, setChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,6 +26,29 @@ export default function AccountSecurityPage() {
     }).finally(() => { if (active) setChecking(false); });
     return () => { active = false; };
   }, []);
+
+  async function requestRecovery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (recoveryBusy) return;
+    const address = recoveryEmail.trim().toLowerCase();
+    if (!address) return setMessage("Introduce tu correo registrado.");
+    setRecoveryBusy(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: new URL("/reset-password", window.location.origin).toString()
+      });
+      if (error) {
+        setMessage("No fue posible solicitar la recuperación. Comprueba el correo e inténtalo nuevamente.");
+        return;
+      }
+      setMessage("Si el correo está registrado, recibirás un enlace de recuperación. Ábrelo una sola vez para establecer tu contraseña permanente; después entra directamente con correo y contraseña.");
+    } catch {
+      setMessage("No pudimos enviar la recuperación. Revisa tu conexión e inténtalo nuevamente.");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
 
   async function savePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,8 +89,15 @@ export default function AccountSecurityPage() {
     <p className="muted">Configura o cambia la contraseña de tu cuenta. Esto permite entrar sin pedir un enlace por correo cada vez.</p>
     {checking ? <p role="status">Comprobando sesión…</p> : !authenticated
       ? <div className="stack gap-16">
-          <p className="notice" role="status">{message || "Inicia sesión para configurar tu contraseña. Si hoy solo accedes con un enlace por correo, úsalo una última vez."}</p>
-          <Link className="button primary" href="/login">Ir a iniciar sesión</Link>
+          <p className="muted">No tienes una sesión activa en este navegador. Si el inicio de sesión rechaza tu contraseña, recupérala una sola vez aquí.</p>
+          <form className="stack gap-16" onSubmit={requestRecovery}>
+            <label>Correo de tu cuenta
+              <input type="email" autoComplete="email" required value={recoveryEmail} onChange={event => setRecoveryEmail(event.target.value)} disabled={recoveryBusy}/>
+            </label>
+            <button className="button primary" type="submit" disabled={recoveryBusy}>{recoveryBusy ? "Enviando…" : "Recuperar contraseña una sola vez"}</button>
+          </form>
+          {message && <p className="notice" role="status">{message}</p>}
+          <Link className="button" href="/login">Ya tengo mi contraseña · Iniciar sesión</Link>
         </div>
       : <form className="stack gap-16" onSubmit={savePassword}>
           <p className="muted">Cuenta: <strong>{email}</strong></p>
