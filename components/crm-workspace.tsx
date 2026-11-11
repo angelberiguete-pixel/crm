@@ -206,7 +206,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
-        <nav className="nav">{!isFamilyPower&&<PlatformCompaniesShortcut/>}
+        <nav className="nav"><PlatformCompaniesShortcut/>
           {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
               <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
