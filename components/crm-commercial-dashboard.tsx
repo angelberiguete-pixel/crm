@@ -9,6 +9,8 @@ import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import EnergyServiceDashboard from "@/components/energy-service-dashboard";
+import CommercialFunnel from "@/components/commercial-funnel";
+import CrmAgentAdvicePanel from "@/components/crm-agent-advice-panel";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
 
@@ -95,6 +97,8 @@ function GeneralCommercialDashboard(){
           <Link className="button" href="/crm/inbox"><Inbox size={16}/> {canManage?"Conversaciones":"Mis conversaciones"}</Link>
         </div>
       </section>
+      <CommercialFunnel/>
+      {canManage&&<div className="section-gap"><CrmAgentAdvicePanel tenantId={tenantId} compact/></div>}
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
         <section className="grid dashboard-kpis section-gap" aria-label="Indicadores de esta empresa">
           <Metric label="Empresas" value={countText(counts.companies)} sub="Registros de clientes"/>
