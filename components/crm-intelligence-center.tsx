@@ -6,11 +6,13 @@ import {BrainCircuit,RefreshCw,ShieldCheck,CheckCheck,AlertTriangle,Workflow} fr
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import styles from "./crm-intelligence-center.module.css";
+import CrmIntelligenceDraft from "@/components/crm-intelligence-draft";
 
 type BrainDecision={
  id:string;tenant_id:string;action_key:string;risk_level:string;
  reason_code:string;status:string;event_id:string;task_id:string|null;
  created_at:string;reviewed_at:string|null;executed_at:string|null;
+ evidence:Record<string,unknown>|null;
 };
 type Learning={action_key:string;proposed_count:number;approved_count:number;executed_count:number;task_completed_count:number};
 const stages=[
@@ -51,7 +53,7 @@ export default function CrmIntelligenceCenter(){
   if(!id){setLoading(false);return()=>{alive=false;};}
   void Promise.all([
     supabase.from("empresia_brain_decisions")
-     .select("id,tenant_id,action_key,risk_level,reason_code,status,event_id,task_id,created_at,reviewed_at,executed_at")
+     .select("id,tenant_id,action_key,risk_level,reason_code,status,event_id,task_id,created_at,reviewed_at,executed_at,evidence")
      .eq("tenant_id",id).order("created_at",{ascending:false}).limit(40),
     supabase.from("empresia_brain_learning")
      .select("action_key,proposed_count,approved_count,executed_count,task_completed_count")
@@ -125,6 +127,7 @@ export default function CrmIntelligenceCenter(){
     {decisions.map(d=><article key={d.id} className={styles.decision}>
       <div className={styles.decisionTop}><strong>{actionTitle[d.action_key]??"Revisión comercial"}</strong><span>{statusTitle[d.status]??d.status}</span></div>
       <small>{time(d.created_at)} · Riesgo: {d.risk_level} · Evidencia: {d.reason_code.replaceAll("_"," ")}</small>
+      {canReview&&id&&d.action_key==="review_inbound"&&d.status!=="rejected"&&<CrmIntelligenceDraft tenantId={id} evidence={d.evidence??{}}/>}
       {d.task_id&&<div className={styles.taskRef}><CheckCheck size={16}/> Tarea interna vinculada. No implica venta, pago ni respuesta enviada.</div>}
       {canReview&&d.status==="proposed"&&<div className={styles.actions}>
        <button type="button" disabled={!!saving} onClick={()=>void change(d.id,"approve")}>Aprobar tarea interna</button>
