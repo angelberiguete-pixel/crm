@@ -98,8 +98,12 @@ begin
  then raise exception 'Real task completion not recorded'; end if;
  if (select count(*) from public.empresia_brain_learning where tenant_id=a and task_completed_count=1)<>1
  then raise exception 'Learning report did not reflect observed outcome'; end if;
+end;
+$test$;
+reset role;
+do $test$
+begin
  if (select count(*) from public.customer_payments)<>0
  then raise exception 'Unexpected payment mutation'; end if;
 end;
 $test$;
-reset role;
