@@ -33,7 +33,7 @@ export default function MobileTenantNavigation() {
           ["files","arm","reports"].includes(name)?"dashboard":["tasks","erp","inventory"].includes(name)?"operations":name==="ml"?"pipeline":name
         );
         setAllowed(links.filter(([path])=>{
-          const familyKeys=["inbox","ml","products","quotations","inventory","erp","arm","tasks","reports","settings","web-analytics"];
+          const familyKeys=["inbox","ml","products","quotations","inventory","erp","operations","arm","tasks","reports","settings","web-analytics"];
           if(tenant.tenant_slug==="family-power"&&!familyKeys.includes(path))return false;
           if(tenant.tenant_slug!=="family-power"&&["arm","tasks","reports"].includes(path))return false;
           if(["settings","web-analytics"].includes(path)&&tenant.tenant_slug==="family-power"&&!["owner","admin"].includes(role))return false;

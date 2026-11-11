@@ -91,7 +91,7 @@ const nav = [
 
 const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",ml:"Inteligencia ML",inbox:"Mensajes",
- products:"Productos",quotations:"Cotizaciones",inventory:"Inventario",erp:"ERP",operations:"Instalaciones",calendar:"Agenda",
+ products:"Productos",quotations:"Cotizaciones",inventory:"Inventario",erp:"ERP",operations:"Pedidos y facturas",calendar:"Agenda",
  automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web",pagos:"Pagos y suscripción"
 };
@@ -185,7 +185,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
+    const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","operations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
     if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
