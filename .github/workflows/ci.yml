@@ -98,10 +98,14 @@ jobs:
         run: node --test tests/family-power-behavior-analytics.test.mjs
       - name: Typecheck
         run: npm run typecheck
+      - name: OpenReply tenant authorization, native API and Spanish keyword tests
+        run: npm run test:openreply && node --experimental-strip-types --test tests/openreply-events.test.mjs
       - name: Production build
         run: npm run build
       - name: Install browser for regression tests
         run: npx playwright install --with-deps chromium
+      - name: OpenReply campaign bridge, keyword simulator and company switching browser test
+        run: node tests/openreply-bridge-browser.test.mjs
       - name: Official logo browser rendering and loading test
         run: node tests/look-brand-browser.test.mjs
       - name: Family Power official branded login, mobile and membership denial
