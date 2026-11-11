@@ -100,6 +100,11 @@ declare
  v_action text;
  v_risk text;
  v_reason text;
+ v_body text;
+ v_contact_id uuid;
+ v_product_id uuid;
+ v_product_verified boolean:=false;
+ v_context jsonb:='{}'::jsonb;
 begin
  v_action:=case
   when new.event_type='message.inbound' then 'review_inbound'
@@ -126,12 +131,44 @@ begin
   when v_action='coordinate_order' then 'order_requires_operational_coordination'
   when v_action='followup_delivery' then 'delivery_requires_status_check'
   else 'payment_requires_provider_confirmation' end;
+ -- The three memory sources are consulted, never copied wholesale:
+ -- conversation history remains in messages, verified catalog in products,
+ -- and observed results in empresia_brain_outcomes.
+ if v_action='review_inbound' then
+  select m.body,c.contact_id into v_body,v_contact_id
+   from public.messages m join public.conversations c
+    on c.id=m.conversation_id and c.tenant_id=m.tenant_id
+   where m.tenant_id=new.tenant_id and m.id=new.source_id
+     and m.direction='inbound';
+  if coalesce(v_body,'') ~* '(inversor|inverter)'
+   and coalesce(v_body,'') ~* '3[.,]6[[:space:]]*(kw|kva)?' then
+    select p.id into v_product_id from public.products p
+     where p.tenant_id=new.tenant_id and p.status='active'
+       and (p.name ~* '3[.,]6' or p.sku ~* '3[.,]6')
+     order by p.updated_at desc limit 1;
+    if v_product_id is not null then
+      select (p.sale_price>0 and p.metadata->>'price_verified'='true')
+        into v_product_verified
+        from public.products p where p.id=v_product_id and p.tenant_id=new.tenant_id;
+    end if;
+    v_reason:=case when v_product_verified then 'verified_product_candidate_human_draft'
+      else 'inverter_36kw_price_not_verified' end;
+    v_context:=pg_catalog.jsonb_build_object(
+      'intent','inverter_36kw_inquiry','contact_id',v_contact_id,
+      'candidate_product_id',v_product_id,
+      'price_verified',v_product_verified,
+      'outbound_sent',false,'quotation_issued',false);
+  else
+    v_context:=pg_catalog.jsonb_build_object(
+      'intent','general_inquiry','contact_id',v_contact_id,'outbound_sent',false);
+  end if;
+ end if;
  insert into public.empresia_brain_decisions(
   tenant_id,event_id,action_key,risk_level,reason_code,evidence
  ) values(
   new.tenant_id,new.id,v_action,v_risk,v_reason,
   pg_catalog.jsonb_build_object('event_id',new.id,'source_table',new.source_table,
-    'source_id',new.source_id,'event_type',new.event_type,'source_state',new.evidence)
+    'source_id',new.source_id,'event_type',new.event_type,'source_state',new.evidence,'context',v_context)
  );
  return new;
 end;
