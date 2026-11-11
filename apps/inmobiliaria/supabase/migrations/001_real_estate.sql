@@ -1,0 +1,31 @@
+-- Proposed schema; NOT applied. Run only in a dedicated Supabase project.
+create extension if not exists pgcrypto;
+create table if not exists public.re_agencies(id uuid primary key default gen_random_uuid(), name text not null, created_at timestamptz not null default now());
+create table if not exists public.re_members(agency_id uuid not null references public.re_agencies(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,role text not null check(role in ('owner','admin','agent','viewer')),primary key(agency_id,user_id));
+create table if not exists public.re_properties(id uuid primary key default gen_random_uuid(),agency_id uuid not null references public.re_agencies(id),title text not null,description text,price_dop numeric(14,2) not null check(price_dop>=0),listing_type text not null check(listing_type in ('sale','rent')),status text not null default 'draft' check(status in ('draft','published','archived','closed')),is_demo boolean not null default false,created_at timestamptz not null default now(),unique(id,agency_id));
+create table if not exists public.re_leads(id uuid primary key default gen_random_uuid(),agency_id uuid not null references public.re_agencies(id),property_id uuid not null,full_name text not null,contact text not null,consent_at timestamptz not null,stage text not null default 'new' check(stage in ('new','visit','negotiating','closed','lost')),created_at timestamptz not null default now(),foreign key(property_id,agency_id) references public.re_properties(id,agency_id),unique(id,agency_id));
+create table if not exists public.re_visits(id uuid primary key default gen_random_uuid(),agency_id uuid not null references public.re_agencies(id),lead_id uuid not null,scheduled_at timestamptz not null,status text not null default 'scheduled' check(status in ('scheduled','completed','cancelled')),foreign key(lead_id,agency_id) references public.re_leads(id,agency_id));
+create table if not exists public.re_offers(id uuid primary key default gen_random_uuid(),agency_id uuid not null references public.re_agencies(id),lead_id uuid not null,amount_dop numeric(14,2) not null check(amount_dop>=0),status text not null default 'pending' check(status in ('pending','accepted','rejected')),foreign key(lead_id,agency_id) references public.re_leads(id,agency_id));
+create or replace function public.re_is_member(p_agency uuid) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.re_members where agency_id=p_agency and user_id=(select auth.uid())) $$;
+create or replace function public.re_can_write(p_agency uuid) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.re_members where agency_id=p_agency and user_id=(select auth.uid()) and role in ('owner','admin','agent')) $$;
+revoke all on function public.re_is_member(uuid),public.re_can_write(uuid) from public;
+grant execute on function public.re_is_member(uuid),public.re_can_write(uuid) to authenticated;
+alter table public.re_agencies enable row level security;
+alter table public.re_members enable row level security;
+alter table public.re_properties enable row level security;
+alter table public.re_leads enable row level security;
+alter table public.re_visits enable row level security;
+alter table public.re_offers enable row level security;
+create policy re_agencies_select on public.re_agencies for select to authenticated using (public.re_is_member(id));
+create policy re_members_select on public.re_members for select to authenticated using (public.re_is_member(agency_id));
+create policy re_properties_select on public.re_properties for select to authenticated using (public.re_is_member(agency_id));
+create policy re_properties_insert on public.re_properties for insert to authenticated with check (public.re_can_write(agency_id));
+create policy re_properties_update on public.re_properties for update to authenticated using (public.re_can_write(agency_id)) with check (public.re_can_write(agency_id));
+create policy re_leads_select on public.re_leads for select to authenticated using (public.re_is_member(agency_id));
+create policy re_leads_insert on public.re_leads for insert to authenticated with check (public.re_can_write(agency_id));
+create policy re_leads_update on public.re_leads for update to authenticated using (public.re_can_write(agency_id)) with check (public.re_can_write(agency_id));
+create policy re_visits_select on public.re_visits for select to authenticated using (public.re_is_member(agency_id));
+create policy re_visits_insert on public.re_visits for insert to authenticated with check (public.re_can_write(agency_id));
+create policy re_offers_select on public.re_offers for select to authenticated using (public.re_is_member(agency_id));
+create policy re_offers_insert on public.re_offers for insert to authenticated with check (public.re_can_write(agency_id));
+-- No public write policies: unauthenticated lead intake must use a verified rate-limited server endpoint.
