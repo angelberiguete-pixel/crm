@@ -34,6 +34,7 @@ const sectionPermission: Record<string, string> = {
   email: "settings",
   "web-analytics": "settings",
   employees: "settings",
+  evidence: "settings",
   arm: "dashboard",
   tasks: "operations",
   reports: "dashboard",

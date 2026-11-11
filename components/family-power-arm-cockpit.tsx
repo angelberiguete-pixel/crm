@@ -92,7 +92,7 @@ export default function FamilyPowerArmCockpit(){
    <div className="grid two-col" style={{marginTop:14}}>
     {links.map(({href,label,icon:Icon})=><Link className="button" key={href} href={href}><Icon size={17}/>{label}<ArrowRight size={15}/></Link>)}
    </div>
-   {isAdmin&&<Link className="button primary" href="/crm/employees" style={{marginTop:16,display:"inline-flex",alignItems:"center",gap:8}}><Bot size={17}/> Configurar</Link>}
+   {isAdmin&&<div className="top-actions" style={{marginTop:16}}><Link className="button primary" href="/crm/employees"><Bot size={17}/> Configurar</Link><Link className="button" href="/crm/evidence"><ClipboardCheck size={17}/> Evidencias</Link></div>}
   </section>
   {tenantId&&<div className="section-gap"><CrmAgentAdvicePanel tenantId={tenantId} compact/></div>}
   {isAdmin&&tenantId&&<section className="section-gap card" aria-label="Revisión humana de agentes">
