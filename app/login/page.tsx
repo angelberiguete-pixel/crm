@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
-  const [emailLinkBusy, setEmailLinkBusy] = useState(false);
 
   async function routeAuthenticatedUser() {
     const next = new URLSearchParams(window.location.search).get("next");
@@ -38,28 +37,6 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  async function requestEmailLogin() {
-    const target=email.trim().toLowerCase();
-    if (!target) return setMessage("Introduce primero tu correo para recibir un enlace de acceso seguro.");
-    if (emailLinkBusy) return;
-    setEmailLinkBusy(true);
-    setMessage("");
-    try {
-      const { error }=await supabase.auth.signInWithOtp({
-        email: target,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: new URL("/login", window.location.origin).toString()
-        }
-      });
-      if(error) setMessage(authEmailActionMessage(error.code));
-      else setMessage("Si este correo tiene una cuenta activa, recibirás un enlace de acceso. Revisa Recibidos y Spam, y ábrelo desde el mismo navegador.");
-    }catch{
-      setMessage("No se pudo solicitar el enlace. Inténtalo nuevamente.");
-    }finally{
-      setEmailLinkBusy(false);
-    }
-  }
   async function requestPasswordReset() {
     const target = email.trim();
     if (!target) return setMessage("Escribe tu correo para enviarte el enlace de recuperación.");
@@ -91,7 +68,7 @@ export default function LoginPage() {
       <div className="eyebrow">Acceso seguro al CRM</div>
       <h1>Iniciar sesión</h1>
       <p className="muted">Cada empresa y cada vendedor accede a su propio espacio de trabajo. El administrador de plataforma gestiona a sus clientes por separado.</p>
-      <p className="muted">Entra con tu correo y contraseña. El enlace por email es opcional, solo si lo necesitas para recuperar el acceso.</p>
+      <p className="muted">Entra directamente con tu correo y contraseña. No necesitas códigos ni enlaces por email para iniciar sesión.</p>
       <form onSubmit={submit} className="stack gap-16">
         <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
         <label>Contraseña<input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>
@@ -99,11 +76,7 @@ export default function LoginPage() {
         <button className="button primary" disabled={busy}>{busy ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}</button>
       </form>
       {mode === "login" && <>
-        <button type="button" className="button" disabled={emailLinkBusy||resetBusy} onClick={requestEmailLogin}>
-          {emailLinkBusy ? "Enviando enlace…" : "Entrar sin contraseña por correo"}
-        </button>
-        <p className="muted">Si no recuerdas tu contraseña, puedes <Link href="/acceso-correo">entrar solo con correo</Link> como alternativa. No crea otra cuenta ni cambia tus permisos.</p>
-        <button type="button" className="text-button" disabled={resetBusy||emailLinkBusy} onClick={requestPasswordReset}>
+        <button type="button" className="text-button" disabled={resetBusy} onClick={requestPasswordReset}>
           {resetBusy ? "Enviando…" : "Olvidé mi contraseña"}
         </button>
       </>}
