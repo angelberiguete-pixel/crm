@@ -10,6 +10,7 @@ import { dolibarrBaseUrl, isUuid, listDolibarrProducts } from "./dolibarr-protoc
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const publicKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const permittedOrigins = [
+  "https://portal-empresia.vercel.app",
   "https://crm-revenue-os.vercel.app",
   "https://crm-look.vercel.app",
 ];
@@ -21,7 +22,7 @@ function headers(req: Request): Record<string, string> {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
     "Vary": "Origin",
-    "Access-Control-Allow-Origin": permittedOrigins.includes(origin) ? origin : permittedOrigins[0],
+    ...(permittedOrigins.includes(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info",
     "Access-Control-Allow-Methods": "OPTIONS,POST",
   };
