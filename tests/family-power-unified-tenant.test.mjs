@@ -166,6 +166,6 @@ test("Empresia sector profiles are tenant-scoped, persistent and preserve the ex
  assert.match(funnel,/tenant_current_permissions/);
  assert.match(funnel,/pipelineStages\.join\(" · "\)/);
  for(const preset of ["general","energy","clinic","real_estate","retail"])
-   assert.match(presets,new RegExp(preset+":\\\\{"));
+   assert.ok(presets.includes(preset+":{"),"Missing sector profile "+preset);
  assert.doesNotMatch(funnel,/supabase\.from\("contacts"\)\.insert|supabase\.from\("opportunities"\)\.update/);
 });
