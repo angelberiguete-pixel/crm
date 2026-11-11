@@ -44,7 +44,7 @@ function fixture(nodes, edges, options = {}) {
       if (name==='execute_automation_internal_action') {
         const key=`${args.p_run_id}:${args.p_node_id}`;
         if (effects.has(key)) return {data:{...effects.get(key),replayed:true},error:null};
-        if (failOnce===args.p_node_id) { failOnce=null; return {data:null,error:{message:'temporary_database_failure'}}; }
+        if (failOnce===args.p_node_id) { failOnce=null; return {data:null,error:{message:'temporary_database_failure',code:options.transientError?'40001':undefined}}; }
         const output={task_id:`task-${effects.size+1}`}; effects.set(key,output); return {data:output,error:null};
       }
       throw new Error(`Unexpected RPC ${name}`);
@@ -114,4 +114,18 @@ test('database log failure schedules a retry rather than silently succeeding',as
   const original=f.db.from;
   f.db.from=table=>table==='automation_runs'?{select(){return this;},eq(){return this;},maybeSingle:async()=>({data:null,error:{message:'database_unavailable'}})}:original(table);
   assert.equal((await processAutomationEvents(f.db,[f.event]))[0].status,'queued'); assert.equal(f.effects.size,0);
+});
+
+test('SQLSTATE 40001 requeues once and retries without duplicate effects',async()=>{
+ const f=fixture([trigger,action('one'),action('two')],[edge('trigger','one'),edge('one','two')],{failOnce:'two',transientError:true});
+ assert.equal((await processAutomationEvents(f.db,[f.event]))[0].status,'queued');
+ assert.equal(f.effects.size,1);
+ f.event.attempts=2;
+ assert.equal((await processAutomationEvents(f.db,[f.event]))[0].status,'succeeded');
+ assert.equal(f.effects.size,2);
+});
+
+test('SQLSTATE 40001 stops retrying at attempt three',async()=>{
+ const f=fixture([trigger,action('task')],[edge('trigger','task')],{failOnce:'task',transientError:true,event:{attempts:3}});
+ assert.equal((await processAutomationEvents(f.db,[f.event]))[0].status,'failed');
 });

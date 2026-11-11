@@ -35,7 +35,17 @@ export function nextNodes(node: Node, edges: Edge[], branch: string): string[] {
 }
 const render = (template: string, context: Record<string, unknown>) => template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, path) => String(getPath(context, path) ?? ""));
 const message = (error: unknown) => error instanceof Error ? error.message : "automation_failed";
-function check(result: { error: { message: string } | null }) { if (result.error) throw new Error(result.error.message); }
+const TRANSIENT_DB_CODES = new Set(["40001","40P01","53300","57P03","08000","08001","08003","08006","08P01","PGRST000","PGRST001","PGRST002","PGRST003"]);
+class RetryableAutomationError extends Error {}
+function retryable(error: unknown): boolean {
+  if (error instanceof RetryableAutomationError) return true;
+  if (!error || typeof error !== "object") return false;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" && TRANSIENT_DB_CODES.has(code);
+}
+function check(result: { error: { message: string; code?: string } | null }) {
+  if (result.error) throw retryable(result.error) ? new RetryableAutomationError(result.error.message) : new Error(result.error.message);
+}
 
 async function executeNode(db: SupabaseClient, node: Node, event: EventRow, runId: string, context: Record<string, unknown>) {
   const cfg = node.config ?? {};
@@ -106,6 +116,7 @@ export async function processAutomationEvents(db: SupabaseClient, events: EventR
       const rules = await query;
       check(rules);
       const failures: string[] = [];
+      let terminalFailure = false;
       for (const rule of (rules.data ?? []) as Rule[]) {
         const idempotency = `${event.id}:${rule.id}`;
         const existing = await db.from("automation_runs").select("id,status,context,error_message,retry_count").eq("tenant_id", event.tenant_id).eq("idempotency_key", idempotency).maybeSingle();
@@ -115,13 +126,13 @@ export async function processAutomationEvents(db: SupabaseClient, events: EventR
         versionQuery = existing.data ? versionQuery.eq("version_number", existing.data.context.flow_version) : versionQuery.eq("state", "published").order("version_number", { ascending: false }).limit(1);
         const versionResult = await versionQuery.maybeSingle();
         check(versionResult);
-        if (!versionResult.data) { failures.push(`${rule.name}: published_version_missing`); continue; }
+        if (!versionResult.data) { failures.push(`${rule.name}: published_version_missing`); terminalFailure = true; continue; }
         const version = Number(versionResult.data.version_number);
         const snapshot = versionResult.data.snapshot as { nodes?: Node[]; edges?: Edge[] };
         const nodes = (snapshot.nodes ?? []).filter(node => node.is_enabled !== false), edges = snapshot.edges ?? [];
         const triggers = nodes.filter(node => node.node_type === "trigger");
-        if (triggers.length !== 1) { failures.push(`${rule.name}: invalid_trigger_count`); continue; }
-        if (nodes.length > MAX_FLOW_STEPS) { failures.push(`${rule.name}: automation_step_limit`); continue; }
+        if (triggers.length !== 1) { failures.push(`${rule.name}: invalid_trigger_count`); terminalFailure = true; continue; }
+        if (nodes.length > MAX_FLOW_STEPS) { failures.push(`${rule.name}: automation_step_limit`); terminalFailure = true; continue; }
         let runId = existing.data?.id as string | undefined;
         if (!runId) {
           const insert = await db.from("automation_runs").insert({ tenant_id: event.tenant_id, rule_id: rule.id, trigger_event: event.event_type, entity_type: event.entity_type, entity_id: event.entity_id, status: "running", idempotency_key: idempotency, context: { event_id: event.id, event: event.payload, mode: event.mode, flow_version: version, execution_contract: "safe-v2" }, started_at: new Date().toISOString() }).select("id").single();
@@ -133,6 +144,7 @@ export async function processAutomationEvents(db: SupabaseClient, events: EventR
         const queue = [triggers[0].id], visited = new Set<string>(), nodeMap = new Map(nodes.map(node => [node.id, node]));
         const started = Date.now();
         let runFailed: string | null = null;
+        let transientFailure = false;
         while (queue.length && !runFailed) {
           if (Date.now() - started >= MAX_FLOW_DURATION_MS || visited.size >= MAX_FLOW_STEPS) { runFailed = "automation_execution_limit"; break; }
           const nodeId = queue.shift()!;
@@ -142,19 +154,20 @@ export async function processAutomationEvents(db: SupabaseClient, events: EventR
           if (!node) { runFailed = "flow_node_missing"; break; }
           const nodeStarted = Date.now();
           const log = await db.from("automation_flow_node_runs").insert({ tenant_id: event.tenant_id, run_id: runId, node_id: node.id, status: "running", input: { context: { ...context }, node_config: node.config }, started_at: new Date(nodeStarted).toISOString() }).select("id").single();
-          if (log.error) { runFailed = log.error.message; break; }
+          if (log.error) { runFailed = log.error.message; transientFailure = retryable(log.error); break; }
           let branch = "default", output: Record<string, unknown> | null = null, error: string | null = null;
-          try { const result = await executeNode(db, node, event, runId!, context); branch = result.branch; output = result.output; } catch (cause) { error = message(cause); }
+          let transientActionError = false;
+          try { const result = await executeNode(db, node, event, runId!, context); branch = result.branch; output = result.output; } catch (cause) { error = message(cause); transientActionError = retryable(cause); }
           const update = await db.from("automation_flow_node_runs").update({ status: error ? "failed" : "succeeded", output, error_message: error, finished_at: new Date().toISOString(), duration_ms: Date.now() - nodeStarted }).eq("tenant_id", event.tenant_id).eq("id", log.data.id);
-          if (error || update.error) { runFailed = `${node.label}: ${error ?? update.error?.message}`; break; }
+          if (error || update.error) { runFailed = `${node.label}: ${error ?? update.error?.message}`; transientFailure = transientActionError || retryable(update.error); break; }
           for (const target of nextNodes(node, edges, branch)) if (!visited.has(target)) queue.push(target);
         }
         if (Date.now() - started >= MAX_FLOW_DURATION_MS) runFailed ??= "automation_duration_limit";
         check(await db.from("automation_runs").update({ status: runFailed ? "failed" : "succeeded", result: { visited_nodes: [...visited], flow_version: version, mode: event.mode }, error_message: runFailed, finished_at: new Date().toISOString(), duration_ms: Date.now() - started }).eq("tenant_id", event.tenant_id).eq("id", runId!));
         processed++;
-        if (runFailed) failures.push(`${rule.name}: ${runFailed}`);
+        if (runFailed) { failures.push(`${rule.name}: ${runFailed}`); if (!transientFailure) terminalFailure = true; }
       }
-      const status = failures.length ? "failed" : processed ? "succeeded" : "skipped", error = failures.length ? failures.join("; ").slice(0, 2000) : null;
+      const status = failures.length ? (!terminalFailure && event.attempts < 3 ? "queued" : "failed") : processed ? "succeeded" : "skipped", error = failures.length ? failures.join("; ").slice(0, 2000) : null;
       check(await db.rpc("finish_automation_event", { p_event_id: event.id, p_status: status, p_error: error }));
       summary.push({ event_id: event.id, status, rules: processed, ...(error ? { error } : {}) });
     } catch (error) {
