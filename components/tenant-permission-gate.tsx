@@ -35,6 +35,7 @@ const sectionPermission: Record<string, string> = {
   "web-analytics": "settings",
   employees: "settings",
   arm: "dashboard",
+  intelligence: "dashboard",
   tasks: "operations",
   reports: "dashboard",
   products: "products",
@@ -149,7 +150,8 @@ export default function TenantPermissionGate({ section, children }: { section: s
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
            (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
-      if (hasPermission && moduleEnabled && !familyPowerRestriction) {
+      const intelligencePilotOnly=section==="intelligence"&&activeTenant.tenant_slug!=="eurevector";
+      if (hasPermission && moduleEnabled && !familyPowerRestriction && !intelligencePilotOnly) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
         setValidatedSection(section);
