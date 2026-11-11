@@ -12,7 +12,6 @@ export default function AccountSecurityPage() {
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -30,7 +29,6 @@ export default function AccountSecurityPage() {
     event.preventDefault();
     if (busy || !authenticated) return;
     setMessage("");
-    setSuccess(false);
     if (password.length < 12) {
       setMessage("La contraseña debe tener al menos 12 caracteres.");
       return;
@@ -52,7 +50,6 @@ export default function AccountSecurityPage() {
       }
       setPassword("");
       setConfirmation("");
-      setSuccess(true);
       setMessage("Contraseña guardada. La próxima vez podrás entrar con tu correo y contraseña desde /login, sin solicitar un enlace por correo.");
     } catch {
       setMessage("Ocurrió un problema al guardar la contraseña. Inténtalo nuevamente.");
@@ -78,7 +75,7 @@ export default function AccountSecurityPage() {
           <label>Confirmar nueva contraseña
             <input type="password" autoComplete="new-password" minLength={12} required value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy}/>
           </label>
-          {message && <p className={success ? "notice" : "notice"} role="status">{message}</p>}
+          {message && <p className="notice" role="status">{message}</p>}
           <button className="button primary" type="submit" disabled={busy}>{busy ? "Guardando…" : "Guardar contraseña"}</button>
         </form>}
     <p className="muted">La sesión se conserva en este navegador mientras siga siendo válida. Si cierras sesión, borras los datos del navegador o utilizas uno diferente, tendrás que volver a identificarte.</p>
