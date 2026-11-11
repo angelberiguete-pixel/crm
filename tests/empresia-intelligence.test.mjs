@@ -76,3 +76,26 @@ test("the real customer-facing center is routed and cannot bypass tenant permiss
  assert.ok(ui.includes('No se muestran datos simulados'));
  assert.ok(!ui.includes("service_role"));
 });
+
+test("AI assistance is optional, tenant-scoped, budgeted and draft-only",()=>{
+ const draft=read("../components/crm-intelligence-draft.tsx");
+ const center=read("../components/crm-intelligence-center.tsx");
+ const api=read("../supabase/functions/ai-employee-draft/index.ts");
+ const readiness=read("../supabase/functions/ai-employee-readiness/index.ts");
+ assert.ok(center.includes("<CrmIntelligenceDraft tenantId={id}"));
+ assert.ok(draft.includes('checked={consent}'));
+ assert.ok(draft.includes('if(busy||!consent'));
+ assert.ok(draft.includes('supabase.functions.invoke("ai-employee-readiness"'));
+ assert.ok(draft.includes('supabase.functions.invoke("ai-employee-draft"'));
+ assert.ok(draft.includes('.eq("tenant_id",tenantId)'));
+ assert.ok(draft.includes('p.metadata.price_verified===true'));
+ assert.ok(draft.includes('No se pudo verificar el catálogo.'));
+ assert.ok(draft.includes("sin nombres, teléfonos ni el texto íntegro"));
+ assert.ok(draft.includes("No enviado."));
+ assert.ok(api.includes('reserve_ai_employee_budgeted_trial'));
+ assert.ok(api.includes('tenant_owner_required'));
+ assert.ok(api.includes('agent_not_in_safe_draft_mode'));
+ assert.ok(api.includes("store:false"));
+ assert.ok(api.includes('https://portal-empresia.vercel.app'));
+ assert.ok(readiness.includes('https://portal-empresia.vercel.app'));
+});
