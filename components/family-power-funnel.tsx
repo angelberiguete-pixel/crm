@@ -9,7 +9,7 @@ import styles from "./family-power-funnel.module.css";
 
 const steps=[
  {key:"visibility",name:"Visibilidad",hint:"Vistas de página registradas",permission:null,href:null},
- {key:"interaction",name:"Interacción",hint:"Eventos de marketing registrados",permission:null,href:null},
+ {key:"interaction",name:"Interacción",hint:"Clics registrados en el sitio web",permission:null,href:null},
  {key:"conversations",name:"Conversación",hint:"Conversaciones creadas",permission:"inbox",href:"/crm/inbox"},
  {key:"contacts",name:"Prospecto",hint:"Contactos registrados",permission:"contacts",href:"/crm/contacts"},
  {key:"opportunities",name:"Oportunidad",hint:"Oportunidades registradas",permission:"pipeline",href:"/crm/revenue"},
@@ -52,9 +52,8 @@ export default function FamilyPowerFunnel(){
    return result.error?null:result.count??0;
   }
   void (async()=>{
-   const [visibility,interaction,conversations,contacts,opportunities,quotations,orders,deliveries,activeAgents,drafts,aiRuns,allowed]=await Promise.all([
-    count("marketing_behavior_events",{field:"event_name",equals:"page_view"}),
-    count("marketing_event_ledger"),
+   const [web,conversations,contacts,opportunities,quotations,orders,deliveries,activeAgents,drafts,aiRuns,allowed]=await Promise.all([
+    period==="all"?Promise.resolve(null):supabase.rpc("marketing_behavior_overview",{p_tenant_id:tenantId,p_days:Number(period)}),
     count("conversations"),count("contacts"),count("opportunities"),count("quotations"),
     count("orders",{field:"status",equals:"confirmed"}),
     count("deliveries",{notNull:"delivered_at",dateField:"delivered_at"}),
@@ -64,6 +63,11 @@ export default function FamilyPowerFunnel(){
     supabase.rpc("tenant_current_permissions",{p_tenant_id:tenantId})
    ]);
    if(!alive)return;
+   // Web events are private. The authorized aggregate RPC is the sole browser-facing source.
+   // This RPC supports 30/90 days; historical web volume is intentionally unavailable.
+   const webStats=web&&!web.error?(web.data as {connected?:boolean;summary?:{pageviews?:number;clicks?:number}}|null):null;
+   const visibility=webStats?.connected&&typeof webStats.summary?.pageviews==="number"?webStats.summary.pageviews:null;
+   const interaction=webStats?.connected&&typeof webStats.summary?.clicks==="number"?webStats.summary.clicks:null;
    const next={visibility,interaction,conversations,contacts,opportunities,quotations,orders,ecf:null,deliveries,loyalty:null};
    setMetrics(next);setAgents(activeAgents);setDraftAgents(drafts);setRuns(aiRuns);
    if(!allowed.error)setPermissions((allowed.data??{}) as Record<string,unknown>);
@@ -111,6 +115,6 @@ export default function FamilyPowerFunnel(){
    <div><BrainCircuit size={19}/><span><strong>IA conectada al ciclo</strong><small>{agents===null?"Estado no disponible":agents+" activo(s) · "+(draftAgents===null?"borradores no disponibles":draftAgents+" en borrador")} · {runs===null?"sin datos de ejecución":runs+" ejecución(es) registradas en el período"}. Las sugerencias no se entrenan solas ni autorizan cobros.</small></span></div>
    <div><ShieldCheck size={19}/><span><strong>Validación humana para acciones sensibles</strong><small>Enviar mensajes, cambiar precios, cerrar ventas y emitir e-CF requieren permisos, evidencia y el flujo de aprobación correspondiente.</small></span></div>
   </div>
-  <p className={styles.note}>Los valores son volúmenes de actividades diferentes, no personas únicas que pasan de una etapa a otra: no equivalen a una tasa de conversión. La forma del embudo indica el proceso, no la magnitud. Visibilidad significa páginas vistas instrumentadas, no impresiones de Meta. e-CF y satisfacción permanecen sin cifra hasta disponer de integraciones verificables.</p>
+  <p className={styles.note}>Los valores son volúmenes de actividades diferentes, no personas únicas que pasan de una etapa a otra: no equivalen a una tasa de conversión. La forma del embudo indica el proceso, no la magnitud. Visibilidad representa páginas vistas y la interacción representa clics web (30/90 días mediante agregado autorizado); no son impresiones de Meta. El histórico web aún no está disponible. e-CF y satisfacción permanecen sin cifra hasta disponer de integraciones verificables.</p>
  </section>;
 }
