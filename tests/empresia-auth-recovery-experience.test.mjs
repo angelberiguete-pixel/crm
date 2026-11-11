@@ -13,14 +13,12 @@ test("distinguishes password errors from unconfirmed email and rate limits",()=>
  assert.doesNotMatch(authSignInMessage("invalid_credentials"),/service_role|SUPABASE|stack trace/);
 });
 
-test("passwordless login proves mailbox ownership without creating users or elevating roles",()=>{
+test("Empresia login uses passwords and does not request email links",()=>{
  const login=source("app/login/page.tsx");
- assert.match(login,/supabase\.auth\.signInWithOtp\(/);
- assert.match(login,/shouldCreateUser: false/);
- assert.match(login,/emailRedirectTo: new URL\("\/login", window\.location\.origin\)/);
- assert.match(login,/Entrar sin contraseña por correo/);
+ assert.match(login,/supabase\.auth\.signInWithPassword/);
+ assert.match(login,/No necesitas códigos ni enlaces por email para iniciar sesión/);
  assert.match(login,/if \(data\.session\) await routeAuthenticatedUser\(\)/);
- assert.doesNotMatch(login,/platform_add_member|service_role|setUserClaims/);
+ assert.doesNotMatch(login,/signInWithOtp|Entrar sin contraseña por correo|shouldCreateUser|service_role|setUserClaims/);
 });
 
 test("global Empresia login recovers password using current host and routes admins separately",()=>{
@@ -38,10 +36,8 @@ test("Family Power shows verified owner actions while keeping membership securit
  const signup=source("app/family-power/registro/page.tsx");
  const recovery=source("app/reset-password/page.tsx");
  assert.match(login,/authSignInMessage\(result\.error\?\.code\)/);
- assert.match(login,/email_not_confirmed/);
- assert.match(login,/supabase\.auth\.resend\(/);
- assert.match(login,/email:OWNER_EMAIL/);
- assert.match(login,/emailRedirectTo:new URL\("\/family-power\/login",window\.location\.origin\)/);
+ assert.match(login,/supabase\.auth\.signInWithPassword/);
+ assert.doesNotMatch(login,/resendOwnerConfirmation|email_not_confirmed|signInWithOtp|OWNER_EMAIL/);
  assert.match(login,/familyPowerMembership\(list\.data/);
  assert.match(login,/supabase\.rpc\("set_active_tenant"/);
  assert.match(login,/href="\/login"/);
