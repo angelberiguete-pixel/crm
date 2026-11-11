@@ -39,6 +39,8 @@ begin
   s:=(r->'supplier'->>'id')::uuid;
   again:=public.erp_purchase_command(t,'supplier_save','{"name":"Synthetic Supplier"}','supplier-1');
   if again<>r or (select count(*) from public.suppliers)<>1 then raise exception 'Supplier replay duplicated'; end if;
+  if (select count(*) from public.audit_logs where tenant_id=t and action='erp.purchase.supplier_save' and entity_id=s)<>1 then
+    raise exception 'Supplier audit missing or replay duplicated audit'; end if;
   begin
     perform public.erp_purchase_command(t,'supplier_save','{"name":"Changed payload"}','supplier-1');
     raise exception 'Idempotency mismatch accepted';
@@ -119,5 +121,14 @@ begin
   exception when insufficient_privilege then null; end;
   raise notice 'Purchasing: tenant isolation, supplier/order replay, approval, atomic receipt/return, decimal AP, rollback and write protection passed';
 end $test$;
+reset role;
+set local role authenticated;
+set local request.jwt.claims='{"sub":"aa110000-0000-0000-0000-000000000001","role":"authenticated","app_metadata":{"actor_type":"agent"}}';
+do $$begin
+ begin
+   perform public.erp_purchase_command('bb110000-0000-0000-0000-000000000001','supplier_save','{"name":"AI supplier"}','ai-purchase');
+   raise exception 'AI purchase mutation was permitted';
+ exception when insufficient_privilege then null; end;
+end$$;
 reset role;
 rollback;

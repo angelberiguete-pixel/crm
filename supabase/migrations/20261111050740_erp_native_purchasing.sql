@@ -133,6 +133,7 @@ declare
   v_returned numeric; v_refunded numeric;
 begin
   if auth.uid() is null or not coalesce(private.has_tenant_access(p_tenant_id),false)
+    or coalesce(auth.jwt()->'app_metadata'->>'actor_type','human') in ('agent','ai','service')
     or not coalesce(private.can_manage_crm(p_tenant_id),false)
     or not coalesce(private.crm_active_tenant_matches(p_tenant_id),false) then
     raise exception 'purchase_forbidden' using errcode='42501';
@@ -313,6 +314,11 @@ begin
   end if;
   update private.erp_purchase_requests set response=v_result
     where tenant_id=p_tenant_id and idempotency_key=p_idempotency_key;
+  insert into public.audit_logs(tenant_id,actor_user_id,action,entity_type,entity_id,metadata)
+    values(p_tenant_id,auth.uid(),'erp.purchase.'||p_action,
+      case when p_action='supplier_save' then 'supplier' when p_action in ('receive','return') then 'purchase_receipt' else 'purchase_order' end,
+      coalesce(v_result->'receipt'->>'id',v_result->'order'->>'id',v_result->'supplier'->>'id')::uuid,
+      jsonb_build_object('idempotency_key',p_idempotency_key));
   return v_result;
 end $fn$;
 revoke all on function private.erp_purchase_command(uuid,text,jsonb,text) from public,anon,authenticated;

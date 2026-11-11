@@ -5,6 +5,13 @@ on:
       - 'components/empresia-erp-overview.tsx'
       - 'components/crm-workspace.tsx'
       - 'components/tenant-permission-gate.tsx'
+      - 'components/crm-operations.tsx'
+      - 'components/erp-native-*'
+      - 'lib/erp-native/**'
+      - 'supabase/migrations/*erp_native*'
+      - 'supabase/rollback/*erp_native*'
+      - 'tests/erp-native-*'
+      - 'tests/fixtures/erp-native-baseline.sql'
       - 'tests/empresia-erp-module.test.mjs'
       - '.github/workflows/empresia-erp-module.yml'
   push:
@@ -21,6 +28,16 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/empresia-erp-module.test.mjs tests/empresia-unified-brand.test.mjs tests/tenant-white-label.test.mjs
+      - run: node --test tests/empresia-erp-module.test.mjs tests/empresia-unified-brand.test.mjs tests/tenant-white-label.test.mjs tests/erp-native-domain.test.mjs tests/erp-native-accounting-fiscal.test.mjs tests/erp-native-commercial-document.test.mjs
+      - name: Disposable PostgreSQL transaction and concurrency tests
+        run: |
+          docker run --name empresia-erp-test -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres:17.6
+          for attempt in $(seq 1 30); do
+            if docker exec empresia-erp-test pg_isready -U postgres; then break; fi
+            sleep 1
+          done
+          ERP_POSTGRES_TESTS=1 node --test tests/erp-native-postgres.test.mjs
       - run: npm run typecheck
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/erp-native-commercial-browser.test.mjs
