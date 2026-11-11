@@ -6,7 +6,7 @@ declare v_id uuid;
 begin
  select id into v_id from public.tenants where slug='eurevector' and status='active';
  if v_id is null then raise exception 'empresia_tenant_not_active'; end if;
- if not exists (select 1 from public.empresia_brain_events limit 0) then
+ if to_regclass('public.empresia_brain_events') is null then
   raise exception 'brain_migration_missing';
  end if;
  insert into private.empresia_brain_tenant_pilots(tenant_id,enabled,activated_at)
