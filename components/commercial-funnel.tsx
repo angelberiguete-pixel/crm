@@ -83,8 +83,9 @@ export default function CommercialFunnel(){
   try{
    // Compare-and-set prevents silently overwriting other settings edited meanwhile.
    const next={...snapshot.settings,commercial_sector:sectorDraft};
+   const updatedAt=new Date().toISOString();
    const result=await supabase.from("tenant_settings")
-    .update({settings:next}).eq("tenant_id",tenantId).eq("updated_at",snapshot.updated_at)
+    .update({settings:next,updated_at:updatedAt}).eq("tenant_id",tenantId).eq("updated_at",snapshot.updated_at)
     .select("settings,updated_at").maybeSingle();
    if(result.error)throw result.error;
    if(!result.data)throw new Error("La configuración cambió en otra sesión. Actualiza antes de guardar.");
