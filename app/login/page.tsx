@@ -102,7 +102,7 @@ export default function LoginPage() {
         <button type="button" className="button" disabled={emailLinkBusy||resetBusy} onClick={requestEmailLogin}>
           {emailLinkBusy ? "Enviando enlace…" : "Entrar sin contraseña por correo"}
         </button>
-        <p className="muted">Si no recuerdas tu contraseña, te enviaremos un enlace de acceso a tu correo verificado. No crea otra cuenta ni cambia tus permisos.</p>
+        <p className="muted">Si no recuerdas tu contraseña, puedes <Link href="/acceso-correo">entrar solo con correo</Link> como alternativa. No crea otra cuenta ni cambia tus permisos.</p>
         <button type="button" className="text-button" disabled={resetBusy||emailLinkBusy} onClick={requestPasswordReset}>
           {resetBusy ? "Enviando…" : "Olvidé mi contraseña"}
         </button>
