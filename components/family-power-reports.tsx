@@ -4,6 +4,7 @@ import {useEffect,useState} from "react";
 import {RefreshCw} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
+import FamilyPowerFunnel from "@/components/family-power-funnel";
 const metrics=[
  {key:"contacts",label:"Clientes",table:"contacts"},
  {key:"opportunities",label:"Oportunidades",table:"opportunities"},
@@ -37,5 +38,6 @@ export default function FamilyPowerReports({tenantId}:{tenantId:string}){
   <div className="grid two-col">{metrics.map(m=><article key={m.key} className="card">
    <div className="eyebrow">{m.label}</div><strong style={{fontSize:28}}>{loading?"…":counts[m.key]??"—"}</strong>
   </article>)}</div>
+  <FamilyPowerFunnel/>
  </section>;
 }

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Building2, CalendarDays, FileText, Gauge, Inbox, Bot, RefreshCw, Target, Users, BarChart3 } from "lucide-react";
+import { Building2, CalendarDays, FileText, Gauge, Inbox, Bot, RefreshCw, Target, Users, BarChart3, BrainCircuit } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActiveTenant } from "@/components/tenant-context";
 import CrmWorkspace from "@/components/crm-workspace";
 import BrandLogo from "@/components/brand-logo";
 import PlatformCompaniesShortcut from "@/components/platform-companies-shortcut";
 import EnergyServiceDashboard from "@/components/energy-service-dashboard";
+import CommercialFunnel from "@/components/commercial-funnel";
+import CrmAgentAdvicePanel from "@/components/crm-agent-advice-panel";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "@/components/crm-commercial.module.css";
 
@@ -17,7 +19,7 @@ type Deal = { id:string; title:string; status:string; next_action:string|null; n
 type Revenue = { current_mrr:number|null; open_pipeline_mrr:number|null; weighted_pipeline_mrr:number|null };
 const blank:Counts={companies:null,contacts:null,opportunities:null,conversations:null,quotations:null,events:null};
 const countText=(n:number|null)=>n===null?"—":String(n);
-const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays],["marketing","Marketing",BarChart3]] as const;
+const nav=[["","Inicio",Gauge],["companies","Empresas",Building2],["contacts","Contactos",Users],["revenue","Oportunidades",Target],["inbox","Conversaciones",Inbox],["quotations","Cotizaciones",FileText],["calendar","Calendario",CalendarDays],["marketing","Marketing",BarChart3],["intelligence","Cerebro IA",BrainCircuit]] as const;
 const money=(value:number)=>new Intl.NumberFormat("es-DO",{style:"currency",currency:"DOP",maximumFractionDigits:0}).format(value||0);
 function Metric({label,value,sub}:{label:string;value:string;sub:string}){
   return <div className="metric"><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-sub">{sub}</div></div>;
@@ -95,6 +97,9 @@ function GeneralCommercialDashboard(){
           <Link className="button" href="/crm/inbox"><Inbox size={16}/> {canManage?"Conversaciones":"Mis conversaciones"}</Link>
         </div>
       </section>
+      <CommercialFunnel/>
+      {canManage&&<div className="dashboard-actions section-gap"><Link className="button" href="/crm/intelligence"><BrainCircuit size={16}/> Abrir cerebro IA y decisiones</Link></div>}
+      {canManage&&<div className="section-gap"><CrmAgentAdvicePanel tenantId={tenantId} compact/></div>}
       {loading?<div role="status" className="loading">Cargando indicadores…</div>:<>
         <section className="grid dashboard-kpis section-gap" aria-label="Indicadores de esta empresa">
           <Metric label="Empresas" value={countText(counts.companies)} sub="Registros de clientes"/>

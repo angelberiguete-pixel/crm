@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot,LayoutDashboard,CreditCard} from "lucide-react";
+import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot,LayoutDashboard,CreditCard,BrainCircuit} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerFunnel from "@/components/family-power-funnel";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
 type Counts={contacts:number|null;quotations:number|null;orders:number|null;opportunities:number|null};
@@ -77,6 +78,7 @@ export default function EnergyServiceDashboard(){
      </div>
      {error&&<div className="notice" role="alert">{error}</div>}
      {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #D20A14"}}><Bot size={30} color="#D20A14"/><span style={{flex:1}}><strong>Agentes</strong></span><ArrowRight size={19}/></Link>}
+     {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/intelligence" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #137b83"}}><BrainCircuit size={30} color="#137b83"/><span style={{flex:1}}><strong>Cerebro IA · Empresia Intelligence</strong><small className="muted" style={{display:"block"}}>Eventos, decisiones y revisión de acciones</small></span><ArrowRight size={19}/></Link>}
      {["owner","admin"].includes(tenant?.membership_role??"")&&<Link href="/crm/pagos" className="card" style={{display:"flex",gap:13,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #B21B2C"}}><CreditCard size={25} color="#B21B2C"/><span style={{flex:1}}><strong>Pagos y suscripción</strong><small className="muted" style={{display:"block"}}>Factura inicial y plan mensual de US$80</small></span><ArrowRight size={16}/></Link>}
      <div className="grid two-col" style={{marginTop:18}}>
        {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,description,Icon,key})=><Link href={href} key={key}
@@ -95,6 +97,7 @@ export default function EnergyServiceDashboard(){
        </Link>)}
      </div>
    </section>
+   <FamilyPowerFunnel/>
    <section className="grid two-col section-gap">
      <div className="card">
        <div className="eyebrow">Canales</div>

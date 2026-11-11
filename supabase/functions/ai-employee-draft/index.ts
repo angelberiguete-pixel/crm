@@ -8,7 +8,7 @@ import {EMPLOYEE_AI_MODEL,EMPLOYEE_AI_MAX_OUTPUT_TOKENS,EMPLOYEE_AI_FORMAT,
   budgetUsdToMicros,estimatedMaxCostMicros,observedCostMicros,
   validateEmployeeAIOutcome} from "../../../lib/ai-employee-provider.ts";
 
-const allowedOrigins=new Set(["https://crm-revenue-os.vercel.app","http://localhost:3000"]);
+const allowedOrigins=new Set(["https://crm-revenue-os.vercel.app","https://portal-empresia.vercel.app","http://localhost:3000"]);
 const respond=(origin:string,data:unknown,status=200)=>new Response(JSON.stringify(data),{
   status,headers:{"Content-Type":"application/json; charset=utf-8","Access-Control-Allow-Origin":origin,
     "Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",

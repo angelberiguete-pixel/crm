@@ -1,0 +1,50 @@
+name: Empresia Intelligence isolated PostgreSQL QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261111124500_empresia_intelligence_core.sql'
+      - 'tests/empresia-intelligence-*'
+      - '.github/workflows/empresia-intelligence-db-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  intelligence-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: empresia_brain_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d empresia_brain_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: empresia_brain_test
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Ensure local PostgreSQL client
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+      - name: Prepare isolated test fixtures
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/empresia-intelligence-db-fixture.sql
+      - name: Apply the proposed migration to disposable PostgreSQL
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261111124500_empresia_intelligence_core.sql
+      - name: Exercise tenant isolation, event policy, idempotent execution and observed feedback
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/empresia-intelligence-db-qa.sql

@@ -123,3 +123,49 @@ test("Family Power sidebar hides denied sections and uses Spanish business label
  assert.match(logout,/platform_current_access/);
  assert.match(logout,/return "\/family-power\/login"/);
 });
+
+
+test("Family Power displays an evidence-backed funnel, not synthetic conversion rates",()=>{
+ const home=read("../components/energy-service-dashboard.tsx");
+ const reports=read("../components/family-power-reports.tsx");
+ const funnel=read("../components/commercial-funnel.tsx");
+ const wrapper=read("../components/family-power-funnel.tsx");
+ const general=read("../components/crm-commercial-dashboard.tsx");
+ const sectorConfig=read("../lib/empresia-sector-presets.ts");
+ assert.match(home,/<FamilyPowerFunnel\/>/);
+ assert.match(wrapper,/<CommercialFunnel\/>/);
+ assert.match(general,/<CommercialFunnel\/>/);
+ assert.match(general,/<CrmAgentAdvicePanel tenantId=\{tenantId\} compact\/>/);
+ assert.match(reports,/<FamilyPowerFunnel\/>/);
+ for(const table of ["conversations","contacts","opportunities","quotations","orders","deliveries"])
+   assert.match(funnel,new RegExp('count\\("'+table+'"'));
+ assert.match(funnel,/\.eq\("tenant_id",tenantId!/);
+ assert.match(funnel,/setMetrics\(empty\(\)\)/);
+ assert.match(funnel,/marketing_behavior_overview/);
+ assert.doesNotMatch(funnel,/count\("marketing_behavior_events"|count\("marketing_event_ledger"/);
+ assert.match(funnel,/Factura e-CF/);
+ assert.match(funnel,/Satisfacci.n a.n sin medici.n/);
+ assert.match(funnel,/no equivalen a una tasa de conversi.n/);
+ assert.doesNotMatch(funnel,/Math\.random\(|mockData|fakeData/);
+});
+
+test("Empresia sector profiles are tenant-scoped, persistent and preserve the existing CRM",()=>{
+ const funnel=read("../components/commercial-funnel.tsx");
+ const presets=read("../lib/empresia-sector-presets.ts");
+ const general=read("../components/crm-commercial-dashboard.tsx");
+ assert.match(general,/CommercialFunnel/);
+ assert.match(funnel,/tenant\?\.tenant_id\?\?null/);
+ assert.match(funnel,/\.eq\("tenant_id",tenantId\)/);
+ assert.match(funnel,/tenant_template_installs/);
+ assert.match(funnel,/tenant_settings/);
+ assert.match(funnel,/\.eq\("updated_at",snapshot.updated_at\)/);
+ assert.match(funnel,/commercial_sector:sectorDraft/);
+ assert.match(funnel,/canConfigure=Boolean\(tenantId&&\["owner","admin"\]/);
+ assert.match(funnel,/tenant\?\.tenant_slug!=="family-power"/);
+ assert.match(funnel,/marketing_behavior_overview/);
+ assert.match(funnel,/tenant_current_permissions/);
+ assert.match(funnel,/pipelineStages\.join\(" · "\)/);
+ for(const preset of ["general","energy","clinic","real_estate","retail"])
+   assert.ok(presets.includes(preset+":{"),"Missing sector profile "+preset);
+ assert.doesNotMatch(funnel,/supabase\.from\("contacts"\)\.insert|supabase\.from\("opportunities"\)\.update/);
+});
