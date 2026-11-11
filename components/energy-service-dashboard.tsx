@@ -7,6 +7,7 @@ import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerFunnel from "@/components/family-power-funnel";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
 type Counts={contacts:number|null;quotations:number|null;orders:number|null;opportunities:number|null};
@@ -95,6 +96,7 @@ export default function EnergyServiceDashboard(){
        </Link>)}
      </div>
    </section>
+   <FamilyPowerFunnel/>
    <section className="grid two-col section-gap">
      <div className="card">
        <div className="eyebrow">Canales</div>
