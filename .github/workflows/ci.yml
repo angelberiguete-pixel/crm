@@ -70,6 +70,8 @@ jobs:
         run: node --test tests/empresia-public-acquisition.test.mjs
       - name: Empresia sales design and PayPal checkout readiness
         run: node --test tests/empresia-sales-redesign.test.mjs
+      - name: Empresia Pay owner-only verified financial console
+        run: node --test tests/empresia-pay-owner.test.mjs
       - name: Tenant-isolated email campaigns and opt-in safety contracts
         run: node --test tests/crm-email-campaigns.test.mjs
       - name: YCloud signed webhooks, CTWA referrals, reply controls and guarded human sender
