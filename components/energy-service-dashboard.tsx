@@ -60,7 +60,7 @@ export default function EnergyServiceDashboard(){
        <p>Ventas, cotizaciones e instalaciones en un mismo lugar.</p>
        <div className={styles.heroActions}>
          <Link href="/crm/contacts?new=1" className={styles.primary}><Users size={17}/> Nuevo cliente <ArrowRight size={16}/></Link>
-         <Link href="/crm/quotations" className={styles.ghost}><FileText size={17}/> Cotizaciones</Link>
+         <Link href="/crm/revenue" className={styles.ghost}><FileText size={17}/> Abrir gestión comercial</Link>
        </div>
      </div>
      <div className={styles.brand}><BrandLogo size="login" surface="dark"/></div>
