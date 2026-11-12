@@ -20,6 +20,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
+      - name: Issue 69 mobile QA evidence validation and production gate
+        run: node --experimental-strip-types --test tests/qa-mobile-center.test.mjs
       - name: Look owner global entry and customer logout routing contracts
         run: node --experimental-strip-types --test tests/look-owner-entry.test.mjs
       - name: Empresia platform dashboard responsive and owner routing contracts
@@ -114,6 +116,8 @@ jobs:
         run: node tests/digital-staff-commercial-demo-browser.test.mjs
       - name: Tenant switching browser regression tests
         run: npm run test:browser:tenant
+      - name: Isolated QA cockpit Android smoke test (no production traffic)
+        run: node tests/qa-mobile-center-browser.test.mjs
       - name: Company session presence, owner report and logout browser regression tests
         run: node tests/member-session-presence-browser.test.mjs
       - name: Password recovery browser regression tests
