@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Boxes, FileText, ShoppingCart } from "lucide-react";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "./erp-native-inventory.module.css";
+import FamilyPowerErpControl from "@/components/family-power-erp-control";
 
 export default function EmpresiaErpOverview() {
   const tenant = useActiveTenant();
   if (!tenant) return <div className="notice" role="alert">Selecciona una empresa para abrir el ERP.</div>;
+  if (tenant.tenant_slug === "family-power") return <FamilyPowerErpControl />;
   return <div className="stack gap-16">
     <header><div className="eyebrow">Empresia · Plataforma principal</div><h2>ERP · {tenant.tenant_name}</h2><p className="muted">Inventario y ventas dentro de la misma sesión de tu empresa.</p></header>
     <section className={styles.links} aria-label="Módulos ERP">
