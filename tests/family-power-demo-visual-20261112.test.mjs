@@ -70,3 +70,16 @@ test("routes and menus grant owner/admin only; no cross-tenant finance pages",()
  assert.match(familyMenu,/finanzas/);
  assert.match(familyMenu,/seguridad-instalaciones/);
 });
+
+test("only verified and priced Family Power products are presented as quotation-ready",()=>{
+ const catalog=read("components/family-power-catalog-readiness.tsx");
+ assert.match(home,/FamilyPowerCatalogReadiness/);
+ assert.match(catalog,/tenant\?\.tenant_slug==="family-power"/);
+ assert.match(catalog,/\["owner","admin"\]/);
+ assert.match(catalog,/\.eq\("tenant_id",id\)/);
+ assert.match(catalog,/p\.status==="active"/);
+ assert.match(catalog,/p\.metadata\?\.verification_status==="approved"/);
+ assert.match(catalog,/Number\(p\.sale_price\)>0/);
+ assert.match(catalog,/Antes de cotizar/);
+ assert.match(catalog,/href="\/crm\/products"/);
+});
