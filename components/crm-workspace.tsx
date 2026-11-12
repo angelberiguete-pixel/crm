@@ -206,7 +206,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       &&familyEnabledModules[permission]!==false;
   });
   return (
-    <div className="shell">
+    <div className="shell" data-family-mobile={isFamilyPower?"true":undefined}>
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
         <nav className="nav"><PlatformCompaniesShortcut/>
@@ -223,6 +223,14 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       </aside>
       <main className="content">
         <header className="topbar">
+          {isFamilyPower&&<details className="family-power-more-menu">
+            <summary aria-label="Abrir menú de módulos de Family Power"><span>Módulos</span><span aria-hidden="true">☰</span></summary>
+            <nav aria-label="Navegación móvil de Family Power">
+              {permittedNav.map(([key,label,Icon])=><Link key={key} href={`/crm${key?"/"+key:""}`} aria-current={section===key?"page":undefined} onClick={e=>e.currentTarget.closest("details")?.removeAttribute("open")}>
+                <Icon size={17}/><span>{familyLabels[key]??label}</span>
+              </Link>)}
+            </nav>
+          </details>}
           <div>{!isFamilyPower&&<div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div>}<h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
             {!isFamilyPower&&<Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>}
