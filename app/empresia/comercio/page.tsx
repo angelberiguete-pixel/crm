@@ -106,7 +106,7 @@ export default function EmpresiaCommerceAdmin(){
     <h1>Catálogo, checkout y ventas</h1>
     <p className="muted">Precios aprobados en USD, pagos PayPal verificados y suscripciones con autorización del cliente.</p>
    </div>
-   <div className="top-actions"><Link href="/platform-admin" className="button">Administración</Link><Link href="/empresia/tienda" className="button primary">Ver tienda</Link></div>
+   <div className="top-actions"><Link href="/platform-admin" className="button">Administración</Link><Link href="/empresia/pay" className="button">Empresia Pay</Link><Link href="/empresia/tienda" className="button primary">Ver tienda</Link></div>
   </header>
   {loading?<div role="status" className="card">Verificando autorización y catálogo…</div>:
    !authorized?<div role="alert" className="notice">Este panel solo está disponible para el propietario autorizado de Empresia. <Link href="/login">Iniciar sesión</Link></div>:<>
