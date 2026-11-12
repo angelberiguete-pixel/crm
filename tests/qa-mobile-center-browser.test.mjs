@@ -38,7 +38,7 @@ try {
   await page.getByRole("button", { name: "Guardar resultado local" }).click();
   await page.getByRole("status").getByText(/Resultado registrado/).waitFor();
   await page.reload();
-  await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).waitFor();
+  await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).getByText("Bloqueada", { exact: true }).waitFor();
   assert.ok((await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).innerText()).includes("Bloqueada"));
   const dims = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: window.innerWidth }));
   assert.ok(dims.document <= dims.viewport + 1, "QA page has no Android horizontal overflow");
