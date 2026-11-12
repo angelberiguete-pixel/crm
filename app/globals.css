@@ -495,3 +495,39 @@ textarea{min-height:96px;resize:vertical}
     right:12px!important;width:auto!important;max-height:70vh!important;
   }
 }
+
+
+/* Family Power compact CRM navigation: handles phones whose browsers use a
+   desktop-layout viewport (~980px), as well as tablets and actual mobile viewports.
+   The module menu is built only from the tenant-authorized navigation list. */
+.family-power-more-menu{display:none}
+@media(max-width:1100px){
+  .shell[data-family-mobile="true"]{display:block;min-width:0;width:100%}
+  .shell[data-family-mobile="true"]>.sidebar{display:none}
+  .shell[data-family-mobile="true"]>.content{min-width:0;width:100%;padding:16px clamp(12px,2.5vw,25px) 104px}
+  .shell[data-family-mobile="true"]>.mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:25;justify-content:space-around;padding:9px 5px max(9px,env(safe-area-inset-bottom));background:#101923;border-top:1px solid #33434e;box-shadow:0 -9px 23px #09132129}
+  .shell[data-family-mobile="true"]>.mobile-nav a{display:grid;justify-items:center;align-content:center;gap:4px;min-width:0;max-width:20%;text-align:center;font-size:11px;color:#d7e1e8;min-height:49px;text-decoration:none}
+  .shell[data-family-mobile="true"]>.mobile-nav a.active{color:#fff}
+  .shell[data-family-mobile="true"]>.mobile-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .shell[data-family-mobile="true"] .topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;position:relative;gap:11px;min-height:60px;padding:6px 0 10px}
+  .shell[data-family-mobile="true"] .topbar>div:first-of-type{flex:1;min-width:145px}
+  .shell[data-family-mobile="true"] .topbar h1{font-size:clamp(20px,3vw,27px);margin:0;overflow-wrap:anywhere}
+  .shell[data-family-mobile="true"] .topbar .top-actions{margin:0}
+  .family-power-more-menu{display:block;position:relative;z-index:51;order:3;flex:0 0 auto}
+  .family-power-more-menu summary{min-height:44px;cursor:pointer;border:1px solid #ccdadf;border-radius:10px;display:flex;align-items:center;gap:10px;padding:9px 13px;list-style:none;background:#fff;color:#253e4b;font-size:13px;font-weight:850}
+  .family-power-more-menu summary::-webkit-details-marker{display:none}
+  .family-power-more-menu[open] summary{border-color:#9e304b;color:#90223a}
+  .family-power-more-menu nav{position:absolute;right:0;top:calc(100% + 7px);width:min(380px,calc(100vw - 25px));max-height:min(65vh,600px);overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:12px;background:#fff;border:1px solid #d3dee4;border-radius:13px;box-shadow:0 18px 45px #101c2d38}
+  .family-power-more-menu nav a{display:flex;align-items:center;gap:8px;padding:10px 8px;min-height:46px;text-decoration:none;color:#324d5c;background:#f8fafb;border:1px solid #e0e8eb;border-radius:9px;font-weight:700;font-size:12px;min-width:0}
+  .family-power-more-menu nav a[aria-current="page"]{border-color:#a63852;background:#faeef0;color:#91283d}
+  .family-power-more-menu nav a span{overflow-wrap:anywhere}
+  .family-power-more-menu nav a svg{flex:none;color:#a23b52}
+}
+@media(max-width:560px){
+  .shell[data-family-mobile="true"] .topbar{gap:7px}
+  .shell[data-family-mobile="true"] .topbar>div:first-of-type{order:1;flex:1 1 100%}
+  .shell[data-family-mobile="true"] .topbar .top-actions{order:2}
+  .family-power-more-menu{order:3}
+  .family-power-more-menu summary{padding:9px 10px}
+  .family-power-more-menu nav{grid-template-columns:1fr 1fr}
+}

@@ -19,6 +19,7 @@ import {
   Package,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Target,
   Users,
   Workflow,
@@ -29,6 +30,7 @@ import { useActiveTenant } from "@/components/tenant-context";
 import { notifyTenantContextChanged } from "@/lib/tenant-context-events";
 import CrmOperations from "@/components/crm-operations";
 import EmpresiaErpOverview from "@/components/empresia-erp-overview";
+import ErpNativeInventory from "@/components/erp-native-inventory";
 import CrmMlHub from "@/components/crm-ml-hub";
 import AutomationStudio from "@/components/automation-studio";
 import TenantFiles from "@/components/tenant-files";
@@ -72,6 +74,7 @@ const nav = [
   ["inbox", "Conversaciones", Inbox],
   ["products", "Productos", Package],
   ["erp", "ERP", Boxes],
+  ["inventory", "Inventario", Boxes],
   ["quotations", "Cotizaciones", FileText],
   ["operations", "Operaciones", Workflow],
   ["calendar", "Calendario", CalendarDays],
@@ -79,6 +82,8 @@ const nav = [
   ["arm", "Agentes", Bot],
   ["tasks", "Tareas", CalendarDays],
   ["reports", "Reportes", BarChart3],
+  ["finanzas", "Finanzas", CreditCard],
+  ["seguridad-instalaciones", "Seguridad técnica", ShieldCheck],
   ["files", "Archivos", FileText],
   ["pagos", "Pagos y suscripción", CreditCard],
   ["channels", "Canales", Inbox],
@@ -89,14 +94,14 @@ const nav = [
 
 const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",ml:"Inteligencia ML",inbox:"Mensajes",
- products:"Productos",quotations:"Cotizaciones",operations:"Instalaciones",calendar:"Agenda",
- automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
+ products:"Productos",quotations:"Cotizaciones",inventory:"Inventario",erp:"ERP",operations:"Pedidos y facturas",calendar:"Agenda",
+ automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",finanzas:"Finanzas","seguridad-instalaciones":"Seguridad técnica",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web",pagos:"Pagos y suscripción"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
- products:"products",quotations:"quotations",operations:"operations",erp:"settings",calendar:"calendar",
- automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
+ products:"products",quotations:"quotations",operations:"operations",erp:"operations",inventory:"operations",calendar:"calendar",
+ automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",finanzas:"dashboard","seguridad-instalaciones":"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
@@ -183,16 +188,15 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    const familyKeys=["","contacts","revenue","ml","products","quotations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
+    const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","operations","inbox","tasks","arm","reports","finanzas","seguridad-instalaciones","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
-    if(key==="erp"&&(member.tenant_slug!=="eurevector"||!["owner","admin"].includes(member.role)))return false;
-    if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
+    if(!isFamilyPower&&["arm","tasks","reports","finanzas","seguridad-instalaciones","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
       &&familyMenuPermissions!==null
       &&(familyMenuPermissions.all===true||familyMenuPermissions.settings===true)
       &&familyEnabledModules.settings!==false
       &&familyEnabledModules.umami_analytics===true;
-    if(key==="pagos"&&!["owner","admin"].includes(member.role))return false;
+    if(["pagos","finanzas","seguridad-instalaciones"].includes(key)&&!["owner","admin"].includes(member.role))return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
@@ -202,10 +206,10 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       &&familyEnabledModules[permission]!==false;
   });
   return (
-    <div className="shell">
+    <div className="shell" data-family-mobile={isFamilyPower?"true":undefined}>
       <aside className="sidebar">
         <div className="brand"><BrandLogo size="sidebar"/><span>{member.tenant_name ? `Empresa · ${member.tenant_name}` : "Ventas · Operaciones · IA"}</span></div>
-        <nav className="nav">{!isFamilyPower&&<PlatformCompaniesShortcut/>}
+        <nav className="nav"><PlatformCompaniesShortcut/>
           {permittedNav.map(([key, label, Icon]) => (
             <Link key={key} className={section === key ? "active" : ""} href={`/crm${key ? `/${key}` : ""}`}>
               <Icon size={17} />{isFamilyPower?familyLabels[key]??label:label}
@@ -219,6 +223,14 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
       </aside>
       <main className="content">
         <header className="topbar">
+          {isFamilyPower&&<details className="family-power-more-menu">
+            <summary aria-label="Abrir menú de módulos de Family Power"><span>Módulos</span><span aria-hidden="true">☰</span></summary>
+            <nav aria-label="Navegación móvil de Family Power">
+              {permittedNav.map(([key,label,Icon])=><Link key={key} href={`/crm${key?"/"+key:""}`} aria-current={section===key?"page":undefined} onClick={e=>e.currentTarget.closest("details")?.removeAttribute("open")}>
+                <Icon size={17}/><span>{familyLabels[key]??label}</span>
+              </Link>)}
+            </nav>
+          </details>}
           <div>{!isFamilyPower&&<div className="eyebrow">CRM de empresas{member.tenant_name ? ` · ${member.tenant_name}` : ""}</div>}<h1>{isFamilyPower?familyLabels[section]??"CRM":titleFor(section)}</h1></div>
           <div className="top-actions">
             {!isFamilyPower&&<Link className="button" href="/revenue-command-center"><Workflow size={14} /> Centro de ventas</Link>}
@@ -234,6 +246,7 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
         {section === "inbox" && <InboxPanel tenantId={tenantId} reloadKey={reloadKey} notice={setNotice} />}
         {section === "products" && (isFamilyPower?<FamilyPowerProductCatalog tenantId={tenantId}/>:<Products tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "erp" && <EmpresiaErpOverview />}
+        {section === "inventory" && <ErpNativeInventory />}
         {section === "quotations" && (isFamilyPower ? <FamilyPowerQuotations tenantId={tenantId}/> : <Quotations tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />)}
         {section === "operations" && <CrmOperations tenantId={tenantId} />}
         {section === "calendar" && <Calendar tenantId={tenantId} reloadKey={reloadKey} refresh={refresh} notice={setNotice} />}
@@ -661,6 +674,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
   }
   async function syncProducts(){ if(erp?.status!=="connected")return notice("Conecta y verifica Odoo antes de sincronizar."); const r=await supabase.rpc("queue_tenant_odoo_sync",{p_tenant_id:tenantId,p_entity_type:"product",p_entity_id:null}); if(r.error)return notice(r.error.message); notice("Sincronización Odoo encolada."); }
   return <div className="stack gap-16">
+    <section className="card" id="seguridad-cuenta"><div className="eyebrow">Configuración · Mi cuenta</div><h2>Seguridad de la cuenta</h2><p className="muted">Cambia la contraseña de tu usuario sin modificar los permisos ni los datos de las empresas.</p><Link href="/cuenta/seguridad" className="button">Cambiar mi contraseña</Link></section>
     <section className="card"><div className="eyebrow">Configuración · Integraciones</div><h2>WhatsApp, Instagram, correo y empleados digitales</h2><p className="muted">Consulta y prepara las conexiones oficiales de esta empresa sin pegar claves privadas ni activar gastos.</p><Link className="button primary" href="/crm/integrations">Abrir Centro de Integraciones</Link></section>
     <div className="grid two-col">
       <form className="card" onSubmit={save}>
@@ -699,7 +713,7 @@ function SettingsPanel({ tenantId, reloadKey, notice }: { tenantId: string; relo
         </div>
       </div>
     </div>
-    {isEmpresia?<section className="card"><div className="eyebrow">ERP en Empresia</div><h2>Motor Dolibarr en integración</h2><p className="muted">No existe una instancia ERP operativa y validada. La integración histórica de Odoo no equivale a Dolibarr.</p><Link href="/crm/erp" className="button">Ver estado del módulo ERP</Link></section>:<section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>}
+    {isEmpresia?<section className="card"><div className="eyebrow">ERP de Empresia</div><h2>Panel de ERP</h2><p className="muted">Accede al ERP nativo de tu empresa: inventario, cotizaciones, pedidos, facturas y operaciones. Algunas funciones requieren activar las migraciones pendientes de la base de datos.</p><Link href="/crm/erp" className="button primary">Abrir panel de ERP</Link></section>:<section className="card"><div className="eyebrow">ERP por tenant</div><h2>Odoo · fuente operativa oficial</h2>{erp ? <div className="stack gap-8"><div className="priority-item"><strong>Conexión</strong><span>{erp.status}</span></div><div className="priority-item"><strong>Dirección</strong><span>{erp.sync_direction}</span></div><div className="priority-item"><strong>Productos Odoo</strong><span>{Number(erp.odoo_products??0)}</span></div><div className="priority-item"><strong>Inventario sincronizado</strong><span>{erp.inventory_synced_at?date.format(new Date(erp.inventory_synced_at)):"Pendiente"}</span></div><div className="priority-item"><strong>Autoridad</strong><span>Productos · inventario · cotizaciones · PDF · pedidos · facturas</span></div>{erp.last_error&&<div className="notice">{erp.last_error}</div>}<button className="button" onClick={syncProducts} disabled={erp.status!=="connected"}><RefreshCw size={14}/> Sincronizar productos/inventario</button></div> : <div className="empty"><strong>Odoo no conectado</strong><div>La arquitectura está preparada, pero este tenant necesita su URL, base de datos y credenciales seguras de Odoo antes de sincronizar.</div></div>}</section>}
     <section className="card"><h2>Catálogo web conectado</h2><p className="muted">{isEmpresia?"La publicación del catálogo CRM no implica sincronización ERP. Solo representa los datos registrados por el CRM.":"Los productos marcados como publicados pueden consumirse desde el endpoint público seguro del CRM. La web recibe disponibilidad y fecha de sincronización sin acceder directamente a las credenciales de Odoo."}</p><code>/functions/v1/crm-public-catalog?tenant=&lt;slug-del-tenant&gt;</code></section>
   </div>;
 }

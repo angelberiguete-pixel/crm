@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {BarChart3,BrainCircuit,Bot,ClipboardList,CreditCard,FileText,Gauge,Inbox,Package,Settings,Target,Users} from "lucide-react";
+import {BarChart3,BrainCircuit,Bot,ClipboardList,CreditCard,FileText,Gauge,Inbox,Landmark,ShieldCheck,Package,Settings,Target,Users} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 
@@ -11,11 +11,15 @@ const modules=[
  ["revenue","Oportunidades","pipeline",Target],
  ["ml","Inteligencia ML","pipeline",BrainCircuit],
  ["products","Productos","products",Package],
+ ["inventory","Inventario","operations",Package],
+ ["operations","Pedidos y facturas","operations",Package],
  ["quotations","Cotizaciones","quotations",FileText],
  ["inbox","Conversaciones","inbox",Inbox],
  ["tasks","Tareas","operations",ClipboardList],
  ["arm","Agentes","dashboard",Bot],
  ["reports","Reportes","dashboard",BarChart3],
+ ["finanzas","Finanzas","dashboard",Landmark],
+ ["seguridad-instalaciones","Seguridad técnica","dashboard",ShieldCheck],
  ["settings","Configuración","settings",Settings],
  ["pagos","Pagos y suscripción","dashboard",CreditCard]
 ] as const;
@@ -41,7 +45,7 @@ export default function FamilyPowerMenu({active,variant}:{active:string;variant:
  },[tenant?.tenant_id,tenant?.tenant_slug]);
  if(tenant?.tenant_slug!=="family-power")return null;
  const visible=modules.filter(([key,,permission])=>{
-  if(["settings","pagos"].includes(key)&&!["owner","admin"].includes(tenant.membership_role))return false;
+  if(["settings","pagos","finanzas","seguridad-instalaciones"].includes(key)&&!["owner","admin"].includes(tenant.membership_role))return false;
   return !!permissions&&(permissions.all===true||permissions[permission]===true)&&enabled[permission]!==false;
  });
  const shown=variant==="mobile"?visible.slice(0,5):visible;

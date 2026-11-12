@@ -13,6 +13,8 @@ import CrmWebAnalytics from "@/components/crm-web-analytics";
 import TenantPermissionGate from "@/components/tenant-permission-gate";
 import TenantSessionReport from "@/components/tenant-session-report";
 import FamilyPowerBillingPortal from "@/components/family-power-billing-portal";
+import FamilyPowerFinance from "@/components/family-power-finance";
+import FamilyPowerInstallationSafety from "@/components/family-power-installation-safety";
 
 export default async function CrmPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug = [] } = await params;
@@ -45,6 +47,10 @@ export default async function CrmPage({ params }: { params: Promise<{ slug?: str
               ? <TenantSessionReport />
             : section === "pagos"
               ? <FamilyPowerBillingPortal />
+            : section === "finanzas"
+              ? <FamilyPowerFinance />
+            : section === "seguridad-instalaciones"
+              ? <FamilyPowerInstallationSafety />
             : <CrmWorkspace slug={slug} />}
     </TenantPermissionGate>
   );

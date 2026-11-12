@@ -38,7 +38,7 @@ test("portfolio offers Empresia first and client entry only after explicit owner
   assert.doesNotMatch(panel,/href="\/crm">Volver al CRM/);
 });
 
-test("client sign-out has owner-aware return without exposing the global admin panel",()=>{
+test("client sign-out keeps owner-aware return and portfolio shortcut checks platform authority",()=>{
   const helper=read("lib/tenant-session.ts");
   const exit=read("components/tenant-session-exit.tsx");
   const legacy=read("components/crm-workspace.tsx");
@@ -48,5 +48,8 @@ test("client sign-out has owner-aware return without exposing the global admin p
   assert.match(helper,/return "\/family-power\/login"/);
   assert.match(exit,/await tenantLogoutDestination\(tenant\.tenant_slug\)/);
   assert.match(legacy,/await tenantLogoutDestination\(member\.tenant_slug/);
-  assert.match(shortcut,/tenant\?\.tenant_slug!=="family-power"/);
+  assert.match(shortcut,/supabase\.rpc\("platform_current_access"\)/);
+  assert.match(shortcut,/is_platform_admin/);
+  assert.match(shortcut,/return allowed\?<Link href="\/mis-empresas"/);
+  assert.doesNotMatch(shortcut,/return true/);
 });

@@ -39,7 +39,8 @@ const sectionPermission: Record<string, string> = {
   reports: "dashboard",
   products: "products",
   quotations: "quotations",
-  erp: "settings",
+  erp: "operations",
+  inventory: "operations",
   operations: "operations",
   calendar: "calendar",
   automations: "automations",
@@ -47,6 +48,8 @@ const sectionPermission: Record<string, string> = {
   sessions: "settings",
   files: "dashboard",
   pagos: "dashboard",
+  finanzas: "dashboard",
+  "seguridad-instalaciones": "dashboard",
 };
 
 type TenantAccess = {
@@ -143,14 +146,12 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const moduleEnabled = module ? module.enabled : true;
 
       const restrictedFamilySections=["companies","sales","marketing","email","channels","automations","sessions"];
-      const familyOnlySections=["arm","tasks","reports"];
+      const familyOnlySections=["arm","tasks","reports","finanzas","seguridad-instalaciones"];
       const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
-           (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
-      const restrictedErp = section === "erp" && (activeTenant.tenant_slug !== "eurevector" ||
-        !["owner", "admin"].includes(activeTenant.membership_role));
-      if (hasPermission && moduleEnabled && !familyPowerRestriction && !restrictedErp) {
+           (["settings","pagos","finanzas","seguridad-instalaciones"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
+      if (hasPermission && moduleEnabled && !familyPowerRestriction) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
         setValidatedSection(section);

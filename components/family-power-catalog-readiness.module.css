@@ -1,0 +1,7 @@
+.panel{display:flex;align-items:center;gap:15px;background:#fdfaf5;border:1px solid #eedbc2;border-radius:15px;padding:16px 20px;flex-wrap:wrap}
+.icon{color:#a2702a;background:#ffedd5;border-radius:13px;padding:11px;flex:none;display:grid;place-items:center}
+.copy{min-width:220px;flex:1}.copy span{font-size:10px;color:#9a652a;text-transform:uppercase;letter-spacing:.08em;font-weight:850}
+.copy h3{color:#344b54;margin:6px 0;font-size:16px}.copy p{margin:0;font-size:12px;color:#63727a;line-height:1.6}
+.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;text-decoration:none!important;min-height:44px;padding:12px 14px;background:#253d4e;color:white;font-size:12px;font-weight:850}
+.button:focus-visible{outline:3px solid #2aa5b9;outline-offset:3px}
+@media(max-width:620px){.panel{padding:14px}.button{width:100%}}
