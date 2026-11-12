@@ -58,6 +58,8 @@ jobs:
         run: node --test tests/family-power-compact-panels.test.mjs
       - name: Family Power clean menus, products, tasks and reports
         run: node --test tests/family-power-operational-ux.test.mjs
+      - name: Family Power ERP visual operations and schema-readiness contracts
+        run: node --test tests/family-power-erp-control-20261111.test.mjs
       - name: Family Power mobile-first navigation and zero-data UX regression
         run: node --test tests/family-power-mobile-first-20261111.test.mjs
       - name: Family Power visual dashboard, finance and sensor-safety demo contracts
