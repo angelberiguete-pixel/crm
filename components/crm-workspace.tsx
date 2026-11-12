@@ -19,6 +19,7 @@ import {
   Package,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Target,
   Users,
   Workflow,
