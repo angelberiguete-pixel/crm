@@ -59,3 +59,15 @@ test("public ERP does not claim nonexistent servers; privileged Empresia only",(
  assert.match(ui,/no simula servidores, facturas ni balances/);
  assert.doesNotMatch(ui,/DOLIBARR_API_KEY|SUPABASE_SERVICE_ROLE_KEY|ODOO_API_KEY/);
 });
+
+test("Odoo 20 onboarding cannot silently convert Empresia into an Odoo-owned ERP",()=>{
+ const onboarding=read("supabase/functions/platform-odoo-onboarding/index.ts");
+ assert.match(sql,/erp_dual_connection_authority_guard/);
+ assert.match(sql,/erp_dual_bidirectional_sync_forbidden/);
+ assert.match(sql,/erp_external_canonical_owner_forbidden/);
+ assert.match(sql,/t.slug='eurevector'/);
+ assert.match(onboarding,/const empresiaCanonical=tenantLookup.data.slug==="eurevector"/);
+ assert.match(onboarding,/p_sync_direction:empresiaCanonical\?"crm_to_erp":"bidirectional"/);
+ assert.match(onboarding,/if\(authenticated&&!empresiaCanonical\)/);
+ assert.match(onboarding,/canonical_source:empresiaCanonical\?"empresia":"legacy_tenant_policy"/);
+});
