@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
  * No importamos el cliente Supabase de producción ni permitimos acciones remotas.
  */
 export default function QAMobilePage() {
-  if (process.env.VERCEL_ENV === "production" ||
+  const approvedHost = process.env.VERCEL_ENV === "preview" ||
+    (process.env.NODE_ENV === "development" && !process.env.VERCEL_ENV);
+  if (process.env.VERCEL_ENV === "production" || !approvedHost ||
       process.env.EMPRESIA_QA_CENTER_ENABLED !== "true") notFound();
   return <QAMobileControlCenter />;
 }
