@@ -166,8 +166,8 @@ export default function EmpresiaCommerceAdmin(){
    setError((failure instanceof Error?failure.message:"Error de activación")+
     " Se activaron "+count+" planes en este intento. Revisa los estados antes de continuar; no se cobra a nadie automáticamente.");
   }finally{
-   setBusy(false);
    await load();
+   setBusy(false);
   }
  }
  const paid=sales.filter(s=>["paid","active"].includes(s.status));
