@@ -197,3 +197,40 @@ comment on table public.erp_dual_external_ids is
  'Deduplicated canonical-to-provider identity mapping, scoped to tenant.';
 comment on table public.erp_dual_outbox is
  'Metadata-only canonical change log; does not execute external ERP writes.';
+
+-- Protect Empresia even BEFORE tenant enrollment: legacy onboarding previously
+-- marked Odoo as source_of_truth for inventory, sale orders and invoices.
+-- Enrolled tenants are protected too. Existing unenrolled customer integrations
+-- remain unchanged.
+create or replace function private.erp_dual_guard_connection_authority()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_legacy jsonb;
+begin
+ if new.provider not in ('odoo','dolibarr') then return new; end if;
+ if not (
+  exists(select 1 from public.tenants t where t.id=new.tenant_id and t.slug='eurevector')
+  or exists(select 1 from private.erp_dual_tenant_enrollments p
+    where p.tenant_id=new.tenant_id and p.enabled=true)
+ ) then return new; end if;
+ if new.sync_direction='bidirectional' then
+   raise exception 'erp_dual_bidirectional_sync_forbidden' using errcode='42501';
+ end if;
+ v_legacy:=coalesce(new.sync_settings->'source_of_truth','{}'::jsonb);
+ if jsonb_typeof(v_legacy)='object' and exists(
+   select 1 from jsonb_each_text(v_legacy) a
+   where a.key in ('products','inventory','quotations','quotation_pdf',
+    'sales_orders','invoices','payments','accounting','orders')
+     and a.value<>'empresia'
+ ) then
+   raise exception 'erp_external_canonical_owner_forbidden' using errcode='42501';
+ end if;
+ return new;
+end;
+$$;
+drop trigger if exists erp_dual_connection_authority_guard on public.erp_connections;
+create trigger erp_dual_connection_authority_guard
+ before insert or update on public.erp_connections for each row
+ execute function private.erp_dual_guard_connection_authority();
+revoke all on function private.erp_dual_guard_connection_authority()
+ from public,anon,authenticated;
