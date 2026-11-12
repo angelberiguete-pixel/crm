@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot,LayoutDashboard,CreditCard} from "lucide-react";
+import {ClipboardList,FileText,Users,MessageCircle,Wrench,ArrowRight,RefreshCw,BarChart3,Bot,LayoutDashboard,CreditCard,ShieldCheck,Landmark,ChevronRight} from "lucide-react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
+import FamilyPowerExecutiveInsights from "@/components/family-power-executive-insights";
+import FamilyPowerCatalogReadiness from "@/components/family-power-catalog-readiness";
+import styles from "./family-power-dashboard.module.css";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
 type Counts={contacts:number|null;quotations:number|null;orders:number|null;opportunities:number|null};
@@ -50,64 +53,39 @@ export default function EnergyServiceDashboard(){
    })().catch(()=>{if(current){setLoading(false);setError("No se pudo completar la consulta.");}});
    return()=>{current=false;};
  },[tenantId,version]);
- return <main className="content family-power-dashboard" style={{margin:"0 auto",maxWidth:1240}}>
-   <section style={{background:"linear-gradient(115deg,#101115,#222329 68%,#4B1117)",border:"1px solid #444650",borderRadius:20,padding:"clamp(20px,5vw,38px)",color:"#F7F8FA"}}>
-     <div className="eyebrow" style={{color:"#DFE1E3"}}>Panel de trabajo · {familyPowerRoleLabel(tenant?.membership_role)}</div>
-     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:18,flexWrap:"wrap"}}>
-       <div style={{flex:"1 1 280px"}}>
-         <h1 style={{color:"#FFFFFF",margin:"10px 0 12px"}}>{brand?.name??tenant?.tenant_name??"Family Power"}</h1>
-         <p style={{color:"#E4E5E8",lineHeight:1.55,maxWidth:480}}>
-           Clientes, ventas, cotizaciones y seguimiento comercial.
-         </p>
-         <Link className="button primary" href="/crm/revenue" style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:8}}>
-           <LayoutDashboard size={16}/> Abrir gestión comercial <ArrowRight size={16}/>
-         </Link>
-       </div>
-       <div style={{width:"min(100%,355px)",padding:12,background:"transparent",flex:"0 1 355px"}}>
-         <BrandLogo size="login" surface="dark"/>
+ return <main className={styles.main}>
+   <section className={styles.hero}>
+     <div className={styles.heroText}>
+       <span className={styles.eyebrow}>Panel ejecutivo · {familyPowerRoleLabel(tenant?.membership_role)}</span>
+       <h1>{brand?.name??tenant?.tenant_name??"Family Power"}</h1>
+       <p>Ventas, cotizaciones e instalaciones en un mismo lugar.</p>
+       <div className={styles.heroActions}>
+         <Link href="/crm/contacts?new=1" className={styles.primary}><Users size={17}/> Nuevo cliente <ArrowRight size={16}/></Link>
+         <Link href="/crm/revenue" className={styles.ghost}><FileText size={17}/> Abrir gestión comercial</Link>
        </div>
      </div>
+     <div className={styles.brand}><BrandLogo size="login" surface="dark"/></div>
    </section>
-   <section className="section-gap" aria-label="Gestión de Family Power">
-     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-       <div><div className="eyebrow">Tu operación</div><h2>¿Qué necesitas gestionar?</h2></div>
-       <button className="button" type="button" onClick={()=>setVersion(v=>v+1)} disabled={loading}>
-         <RefreshCw size={16}/> Actualizar datos
-       </button>
-     </div>
-     {error&&<div className="notice" role="alert">{error}</div>}
-     {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className="card" style={{display:"flex",gap:14,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #D20A14"}}><Bot size={30} color="#D20A14"/><span style={{flex:1}}><strong>Agentes</strong></span><ArrowRight size={19}/></Link>}
-     {["owner","admin"].includes(tenant?.membership_role??"")&&<Link href="/crm/pagos" className="card" style={{display:"flex",gap:13,alignItems:"center",textDecoration:"none",marginTop:18,borderLeft:"4px solid #B21B2C"}}><CreditCard size={25} color="#B21B2C"/><span style={{flex:1}}><strong>Pagos y suscripción</strong><small className="muted" style={{display:"block"}}>Factura inicial y plan mensual de US$80</small></span><ArrowRight size={16}/></Link>}
-     <div className="grid two-col" style={{marginTop:18}}>
-       {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,description,Icon,key})=><Link href={href} key={key}
-         className="card" style={{display:"flex",alignItems:"center",gap:16,textDecoration:"none",borderLeft:"4px solid #D20A14"}}>
-         <span style={{display:"grid",placeItems:"center",background:"#D20A1420",borderRadius:12,padding:12,color:"#D20A14"}}>
-           <Icon size={26}/>
-         </span>
-         <span style={{display:"grid",gap:3,flex:1}}>
-           <strong>{title}</strong>
-           <small className="muted">{description}</small>
-         </span>
-         <strong style={{fontSize:26,minWidth:33,textAlign:"right"}} aria-label={"Registros de "+title}>
-           {loading?"…":counts[key]??"—"}
-         </strong>
-         <ArrowRight size={16} aria-hidden="true"/>
-       </Link>)}
-     </div>
+   {tenantId&&<FamilyPowerExecutiveInsights tenantId={tenantId} counts={counts} loading={loading}/>}
+   <FamilyPowerCatalogReadiness/>
+   <section className={styles.quick}>
+    <div className={styles.heading}><div><span className={styles.eyebrow}>Accesos de trabajo</span><h2>Todo lo necesario para operar</h2></div>
+      <button type="button" onClick={()=>setVersion(v=>v+1)} disabled={loading} className={styles.refresh}><RefreshCw size={16}/> Actualizar</button>
+    </div>
+    {error&&<p role="alert" className={styles.error}>{error}</p>}
+    <div className={styles.quickGrid}>
+      {links.filter(link=>permissions&&(permissions.all===true||permissions[link.permission]===true)).map(({href,title,Icon})=>
+        <Link href={href} key={href} className={styles.quickItem}><span><Icon size={21}/></span><strong>{title}</strong><ChevronRight size={17}/></Link>
+      )}
+      {permissions&&(permissions.all===true||permissions.dashboard===true)&&<Link href="/crm/arm" className={styles.quickItem}><span><Bot size={21}/></span><strong>Equipo de IA</strong><ChevronRight size={17}/></Link>}
+      {["owner","admin"].includes(tenant?.membership_role??"")&&<Link href="/crm/finanzas" className={styles.quickItem}><span><Landmark size={21}/></span><strong>Finanzas</strong><ChevronRight size={17}/></Link>}
+      {["owner","admin"].includes(tenant?.membership_role??"")&&<Link href="/crm/seguridad-instalaciones" className={styles.quickItem}><span><ShieldCheck size={21}/></span><strong>Seguridad de instalaciones</strong><ChevronRight size={17}/></Link>}
+      {["owner","admin"].includes(tenant?.membership_role??"")&&<Link href="/crm/pagos" className={styles.quickItem}><span><CreditCard size={21}/></span><strong>Plan y facturas de Empresia</strong><ChevronRight size={17}/></Link>}
+    </div>
    </section>
-   <section className="grid two-col section-gap">
-     <div className="card">
-       <div className="eyebrow">Canales</div>
-       <h2>Canales de comunicación</h2>
-       <p className="muted">Sin conexión activa.</p>
-       {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/integrations" className="button">Gestionar canales</Link>}
-     </div>
-     <div className="card">
-       <div className="eyebrow">Equipo y acceso</div>
-       <h2>Operación segura</h2>
-       <p className="muted">Usuarios y permisos.</p>
-       {permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/settings" className="button">Configuración de la empresa</Link>}
-     </div>
+   <section className={styles.statusGrid}>
+     <div className={styles.status}><div><span className={styles.eyebrow}>Conexiones</span><h3>Canales de atención</h3></div><p>WhatsApp y Meta no están conectados para esta empresa. Se mostrarán mensajes cuando exista una conexión oficial verificada.</p>{permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/integrations">Gestionar integraciones <ArrowRight size={14}/></Link>}</div>
+     <div className={styles.status}><div><span className={styles.eyebrow}>Seguridad</span><h3>Accesos y permisos</h3></div><p>Cuentas individuales y roles delimitan el acceso del equipo a los datos de Family Power.</p>{permissions&&(permissions.all===true||permissions.settings===true)&&<Link href="/crm/settings">Ver configuración <ArrowRight size={14}/></Link>}</div>
    </section>
  </main>;
 }

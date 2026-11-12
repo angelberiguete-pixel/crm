@@ -73,7 +73,8 @@ test("Family Power panel uses real tenant-scoped records and accessible Spanish 
  assert.match(dashboard,/<BrandLogo size="login" surface="dark"\/>/);
  assert.match(dashboard,/Clientes/);
  assert.match(dashboard,/Trabajos e instalaciones/);
- assert.match(dashboard,/Sin conexión activa/);
+ assert.match(dashboard,/WhatsApp y Meta no están conectados/);
+ assert.match(dashboard,/FamilyPowerExecutiveInsights/);
  assert.doesNotMatch(dashboard,/OPENAI_API_KEY|service_role|graph\.facebook\.com|insert\(/);
 });
 

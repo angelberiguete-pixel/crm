@@ -22,7 +22,7 @@ test("ARM links from Family Power dashboard and mobile menu, never other tenants
  const workspace=read("../components/crm-workspace.tsx");
  assert.match(dashboard,/href="\/crm\/arm"/);
  assert.match(mobile,/tenant.tenant_slug!=="family-power"&&\["arm","tasks","reports"\]\.includes\(path\)/);
- assert.match(workspace,/!isFamilyPower&&\["arm","tasks","reports","web-analytics"\]\.includes\(key\)/);
+ assert.match(workspace,/!isFamilyPower&&\["arm","tasks","reports","finanzas","seguridad-instalaciones","web-analytics"\]\.includes\(key\)/);
  assert.match(workspace,/arm:"dashboard"/);
 });
 test("ARM reads tenant-scoped metrics and keeps functional approval queue without decorative agent cards",()=>{

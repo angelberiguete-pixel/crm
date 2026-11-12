@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, feat/erp-native-postgres-20261111]
   workflow_dispatch:
 
 jobs:
@@ -58,6 +58,8 @@ jobs:
         run: node --test tests/family-power-compact-panels.test.mjs
       - name: Family Power clean menus, products, tasks and reports
         run: node --test tests/family-power-operational-ux.test.mjs
+      - name: Family Power visual dashboard, finance and sensor-safety demo contracts
+        run: node --test tests/family-power-demo-visual-20261112.test.mjs
       - name: Family Power unified tenant and approved brand variants
         run: node --experimental-strip-types --test tests/family-power-unified-tenant.test.mjs
       - name: Family Power ARM within existing tenant and protected route
