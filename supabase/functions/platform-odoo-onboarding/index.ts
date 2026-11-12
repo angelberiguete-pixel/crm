@@ -42,8 +42,14 @@ Deno.serve(async(req)=>{
     const access=await user.rpc("platform_current_access");
     if(access.error||!(access.data as any)?.is_platform_admin)return reply(origin,{ok:false,error:"platform_admin_required"},403);
 
+    // The platform pilot stays canonical in Empresia; never use the legacy
+    // RPC which marks Odoo authoritative for stock, orders and invoices.
+    const tenantLookup=await service.from("tenants").select("slug").eq("id",tenantId).maybeSingle();
+    if(tenantLookup.error||!tenantLookup.data)throw new Error("tenant_not_found");
+    const empresiaCanonical=tenantLookup.data.slug==="eurevector";
+
     const configured=await user.rpc("platform_configure_odoo",{
-      p_tenant_id:tenantId,p_base_url:baseUrl,p_database_name:database,p_sync_direction:"bidirectional"
+      p_tenant_id:tenantId,p_base_url:baseUrl,p_database_name:database,p_sync_direction:empresiaCanonical?"crm_to_erp":"bidirectional"
     });
     if(configured.error)throw new Error(configured.error.message);
     const connectionId=String(configured.data);
@@ -95,7 +101,7 @@ Deno.serve(async(req)=>{
     }).eq("id",connectionId).eq("tenant_id",tenantId);
     if(update.error)throw new Error("connection_status_update_failed");
 
-    if(authenticated){
+    if(authenticated&&!empresiaCanonical){
       const authority=await user.rpc("configure_tenant_odoo_authority",{p_tenant_id:tenantId});
       if(authority.error)throw new Error(authority.error.message);
     }
@@ -109,6 +115,7 @@ Deno.serve(async(req)=>{
       api_protocol:protocol,
       authentication_valid:authenticated,
       credential_storage:"vault",
+      canonical_source:empresiaCanonical?"empresia":"legacy_tenant_policy",
       error
     },authenticated?200:422);
   }catch(e){

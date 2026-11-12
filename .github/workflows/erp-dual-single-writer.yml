@@ -1,0 +1,48 @@
+name: Dual ERP single-writer database QA
+
+on:
+  pull_request:
+    branches: [main, feat/erp-native-postgres-20261111]
+    paths:
+      - 'supabase/migrations/20261111173000_empresia_dual_erp_single_writer.sql'
+      - 'tests/erp-dual-integration-*'
+      - '.github/workflows/erp-dual-single-writer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-tenant-and-dedup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: empresia_dual_erp_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d empresia_dual_erp_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: empresia_dual_erp_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare isolated two-tenant fixtures
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/erp-dual-integration-fixture.sql
+      - name: Apply ERP dual-engine policy migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261111173000_empresia_dual_erp_single_writer.sql
+      - name: Verify ownership, deduplication, permissions, idempotency, kill switch
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/erp-dual-integration-qa.sql
