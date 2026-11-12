@@ -4,6 +4,8 @@ create schema if not exists private;
 create role anon;
 create role authenticated;
 
+create table public.tenants(id uuid primary key,slug text unique not null);
+create table public.memberships(tenant_id uuid,user_id uuid,role text);
 create or replace function auth.uid() returns uuid language sql stable
 as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create or replace function private.crm_active_tenant_matches(id uuid)
@@ -13,8 +15,6 @@ create or replace function private.has_tenant_role(id uuid,roles text[])
 returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.memberships
   where tenant_id=id and user_id=auth.uid() and role=any(roles)) $$;
-create table public.tenants(id uuid primary key,slug text unique not null);
-create table public.memberships(tenant_id uuid,user_id uuid,role text);
 create table public.erp_connections(
  id uuid primary key,tenant_id uuid not null references public.tenants(id),
  provider text not null,status text not null default 'disconnected',
