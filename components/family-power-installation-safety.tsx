@@ -19,6 +19,17 @@ export default function FamilyPowerInstallationSafety(){
  const allowed=tenant?.tenant_slug==="family-power"&&["owner","admin"].includes(tenant.membership_role);
  const [orders,setOrders]=useState<Work[]>([]),[deliveries,setDeliveries]=useState<Work[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState(""),[revision,setRevision]=useState(0);
+ const [inspection,setInspection]=useState(""),[saving,setSaving]=useState(false),[inspectionMessage,setInspectionMessage]=useState("");
+ async function createInspection(){
+  if(!id||!allowed||saving||inspection.trim().length<8)return;
+  setSaving(true);setInspectionMessage("");
+  try{
+   const record=await supabase.from("tasks").insert({tenant_id:id,title:"Revisar seguridad: "+inspection.trim().slice(0,120),status:"todo",priority:"normal",source:"manual",description:"Inspección humana pendiente: validar detectores, documentación técnica, conexiones y protección física. No representa alarma conectada."});
+   if(record.error)throw record.error;
+   setInspection("");setInspectionMessage("Inspección registrada en Tareas. Debe realizarse y validarse físicamente.");
+  }catch{setInspectionMessage("No fue posible crear la inspección. Comprueba permisos y conexión.");}
+  finally{setSaving(false);}
+ }
  useEffect(()=>{
   let live=true;setOrders([]);setDeliveries([]);setLoading(true);setError("");
   if(!id||!allowed){setLoading(false);return()=>{live=false;};}
@@ -52,5 +63,6 @@ export default function FamilyPowerInstallationSafety(){
   </div>
   <section className={styles.alert}><ShieldAlert size={23}/><div><strong>Protección contra incendios: prioridad de seguridad física</strong><p>Este módulo NO detecta humo ni incendios y NO reemplaza un detector certificado, una central de alarma, sirenas, evacuación o supervisión profesional. Una futura integración será únicamente complementaria; si el CRM o Internet falla, la protección local deberá seguir funcionando. Debe evaluarse con el instalador especializado y la normativa R-032 de República Dominicana.</p></div></section>
   <section className={styles.next}><div><span>Próxima definición con Family Power</span><h2>Necesitamos identificar el equipo exacto</h2><p>Solicitar al doctor: marca y modelo del inversor, foto y ficha del detector, forma de comunicación, existencia de central, necesidades de alertas y responsable de emergencias. No conectaremos hardware sin probar compatibilidad y seguridad.</p></div><Link href="/crm/settings" className={styles.link}>Ver usuarios y permisos <ArrowRight size={16}/></Link></section>
+  <section className={styles.inspection}><div><span className={styles.eyebrow}>Acción operativa real</span><h2>Programar una inspección técnica</h2><p>Crea una tarea dentro de Family Power para que el equipo revise un equipo o una instalación. No configura sensores ni altera una alarma.</p></div><div className={styles.inspectionForm}><label htmlFor="fp-inspection">Equipo o instalación que debe revisarse</label><textarea id="fp-inspection" value={inspection} onChange={e=>setInspection(e.target.value)} maxLength={180} placeholder="Ej.: Inversor instalado en el taller, revisar detector de humo y ficha técnica" rows={3}/><button type="button" disabled={saving||inspection.trim().length<8} onClick={()=>void createInspection()}>{saving?"Registrando…":"Crear tarea de inspección"}</button>{inspectionMessage&&<p role="status">{inspectionMessage}</p>}</div></section>
  </main>;
 }
