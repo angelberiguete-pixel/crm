@@ -33,8 +33,8 @@ try {
   await page.waitForFunction(() => document.querySelector('form option[value="aprobada"]')?.hasAttribute("disabled") === true);
   assert.equal(await page.locator('form option[value="aprobada"]').getAttribute("disabled"), "", "real auth cannot be passed");
   await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).click();
-  await page.getByLabel("Resultado", { exact: true }).selectOption("bloqueada");
-  await page.getByLabel("Resultado observado / motivo").fill("Bloqueada a falta de un registro de CI que corresponda al SHA probado.");
+  await page.locator("form select").selectOption("bloqueada");
+  await page.locator("form textarea").fill("Bloqueada a falta de un registro de CI que corresponda al SHA probado.");
   await page.getByRole("button", { name: "Guardar resultado local" }).click();
   await page.getByRole("status").getByText(/Resultado registrado/).waitFor();
   await page.reload();
