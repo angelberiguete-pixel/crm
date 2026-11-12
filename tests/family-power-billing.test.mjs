@@ -30,7 +30,9 @@ test("billing resides in the authorized CRM portal and cannot grant access",()=>
  assert.match(router,/section === "pagos"/);
  assert.match(gate,/pagos: "dashboard"/);
  assert.doesNotMatch(gate,/familyOnlySections=.*"pagos"/);
- assert.match(gate,/\["settings","pagos"\].includes\(section\)/);
+ assert.match(gate,/\["settings","pagos","finanzas","seguridad-instalaciones"\].includes\(section\)/);
+ assert.match(gate,/finanzas: "dashboard"/);
+ assert.match(gate,/"seguridad-instalaciones": "dashboard"/);
  assert.match(portal,/const isFamilyPower=tenant\?\.tenant_slug==="family-power"/);
  assert.match(portal,/\["owner","admin"\]/);
  assert.match(banner,/crm_implementation_contract_summary/);
