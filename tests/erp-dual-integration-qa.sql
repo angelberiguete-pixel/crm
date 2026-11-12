@@ -87,6 +87,28 @@ begin
 end;
 $qa$;
 
+-- The legacy Odoo authority setting must NOT be restorable for Empresia.
+do $qa$
+begin
+ begin
+  update public.erp_connections set sync_direction='bidirectional'
+   where id='aaaaaaaa-0000-4000-8000-000000000001';
+  raise exception 'Legacy bidirectional authority unexpectedly enabled';
+ exception when insufficient_privilege then null;
+ end;
+ begin
+  update public.erp_connections
+   set sync_settings='{"source_of_truth":{"inventory":"odoo","invoices":"odoo"}}'::jsonb
+   where id='aaaaaaaa-0000-4000-8000-000000000001';
+  raise exception 'Odoo claimed the Empresia ledger unexpectedly';
+ exception when insufficient_privilege then null;
+ end;
+ -- A legacy, non-enrolled client remains unchanged until its own rollout.
+ update public.erp_connections set sync_direction='bidirectional'
+ where id='bbbbbbbb-0000-4000-8000-000000000001';
+end;
+$qa$;
+
 -- Browser role is never the privileged writer, even for owners.
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
 select set_config('request.active_tenant','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);
