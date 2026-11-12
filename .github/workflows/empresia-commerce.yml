@@ -10,6 +10,7 @@ on:
       - 'supabase/migrations/20261109050000_empresia_commercial_checkout.sql'
       - 'supabase/migrations/20261109053000_empresia_checkout_hardening.sql'
       - 'tests/empresia-commerce.test.mjs'
+      - 'tests/empresia-live-plans.test.mjs'
       - '.github/workflows/empresia-commerce.yml'
   push:
     branches:
@@ -36,5 +37,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/empresia-commerce.test.mjs
+      - run: node --test tests/empresia-commerce.test.mjs tests/empresia-live-plans.test.mjs
       - run: npm run build
