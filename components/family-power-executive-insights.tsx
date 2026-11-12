@@ -11,7 +11,7 @@ type Item={id:string;created_at:string;status?:string};
 type Source={contacts:Item[];quotations:Item[];orders:Item[];deliveries:Item[];limited:boolean};
 const month=(d:Date)=>d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0");
 const nowRows=()=>{const d=new Date();return Array.from({length:6},(_,i)=>{const day=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()-5+i,1));return {key:month(day),label:new Intl.DateTimeFormat("es-DO",{month:"short"}).format(day),clients:0,quotes:0,orders:0};});};
-export default function FamilyPowerExecutiveInsights({tenantId,counts,loading:countsLoading}:{tenantId:string;counts:Counts;loading:boolean}){
+export default function FamilyPowerExecutiveInsights({tenantId,counts,loading:countsLoading,reloadKey=0}:{tenantId:string;counts:Counts;loading:boolean;reloadKey?:number}){
  const [source,setSource]=useState<Source|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState("");
  useEffect(()=>{
@@ -28,7 +28,7 @@ export default function FamilyPowerExecutiveInsights({tenantId,counts,loading:co
   }).catch(()=>{if(live)setError("No se pudo preparar la analítica comercial.");})
   .finally(()=>{if(live)setLoading(false);});
   return()=>{live=false;};
- },[tenantId]);
+ },[tenantId,reloadKey]);
  const data=useMemo(()=>{
   const rows=nowRows();
   if(!source)return rows;
