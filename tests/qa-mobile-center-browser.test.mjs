@@ -37,6 +37,10 @@ try {
   await page.locator("form textarea").fill("Bloqueada a falta de un registro de CI que corresponda al SHA probado.");
   await page.getByRole("button", { name: "Guardar resultado local" }).click();
   await page.getByRole("status").getByText(/Resultado registrado/).waitFor();
+  await page.waitForFunction(() => {
+    const report = JSON.parse(localStorage.getItem("empresia:qa69:fixture-only:v1") || "{}");
+    return report.records?.["QA-01"]?.status === "bloqueada";
+  });
   await page.reload();
   await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).getByText("Bloqueada", { exact: true }).waitFor();
   assert.ok((await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).innerText()).includes("Bloqueada"));
