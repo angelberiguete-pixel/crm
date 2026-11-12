@@ -66,7 +66,7 @@ export default function EnergyServiceDashboard(){
      </div>
      <div className={styles.brand}><BrandLogo size="login" surface="dark"/></div>
    </section>
-   {tenantId&&<FamilyPowerExecutiveInsights tenantId={tenantId} counts={counts} loading={loading}/>}
+   {tenantId&&<FamilyPowerExecutiveInsights tenantId={tenantId} counts={counts} loading={loading} reloadKey={version}/>}
    <FamilyPowerCatalogReadiness/>
    <section className={styles.quick}>
     <div className={styles.heading}><div><span className={styles.eyebrow}>Accesos de trabajo</span><h2>Todo lo necesario para operar</h2></div>
