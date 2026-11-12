@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect,useMemo,useState} from "react";
+import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import {
  followupRisk,quoteSignals,salesSignals,scoreMl,trainTenantModel,
@@ -30,6 +31,7 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
  const [trainingAvailable,setTrainingAvailable]=useState(false);
  const [limited,setLimited]=useState(false);
  const [version,setVersion]=useState(0);
+ const [showEmptyQuality,setShowEmptyQuality]=useState(false);
  useEffect(()=>{
   let alive=true;
   setData(empty);setError("");setLoading(true);setTrainingAvailable(false);setLimited(false);
@@ -91,6 +93,7 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
  const salesLabels=data.examples.filter(e=>e.capability==="sales_win").length;
  const quoteLabels=data.examples.filter(e=>e.capability==="quote_acceptance").length;
  const urgent=attention.filter(x=>x.risk.level==="alta").length;
+ const hasOperationalData=data.opportunities.length>0||data.quotes.length>0||data.tasks.length>0||data.examples.length>0;
  const next=attention.filter(x=>x.risk.level==="media").length;
  const level=(n:number)=>n<25?"Baja":n<60?"Media":"Alta";
  const Score=({score,model}:{score:number;model:boolean})=><div className={styles.score}>
@@ -112,7 +115,16 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    <button className="button" onClick={()=>setVersion(x=>x+1)} disabled={loading}>Actualizar análisis</button>
   </section>
   {error&&<p className={styles.warning} role="alert">{error}</p>}
-  {loading?<p role="status">Analizando información de esta empresa…</p>:<>
+  {loading?<p role="status">Analizando información de esta empresa…</p>:!hasOperationalData?<section className={styles.emptySetup} aria-label="Preparar Inteligencia ML">
+    <span className={styles.emptyOverline}>Sin historial comercial suficiente</span>
+    <h3>Primero trabajemos con operaciones reales</h3>
+    <p>El módulo no puede predecir cierres sin oportunidades, cotizaciones y resultados verificables. Ya puedes registrar esa actividad desde los módulos existentes.</p>
+    <div className={styles.emptyActions}>
+      <Link href="/crm/revenue">Abrir oportunidades</Link>
+      <Link href="/crm/contacts">Registrar clientes</Link>
+    </div>
+    <button type="button" className={styles.qualityToggle} onClick={()=>setShowEmptyQuality(x=>!x)} aria-expanded={showEmptyQuality}>{showEmptyQuality?"Ocultar verificación de datos":"Ver controles de calidad y preparación"}</button>
+   </section>:<>
    <div className={styles.metrics}>
     <div><span>Oportunidades abiertas</span><strong>{sales.length}</strong></div>
     <div><span>Cierres para aprender</span><strong>{salesLabels}</strong></div>
@@ -169,6 +181,6 @@ export default function CrmMlHub({tenantId}:{tenantId:string}){
    </section>}
    <p className={styles.disclaimer}>Los modelos se entrenan por empresa y por tarea. No comparten registros entre empresas, no deciden cierres ni ejecutan acciones automáticas.</p>
   </>}
-  <CrmMlGovernance tenantId={tenantId}/>
+  {(hasOperationalData||showEmptyQuality)&&<CrmMlGovernance tenantId={tenantId}/> }
  </div>;
 }
