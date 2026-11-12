@@ -10,7 +10,7 @@ create or replace function private.crm_active_tenant_matches(id uuid)
 returns boolean language sql stable as $$
  select id::text=nullif(current_setting('request.active_tenant',true),'') $$;
 create or replace function private.has_tenant_role(id uuid,roles text[])
-returns boolean language sql stable security definer set search_path='' as $
+returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.memberships
   where tenant_id=id and user_id=auth.uid() and role=any(roles)) $$;
 create table public.tenants(id uuid primary key,slug text unique not null);
