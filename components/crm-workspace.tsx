@@ -81,6 +81,8 @@ const nav = [
   ["arm", "Agentes", Bot],
   ["tasks", "Tareas", CalendarDays],
   ["reports", "Reportes", BarChart3],
+  ["finanzas", "Finanzas", CreditCard],
+  ["seguridad-instalaciones", "Seguridad técnica", ShieldCheck],
   ["files", "Archivos", FileText],
   ["pagos", "Pagos y suscripción", CreditCard],
   ["channels", "Canales", Inbox],
@@ -92,13 +94,13 @@ const nav = [
 const familyLabels:Record<string,string>={
  "":"Inicio",companies:"Empresas",contacts:"Clientes",revenue:"Ventas",ml:"Inteligencia ML",inbox:"Mensajes",
  products:"Productos",quotations:"Cotizaciones",inventory:"Inventario",erp:"ERP",operations:"Pedidos y facturas",calendar:"Agenda",
- automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",files:"Archivos",channels:"Canales",
+ automations:"Automatizaciones",arm:"Agentes",tasks:"Tareas",reports:"Reportes",finanzas:"Finanzas","seguridad-instalaciones":"Seguridad técnica",files:"Archivos",channels:"Canales",
  integrations:"Conexiones",sessions:"Sesiones del equipo",settings:"Configuración","web-analytics":"Analítica web",pagos:"Pagos y suscripción"
 };
 const permissionForSection:Record<string,string>={
  "":"dashboard",companies:"companies",contacts:"contacts",revenue:"pipeline",ml:"pipeline",inbox:"inbox",
  products:"products",quotations:"quotations",operations:"operations",erp:"operations",inventory:"operations",calendar:"calendar",
- automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",files:"dashboard",channels:"settings",
+ automations:"automations",arm:"dashboard",tasks:"operations",reports:"dashboard",finanzas:"dashboard","seguridad-instalaciones":"dashboard",files:"dashboard",channels:"settings",
  integrations:"settings",sessions:"settings",settings:"settings",email:"settings","web-analytics":"settings",pagos:"dashboard"
 };
 const titleFor = (section: string) => nav.find(([key]) => key === section)?.[1] ?? "CRM";
@@ -185,15 +187,15 @@ export default function CrmWorkspace({ slug }: { slug: string[] }) {
   const tenantId = member.tenant_id;
   const isFamilyPower=member.tenant_slug==="family-power";
   const permittedNav=nav.filter(([key])=>{
-    const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","operations","inbox","tasks","arm","reports","settings","web-analytics","pagos"];
+    const familyKeys=["","contacts","revenue","ml","products","quotations","inventory","erp","operations","inbox","tasks","arm","reports","finanzas","seguridad-instalaciones","settings","web-analytics","pagos"];
     if(isFamilyPower&&!familyKeys.includes(key))return false;
-    if(!isFamilyPower&&["arm","tasks","reports","web-analytics"].includes(key))return false;
+    if(!isFamilyPower&&["arm","tasks","reports","finanzas","seguridad-instalaciones","web-analytics"].includes(key))return false;
     if(isFamilyPower&&key==="web-analytics")return ["owner","admin"].includes(member.role)
       &&familyMenuPermissions!==null
       &&(familyMenuPermissions.all===true||familyMenuPermissions.settings===true)
       &&familyEnabledModules.settings!==false
       &&familyEnabledModules.umami_analytics===true;
-    if(key==="pagos"&&!["owner","admin"].includes(member.role))return false;
+    if(["pagos","finanzas","seguridad-instalaciones"].includes(key)&&!["owner","admin"].includes(member.role))return false;
     if(isFamilyPower&&key==="settings"&&!["owner","admin"].includes(member.role))return false;
     if(key==="sessions"&&!["owner","admin"].includes(member.role))return false;
     if(!isFamilyPower)return true;
