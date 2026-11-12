@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const page = readFileSync(new URL("../app/empresia/pay/page.tsx", import.meta.url), "utf8");
+const commerce = readFileSync(new URL("../app/empresia/comercio/page.tsx", import.meta.url), "utf8");
 const checkout = readFileSync(new URL("../app/empresia/checkout/page.tsx", import.meta.url), "utf8");
 const edge = readFileSync(new URL("../supabase/functions/empresia-commerce/index.ts", import.meta.url), "utf8");
 
@@ -18,6 +19,7 @@ test("Console is read-only and reuses existing checkout instead of creating mone
   assert.match(page, /\.from\("empresia_checkout_orders"\)/);
   assert.match(page, /\.from\("empresia_subscription_sales"\)/);
   assert.match(page, /href="\/empresia\/comercio"/);
+  assert.match(commerce, /href="\/empresia\/pay"/);
   assert.match(page, /href="\/empresia\/tienda"/);
   assert.match(checkout, /action:"checkout"/);
   assert.match(edge, /PAYPAL_CLIENT_SECRET/);
