@@ -76,6 +76,17 @@ export default function EmpresiaCommerceAdmin(){
     if(!window.confirm("¿Publicar "+offer.title+" por "+money(offer.usd_price_cents)+(offer.kind==="monthly"?"/mes":"")+" para que los clientes puedan comprarlo?"))return;
   }
   setBusy(true);setError("");setNotice("");
+  if(status==="published"&&offer.kind==="monthly"){
+    const verification=await supabase.functions.invoke("empresia-commerce",{
+      body:{action:"publish_plan",offer_id:offer.id}
+    });
+    if(verification.error||verification.data?.status!=="ready"
+      ||verification.data?.environment!=="live"
+      ||verification.data?.plan_id!==offer.paypal_plan_id){
+      setError("No se pudo verificar un plan mensual ACTIVO en PayPal Live. No se publicó la oferta.");
+      setBusy(false);return;
+    }
+  }
   const {error:e}=await supabase.from("empresia_offers").update({
     status,updated_at:new Date().toISOString()
   }).eq("id",offer.id);
@@ -92,12 +103,72 @@ export default function EmpresiaCommerceAdmin(){
     body:{action:"publish_plan",offer_id:offer.id}
   });
   setBusy(false);
-  if(e||!data||data.status!=="ready"){
-    setError("No se creó el plan PayPal. Revisa el acceso de la app y el registro de la función.");
+  if(e||!data||data.status!=="ready"||data.environment!=="live"){
+    setError(data?.error==="paypal_live_required"
+      ?"No se activó: configura primero PayPal Live en el servidor. Sandbox no sirve para cobrar."
+      :"No se pudo verificar el plan en PayPal Live. No se ha publicado la oferta.");
     return;
   }
   setNotice("Plan creado en PayPal. Puedes publicar la oferta cuando estés listo.");
   await load();
+ }
+ const fixedPlans=[
+  {slug:"empresia-essential",cents:8000},
+  {slug:"empresia-growth",cents:46000},
+  {slug:"empresia-scale",cents:80000}
+ ] as const;
+ const catalogReady=fixedPlans.every(({slug,cents})=>
+  offers.some(o=>o.slug===slug&&o.usd_price_cents===cents
+    &&o.kind==="monthly"&&["draft","published"].includes(o.status)));
+ const allPublished=catalogReady&&fixedPlans.every(({slug})=>
+  offers.some(o=>o.slug===slug&&o.status==="published"));
+
+ async function activateStandardCatalog(){
+  if(busy||!authorized||!catalogReady||allPublished)return;
+  if(!window.confirm(
+    "¿Activar Essential US$80, Growth US$460 y Scale US$800 por mes en PayPal LIVE y publicar las tres ofertas? "+
+    "Crear planes no cobra a nadie: cada cliente debe autorizar su propia suscripción."
+  ))return;
+  setBusy(true);setError("");setNotice("");
+  let count=0;
+  try{
+   for(const {slug,cents} of fixedPlans){
+    const offer=offers.find(o=>o.slug===slug);
+    if(!offer||offer.kind!=="monthly"||offer.usd_price_cents!==cents)
+      throw Error("Los tres importes deben coincidir con el catálogo aprobado.");
+    if(offer.status==="published")continue;
+    if(offer.status!=="draft")throw Error("La oferta "+offer.title+" no es publicable.");
+    const {data:ready,error:providerError}=await supabase.functions.invoke(
+      "empresia-commerce",{body:{action:"publish_plan",offer_id:offer.id}}
+    );
+    if(providerError||ready?.status!=="ready"||ready?.environment!=="live"
+      ||typeof ready.plan_id!=="string"||!/^P-[A-Z0-9]+$/.test(ready.plan_id))
+      throw Error(ready?.error==="paypal_live_required"
+        ?"El servidor no está configurado para PayPal Live. No se publicaron los planes restantes."
+        :"PayPal Live no ha confirmado el plan de "+offer.title+". No se publicaron los planes restantes.");
+    // Re-read the persisted provider ID. Never publish based only on the response.
+    const {data:saved,error:savedError}=await supabase.from("empresia_offers")
+      .select("id,paypal_plan_id,usd_price_cents,status")
+      .eq("id",offer.id).single();
+    if(savedError||saved?.paypal_plan_id!==ready.plan_id
+      ||saved?.usd_price_cents!==cents||saved?.status!=="draft")
+      throw Error("No se verificó el identificador PayPal de "+offer.title+".");
+    const {data:published,error:publishError}=await supabase.from("empresia_offers")
+      .update({status:"published",updated_at:new Date().toISOString()})
+      .eq("id",offer.id).eq("status","draft")
+      .eq("paypal_plan_id",ready.plan_id).select("id,status").single();
+    if(publishError||published?.status!=="published")
+      throw Error("PayPal aceptó el plan, pero no se pudo publicar "+offer.title+".");
+    count++;
+   }
+   setNotice("Los tres planes de Empresia están publicados con suscripciones PayPal Live verificadas.");
+  }catch(failure){
+   setError((failure instanceof Error?failure.message:"Error de activación")+
+    " Se activaron "+count+" planes en este intento. Revisa los estados antes de continuar; no se cobra a nadie automáticamente.");
+  }finally{
+   await load();
+   setBusy(false);
+  }
  }
  const paid=sales.filter(s=>["paid","active"].includes(s.status));
  return <main className="content" style={{maxWidth:1160,margin:"0 auto"}}>
@@ -149,6 +220,18 @@ export default function EmpresiaCommerceAdmin(){
        Este comercio procesa cobros propios de Empresia, no los cobros de terceros.
       </p>
      </section>
+    </section>
+    <section className="card" style={{marginBottom:16}}>
+      <h2>Activación de los planes oficiales</h2>
+      <p className="muted">Essential US$80, Growth US$460 y Scale US$800 mensuales. La activación crea o verifica cada plan en PayPal Live antes de publicarlo. No genera suscripciones ni cobros a clientes.</p>
+      <button type="button" className="button primary" onClick={()=>void activateStandardCatalog()}
+        disabled={busy||!catalogReady||allPublished}>
+        {busy?"Comprobando y publicando…":allPublished?"Tres planes publicados":"Activar los tres planes en PayPal Live"}
+      </button>
+      {!catalogReady&&<p role="alert" className="muted" style={{marginTop:9}}>
+        Los identificadores o importes de los tres planes no coinciden con la configuración oficial. No se publicarán automáticamente.
+      </p>}
+      <p className="muted" style={{fontSize:12,marginTop:10}}>Esta operación necesita una sesión del propietario y credenciales PayPal Live configuradas en el servidor. Las transacciones requieren autorización individual del comprador.</p>
     </section>
     <section className="card" style={{marginBottom:16}}>
       <h2>Ofertas configuradas</h2>
