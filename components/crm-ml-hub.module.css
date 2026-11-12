@@ -29,3 +29,15 @@
 .capabilities strong{font-size:14px}.capabilities small{line-height:1.5;color:#6a7380}
 .disclaimer{font-size:12px;color:#717b85;line-height:1.6}
 @media(max-width:740px){.hero{flex-direction:column;align-items:stretch;padding:20px}.hero h2{font-size:21px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.capabilities{grid-template-columns:1fr}.card{padding:15px}.score{min-width:86px}.score progress{width:86px}}
+
+/* Empty, honest business state: focus on a next action instead of blank ML metrics. */
+.emptySetup{display:grid;gap:11px;padding:clamp(20px,4vw,28px);background:#fff;border:1px solid #dfe7eb;border-radius:17px;max-width:850px}
+.emptyOverline{font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;color:#a63850}
+.emptySetup h3{font-size:clamp(19px,3vw,24px);color:#253b4b;letter-spacing:-.03em;margin:0}
+.emptySetup p{font-size:13px;line-height:1.65;margin:0;color:#657783;max-width:680px}
+.emptyActions{display:flex;gap:9px;flex-wrap:wrap}
+.emptyActions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:#942c43;color:white;border-radius:10px;text-decoration:none;padding:11px 15px;font-size:12px;font-weight:850}
+.emptyActions a+a{background:#eff4f6;color:#304c5e;border:1px solid #dce5e9}
+.qualityToggle{justify-self:start;cursor:pointer;border:0;background:none;color:#902b44;font-size:12px;font-weight:800;padding:9px 0;text-align:left}
+.emptyActions a:focus-visible,.qualityToggle:focus-visible{outline:3px solid #27a2b6;outline-offset:2px}
+@media(max-width:520px){.emptyActions{display:grid;grid-template-columns:1fr}.emptySetup{padding:18px}}
