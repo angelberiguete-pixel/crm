@@ -14,6 +14,7 @@ El centro reutiliza los recorridos existentes de Playwright y registra evidencia
 - Vercel: por defecto deshabilitado. Nunca se muestra si VERCEL_ENV=production, incluso si una variable se configuró mal.
 - Local/preview NO productivo: configurar EMPRESIA_QA_CENTER_ENABLED=true en el proceso aislado. Proteger cualquier preview con Vercel Deployment Protection o SSO. Jamás poner esa variable en producción.
 - Ruta: /qa/mobile. No está en navegación pública ni en el CRM de clientes.
+- proxy.ts aplica un bloqueo por defecto SOLO en QA preview activado: cualquier ruta distinta del centro y sus recursos estáticos devuelve 404. Esto evita entrar por accidente en /crm o /family-power y alcanzar el Supabase principal.
 - No enlazar ni automatizar rutas de producción; los paths que aparecen son referencias de código.
 - vercel.json ya limita el despliegue automático a main. La rama/PR no debe fusionarse ni desplegarse a producción sin revisión.
 
