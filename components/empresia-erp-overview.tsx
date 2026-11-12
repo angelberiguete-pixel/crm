@@ -4,12 +4,14 @@ import Link from "next/link";
 import { Boxes, FileText, ShoppingCart } from "lucide-react";
 import { useActiveTenant } from "@/components/tenant-context";
 import styles from "./erp-native-inventory.module.css";
+import ErpDualEngineStatus from "@/components/erp-dual-engine-status";
 
 export default function EmpresiaErpOverview() {
   const tenant = useActiveTenant();
   if (!tenant) return <div className="notice" role="alert">Selecciona una empresa para abrir el ERP.</div>;
   return <div className="stack gap-16">
     <header><div className="eyebrow">Empresia · Plataforma principal</div><h2>ERP · {tenant.tenant_name}</h2><p className="muted">Inventario y ventas dentro de la misma sesión de tu empresa.</p></header>
+    {tenant.tenant_slug==="eurevector"&&["owner","admin"].includes(tenant.membership_role)&&<ErpDualEngineStatus/>}
     <section className={styles.links} aria-label="Módulos ERP">
       <Link className="card" href="/crm/inventory"><Boxes size={26} aria-hidden="true" /><h3>Inventario</h3><p>Artículos, almacenes, reservas, transferencias y movimientos.</p><span className="button">Abrir inventario</span></Link>
       <Link className="card" href="/crm/quotations"><FileText size={26} aria-hidden="true" /><h3>Cotizaciones</h3><p>Propuestas comerciales para revisión y aprobación del cliente.</p><span className="button">Ver cotizaciones</span></Link>
