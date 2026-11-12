@@ -146,9 +146,36 @@ Deno.serve(async(req:Request)=>{
     .eq("id",input.offer_id).maybeSingle();
    const offer=raw as Offer|null;
    if(!offer||offer.kind!=="monthly")return reply({error:"not_monthly"},422);
-   if(offer.paypal_plan_id)return reply({status:"ready",plan_id:offer.paypal_plan_id});
-   if(offer.status!=="draft")return reply({error:"must_be_draft"},409);
+   // Real checkout must never publish a Sandbox subscription plan.
+   if(Deno.env.get("PAYPAL_ENVIRONMENT")!=="live")
+     return reply({error:"paypal_live_required"},409);
+   if(!["draft","published"].includes(offer.status))
+     return reply({error:"not_publishable"},409);
    const token=await paypalToken();
+   // Validate the actual billing plan with PayPal, not merely a saved plan ID.
+   async function verifiedPlan(planId:string,productId:string){
+     const detail=await paypal<{
+       id:string;status:string;product_id:string;
+       billing_cycles?:Array<{
+         tenure_type:string;frequency?:{interval_unit:string;interval_count:number};
+         pricing_scheme?:{fixed_price?:{value:string;currency_code:string}}
+       }>
+     }>(token,"/v1/billing/plans/"+encodeURIComponent(planId));
+     const recurring=detail.billing_cycles?.find(x=>x.tenure_type==="REGULAR");
+     if(detail.id!==planId||detail.status!=="ACTIVE"
+       ||detail.product_id!==productId
+       ||recurring?.frequency?.interval_unit!=="MONTH"
+       ||recurring?.frequency?.interval_count!==1
+       ||recurring?.pricing_scheme?.fixed_price?.currency_code!=="USD"
+       ||parseAmount(recurring?.pricing_scheme?.fixed_price?.value)!==offer.usd_price_cents)
+       throw Error("paypal_plan_mismatch");
+   }
+   if(offer.paypal_plan_id){
+     if(!offer.paypal_product_id)throw Error("paypal_plan_mismatch");
+     await verifiedPlan(offer.paypal_plan_id,offer.paypal_product_id);
+     return reply({status:"ready",plan_id:offer.paypal_plan_id,environment:"live"});
+   }
+   if(offer.status!=="draft")return reply({error:"must_be_draft"},409);
    let productId=offer.paypal_product_id;
    if(!productId){
     const product=await paypal<{id:string}>(
@@ -180,11 +207,12 @@ Deno.serve(async(req:Request)=>{
     },"empresia-offer-plan-"+offer.id
    );
    if(!/^P-[A-Z0-9]+$/.test(pp.id))throw Error("paypal_plan_invalid");
+   await verifiedPlan(pp.id,productId);
    const {error}=await admin.from("empresia_offers").update({
      paypal_plan_id:pp.id,updated_at:new Date().toISOString()
    }).eq("id",offer.id).is("paypal_plan_id",null);
    if(error)throw Error("storage_error");
-   return reply({status:"ready",plan_id:pp.id});
+   return reply({status:"ready",plan_id:pp.id,environment:"live"});
   }
 
   if(action==="checkout"){
@@ -353,6 +381,7 @@ Deno.serve(async(req:Request)=>{
  }catch(e){
   const code=e instanceof Error?e.message:"unknown";
   if(code==="paypal_not_configured")return reply({error:"paypal_not_configured"},503);
+  if(code==="paypal_plan_mismatch")return reply({error:"paypal_plan_mismatch"},409);
   // Errors are intentionally generic: never log provider credentials or payer details.
   return reply({error:"checkout_not_completed"},503);
  }
