@@ -29,7 +29,9 @@ try {
   await page.getByRole("heading", { name: "Pruebas móviles de Empresia" }).waitFor();
   assert.ok(await page.getByText("Salida a beta bloqueada").isVisible());
   await page.getByRole("button", { name: /QA-06.*Propietario y cliente/ }).click();
-  assert.ok(await page.getByRole("option", { name: /Aprobada en fixtures/ }).isDisabled(), "real auth cannot be passed");
+  await page.getByText("No certificable todavía").waitFor();
+  await page.waitForFunction(() => document.querySelector('option[value="aprobada"]')?.hasAttribute("disabled") === true);
+  assert.equal(await page.locator('option[value="aprobada"]').getAttribute("disabled"), "", "real auth cannot be passed");
   await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).click();
   await page.getByLabel("Resultado", { exact: true }).selectOption("bloqueada");
   await page.getByLabel("Resultado observado / motivo").fill("Bloqueada a falta de un registro de CI que corresponda al SHA probado.");
