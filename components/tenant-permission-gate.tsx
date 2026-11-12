@@ -48,6 +48,8 @@ const sectionPermission: Record<string, string> = {
   sessions: "settings",
   files: "dashboard",
   pagos: "dashboard",
+  finanzas: "dashboard",
+  "seguridad-instalaciones": "dashboard",
 };
 
 type TenantAccess = {
@@ -144,11 +146,11 @@ export default function TenantPermissionGate({ section, children }: { section: s
       const moduleEnabled = module ? module.enabled : true;
 
       const restrictedFamilySections=["companies","sales","marketing","email","channels","automations","sessions"];
-      const familyOnlySections=["arm","tasks","reports"];
+      const familyOnlySections=["arm","tasks","reports","finanzas","seguridad-instalaciones"];
       const familyPowerRestriction=(familyOnlySections.includes(section)&&activeTenant.tenant_slug!=="family-power")
         ||(activeTenant.tenant_slug==="family-power"&&
           (restrictedFamilySections.includes(section) ||
-           (["settings","pagos"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
+           (["settings","pagos","finanzas","seguridad-instalaciones"].includes(section)&&!["owner","admin"].includes(activeTenant.membership_role))));
       if (hasPermission && moduleEnabled && !familyPowerRestriction) {
         tenantRef.current = activeTenant.tenant_id;
         setTenant(activeTenant);
