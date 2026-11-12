@@ -8,6 +8,7 @@ import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import BrandLogo from "@/components/brand-logo";
 import FamilyPowerExecutiveInsights from "@/components/family-power-executive-insights";
+import FamilyPowerCatalogReadiness from "@/components/family-power-catalog-readiness";
 import styles from "./family-power-dashboard.module.css";
 import {familyPowerRoleLabel} from "@/lib/family-power-access";
 
@@ -66,6 +67,7 @@ export default function EnergyServiceDashboard(){
      <div className={styles.brand}><BrandLogo size="login" surface="dark"/></div>
    </section>
    {tenantId&&<FamilyPowerExecutiveInsights tenantId={tenantId} counts={counts} loading={loading}/>}
+   <FamilyPowerCatalogReadiness/>
    <section className={styles.quick}>
     <div className={styles.heading}><div><span className={styles.eyebrow}>Accesos de trabajo</span><h2>Todo lo necesario para operar</h2></div>
       <button type="button" onClick={()=>setVersion(v=>v+1)} disabled={loading} className={styles.refresh}><RefreshCw size={16}/> Actualizar</button>
