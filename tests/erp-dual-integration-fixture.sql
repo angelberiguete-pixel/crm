@@ -18,7 +18,8 @@ returns boolean language sql stable security definer set search_path='' as $$
 create table public.erp_connections(
  id uuid primary key,tenant_id uuid not null references public.tenants(id),
  provider text not null,status text not null default 'disconnected',
- sync_direction text default 'read_only',last_healthcheck_at timestamptz);
+ sync_direction text default 'read_only',last_healthcheck_at timestamptz,
+ sync_settings jsonb not null default '{}'::jsonb);
 create table public.erp_sync_jobs(
  id uuid primary key default gen_random_uuid(),
  tenant_id uuid not null references public.tenants(id),
