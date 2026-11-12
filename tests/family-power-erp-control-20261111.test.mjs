@@ -33,9 +33,9 @@ test("no fictitious profit, transactions, product prices or installation milesto
  assert.match(fp,/Number\(x\.sale_price\)<=0/);
  assert.match(fp,/no ha registrado cotizaciones, pedidos, trabajos, entregas ni pagos/);
  assert.match(fp,/no generan ventas, pagos, existencias ni facturas ficticias|no genera ventas, pagos, existencias ni facturas ficticias/);
- assert.match(fp,/href="\/crm\/finanzas"/);
+ assert.match(fp,/link:"\/crm\/finanzas"/);
  assert.match(fp,/href="\/crm\/products"/);
- assert.match(fp,/href="\/crm\/inventory"/);
+ assert.match(fp,/link:"\/crm\/inventory"/);
 });
 test("ERP dashboard is responsive and reuses actual module links",()=>{
  assert.match(css,/@media\(max-width:730px\)/);
