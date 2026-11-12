@@ -139,8 +139,10 @@ create or replace function private.erp_dual_protect_existing_jobs()
 returns trigger language plpgsql security definer set search_path=''
 as $$
 begin
- if exists(select 1 from private.erp_dual_tenant_enrollments p
+ if (exists(select 1 from private.erp_dual_tenant_enrollments p
    where p.tenant_id=new.tenant_id and p.enabled=true)
+   or exists(select 1 from public.tenants t
+     where t.id=new.tenant_id and t.slug='eurevector'))
    and new.job_type in ('push','pull','full_sync')
    and (new.entity_type is null or new.entity_type in
      ('product','quotation','order','invoice','payment','inventory','stock_move','accounting','purchase'))
