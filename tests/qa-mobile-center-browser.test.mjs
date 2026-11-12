@@ -40,6 +40,8 @@ try {
   assert.ok((await page.getByRole("button", { name: /QA-01.*Selección explícita/ }).innerText()).includes("Bloqueada"));
   const dims = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: window.innerWidth }));
   assert.ok(dims.document <= dims.viewport + 1, "QA page has no Android horizontal overflow");
+  const forbidden = await page.goto(base + "/crm");
+  assert.equal(forbidden?.status(), 404, "QA preview blocks real CRM routes");
   assert.equal(productionCalls, 0, "QA panel must never call production Supabase");
   console.log("PASS: local-only mobile checklist, impossible real approval, storage persistence, responsive and no production requests.");
 } finally {
