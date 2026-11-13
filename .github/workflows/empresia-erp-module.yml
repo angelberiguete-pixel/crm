@@ -28,7 +28,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/empresia-erp-module.test.mjs tests/empresia-unified-brand.test.mjs tests/tenant-white-label.test.mjs tests/erp-native-domain.test.mjs tests/erp-native-accounting-fiscal.test.mjs tests/erp-native-commercial-document.test.mjs
+      - run: node --test tests/empresia-erp-module.test.mjs tests/empresia-unified-brand.test.mjs tests/tenant-white-label.test.mjs tests/erp-native-domain.test.mjs tests/erp-native-accounting-fiscal.test.mjs tests/erp-native-commercial-document.test.mjs tests/erp-native-receivables-aging.test.mjs
       - name: Disposable PostgreSQL transaction and concurrency tests
         run: |
           docker run --name empresia-erp-test -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres:17.6
