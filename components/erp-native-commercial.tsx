@@ -1,9 +1,10 @@
 "use client";
 
-import {useCallback,useEffect,useRef,useState,type FormEvent} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState,type FormEvent} from "react";
 import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {buildCommercialInvoicePdf,commercialMinor,commercialMoney,validateCommercialPayment,type CommercialInvoice} from "@/lib/erp-native/commercial-document";
+import {buildReceivablesAging,formatReceivableMoney} from "@/lib/erp-native/receivables-aging";
 
 type Order={id:string;order_number:string;status:string;currency:string;total:string|number;amount_paid:string|number};
 function failure(message:string){
@@ -66,6 +67,13 @@ function CommercialLedger({tenantId,orders,onChanged}:{tenantId:string;orders:Or
  }
  const available=orders.filter(order=>order.status!=="cancelled"&&!invoices.some(invoice=>invoice.order_id===order.id));
  const pending=invoices.filter(invoice=>commercialMinor(invoice.outstanding)>0n);
+ const aging=useMemo(()=>{
+  if(!ready)return {report:null,error:false};
+  try{
+   const now=new Date(),localDay=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+   return {report:buildReceivablesAging(invoices,tenantId,localDay),error:false};
+  }catch{return {report:null,error:true};}
+ },[invoices,tenantId,ready]);
  return <section className="stack gap-16" aria-label="Facturación comercial">
   <div className="card"><div className="eyebrow">Facturación comercial · {tenant?.tenant_name}</div><h2>Facturas y cuentas por cobrar</h2><p className="muted">Facturas del negocio, separadas de la suscripción de Empresia. Los cobros registran dinero recibido y requieren confirmación humana y referencia.</p>
    <button className="button" disabled={busy||loading} onClick={()=>void load().catch(()=>setError("No se pudo actualizar la facturación."))}>Actualizar facturas</button>
@@ -82,6 +90,22 @@ function CommercialLedger({tenantId,orders,onChanged}:{tenantId:string;orders:Or
    <label>Referencia comprobable<input required maxLength={160} value={payment.reference} onChange={event=>setPayment({...payment,reference:event.target.value,confirmed:false})}/></label>
    </div><label style={{display:"flex",gap:10,alignItems:"center",margin:"16px 0"}}><input type="checkbox" required checked={payment.confirmed} onChange={event=>setPayment({...payment,confirmed:event.target.checked})} style={{width:"auto"}}/>Confirmo que el dinero fue recibido y que la referencia es comprobable.</label>
    <button className="button primary" disabled={!payment.confirmed||!payment.invoiceId}>Registrar cobro recibido</button></fieldset></form>}
+  {ready&&<div className="card" aria-label="Antigüedad de cuentas por cobrar">
+   <h3>Antigüedad de cuentas por cobrar</h3>
+   <p className="muted">Resumen de las últimas {invoices.length} facturas consultadas (máximo 250). No representa necesariamente toda la cartera. No combina monedas ni incluye cobros no registrados.</p>
+   {aging.error&&<p className="notice" role="alert">Hay facturas con importes o fechas inconsistentes. Revisa los datos antes de usar este reporte.</p>}
+   {aging.report?.currencies.length===0&&<p className="muted">No hay saldos abiertos en las facturas consultadas.</p>}
+   {aging.report?.currencies.map(group=><div key={group.currency} style={{marginTop:16}}>
+    <h4>{group.currency} · {group.openInvoices} facturas abiertas</h4>
+    <div className="form-grid">
+     <p><strong>Saldo pendiente</strong><br/>{formatReceivableMoney(group.totalMinor,group.currency)}</p>
+     <p><strong>Saldo vencido</strong><br/>{formatReceivableMoney(group.overdueMinor,group.currency)} · {group.overdueInvoices} facturas</p>
+    </div>
+    {group.buckets.map(bucket=><div key={bucket.key} className="priority-item" style={{display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+     <span>{bucket.label} ({bucket.count})</span><strong>{formatReceivableMoney(bucket.amountMinor,group.currency)}</strong>
+    </div>)}
+   </div>)}
+  </div>}
   {ready&&<div className="card"><h3>Facturas comerciales registradas</h3><p className="muted">Últimas 250 facturas. Los importes conservan la moneda de cada documento.</p>
    {invoices.map(invoice=><article className="priority-item" key={invoice.id} style={{alignItems:"flex-start",flexWrap:"wrap",gap:12}}><div style={{minWidth:0,flex:"1 1 240px",overflowWrap:"anywhere"}}><strong>{invoice.invoice_number}</strong><div>{invoice.customer_snapshot.name} · {commercialMoney(invoice.total,invoice.currency)}</div><div className="muted">Cobrado {commercialMoney(invoice.amount_paid,invoice.currency)} · Pendiente {commercialMoney(invoice.outstanding,invoice.currency)}</div><div className="muted">Vence {invoice.due_date}{invoice.overdue?" · Vencida":""}</div></div><button className="button small" onClick={()=>download(invoice)}>Descargar PDF</button></article>)}
    {invoices.length===0&&<p className="muted">No hay facturas comerciales registradas.</p>}
