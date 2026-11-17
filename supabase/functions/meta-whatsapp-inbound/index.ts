@@ -1,5 +1,5 @@
 import {createClient} from "npm:@supabase/supabase-js@2.116.0";
-import {normalizeVerifiedWhatsAppTexts} from "./meta-whatsapp-inbound.ts";
+import {normalizeVerifiedWhatsAppTexts} from "../../../lib/meta-whatsapp-inbound.ts";
 
 const text=(value:string,status=200)=>new Response(value,{status,headers:{
   "Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}});
