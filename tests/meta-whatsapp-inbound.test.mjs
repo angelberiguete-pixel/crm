@@ -55,8 +55,8 @@ test("one human follow-up task is scheduled only from verified receipts",()=>{
 test("Meta Edge receiver resolves the checked-in verified-message parser",()=>{
  const edgeDir=new URL("../supabase/functions/meta-whatsapp-inbound/",import.meta.url);
  const entry=readFileSync(new URL("index.ts",edgeDir),"utf8");
- const parserImport=entry.match(/from\\s+["']([^"']*meta-whatsapp-inbound\\.ts)["']/);
- assert.ok(parserImport,"Meta Edge must import a local parser module");
- const parser=readFileSync(new URL(parserImport[1],edgeDir),"utf8");
+ const parserPath="../../../lib/meta-whatsapp-inbound.ts";
+ assert.ok(entry.includes('from "'+parserPath+'"'),"Meta Edge must import the checked-in parser");
+ const parser=readFileSync(new URL(parserPath,edgeDir),"utf8");
  assert.match(parser,/export function normalizeVerifiedWhatsAppTexts/);
 });
