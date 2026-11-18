@@ -32,6 +32,8 @@ jobs:
         run: node --experimental-strip-types --test tests/contact-vcard.test.mjs
       - name: Meta Business Suite callback verification and event contract tests
         run: node --experimental-strip-types --test tests/meta-webhook.test.mjs
+      - name: Empresia Meta Hub verified connection readiness and tenant isolation
+        run: node --experimental-strip-types --test tests/meta-hub-status.test.mjs
       - name: WhatsApp Cloud API test-send policy and tenant ownership tests
         run: node --experimental-strip-types --test tests/whatsapp-test-send.test.mjs
       - name: Digital staff validated role, human-review and provider budget tests

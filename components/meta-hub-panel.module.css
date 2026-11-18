@@ -1,0 +1,22 @@
+.wrap{margin:22px 0;background:var(--panel,#141d30);border:1px solid #94aed638;border-radius:17px;padding:22px;min-width:0;color:var(--text)}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.header h2{font-size:23px;letter-spacing:-.03em;margin:5px 0}
+.header p,.card p,.card small,.evidence p{color:var(--muted,#a8b5c9);line-height:1.5;font-size:12px;margin:5px 0 0}
+.eyebrow{color:var(--accent,#60a5fa);font-size:11px;letter-spacing:.13em;font-weight:800}
+.external{display:inline-flex;align-items:center;gap:7px;border-radius:9px;border:1px solid #94aed653;padding:10px 12px;color:var(--text);text-decoration:none;font-size:12px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:11px;padding:16px;background:var(--panel2,#1d2940);border:1px solid #94aed62b;border-radius:13px;min-width:0}
+.heading{display:flex;gap:9px;align-items:center;font-size:14px}
+.heading svg{color:var(--accent,#60a5fa);flex:0 0 auto}
+.card small{margin-top:auto}
+.status{font-size:11px;font-weight:750;border:1px solid #90a4bd60;border-radius:8px;padding:6px 9px;align-self:flex-start}
+.status[data-state="verified_route"]{background:#12503e;color:#b7f7d4;border-color:#31846d}
+.status[data-state="pending"]{background:#543916;color:#ffe0a5;border-color:#8d6630}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:17px}
+.evidence{display:flex;gap:10px;align-items:flex-start;max-width:680px}
+.evidence svg{flex:0 0 auto;color:var(--accent,#60a5fa)}
+.evidence strong{font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions a{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--text);font-size:12px;border:1px solid #94aed653;border-radius:9px;padding:10px 12px}
+@media(max-width:1020px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.wrap{padding:16px}.grid{grid-template-columns:1fr}.header,.bottom{flex-direction:column;align-items:stretch}.external{align-self:flex-start}.actions a{flex:1}}

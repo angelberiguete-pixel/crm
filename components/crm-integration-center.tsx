@@ -7,6 +7,7 @@ import {supabase} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "./crm-integration-center.module.css";
+import MetaHubPanel from "./meta-hub-panel";
 
 type Provider="whatsapp"|"instagram"|"email";
 type Channel={id:string;provider:Provider;name:string;record_status:string;verified:boolean};
@@ -250,6 +251,7 @@ export default function CrmIntegrationCenter(){
        </form>
        <p className={styles.smallPrint}>No introduzcas tokens, contraseñas, códigos SMS ni secretos. El registro no autoriza el envío de mensajes.</p>
     </section>}
+   <MetaHubPanel tenantId={tenant.tenant_id} health={health} refreshKey={revision}/>
    <section className={styles.panel} aria-label="Conexión YCloud API" style={{margin:"22px 0"}}>
      <div className={styles.eyebrow}>PROVEEDOR PRINCIPAL · YCLOUD</div>
      <h2>WhatsApp Business API · estado real</h2>
