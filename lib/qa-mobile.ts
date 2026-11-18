@@ -33,6 +33,11 @@ export const QA_CASES: readonly QACase[] = [
   { id: "QA-13", group: "Integraciones", title: "Odoo real", objective: "Solo con servidor y credenciales QA propios; nunca reutilizar conexiones de clientes.", scope: "integracion" },
   { id: "QA-14", group: "Integraciones", title: "Pasarela en sandbox", objective: "Solo con credenciales sandbox y evento verificado; nunca activar pagos reales.", scope: "integracion" },
   { id: "QA-15", group: "Revisión", title: "PR #18 y duplicaciones", objective: "Inspeccionar conflictos y solapamientos; no fusionar sin aprobación y regresiones.", scope: "staging" },
+  { id: "QA-16", group: "Entorno QA", title: "Preview sin acceso a producción", objective: "Demostrar con configuración, red y SHA que las rutas CRM del preview usan exclusivamente una base QA aislada, nunca ygipjqgyreeahslzorik; denegar por defecto si falta.", scope: "staging" },
+  { id: "QA-17", group: "ERP transaccional", title: "Inventario, reservas y cobros", objective: "Verificar esquema de almacenes y columnas, reserva concurrente, entrega, devolución, factura, PDF, pago parcial e idempotencia con datos sintéticos en PostgreSQL QA.", scope: "staging" },
+  { id: "QA-18", group: "WhatsApp oficial", title: "Webhook Meta firmado y Buzón A/B", objective: "En sandbox/autorización oficial probar HMAC inválido, ruta desconocida, recepción firmada, reintento deduplicado, aislamiento tenant, asignación, respuesta y estados sin activar automatización.", scope: "integracion" },
+  { id: "QA-19", group: "Seguridad", title: "Auditoría RLS y funciones privilegiadas", objective: "Clasificar hallazgos Supabase; verificar autorización de funciones SECURITY DEFINER, acceso anónimo, vistas, Storage, RPC y denegación de tenant B sin usar datos de clientes.", scope: "staging" },
+  { id: "QA-20", group: "Salida al cliente", title: "Ensayo de demostración y decisión GO/NO-GO", objective: "Demostración Android/escritorio con datos sintéticos, acta de hallazgos, aprobaciones humanas, rollback, QA por SHA y aceptación separada antes de habilitar Family Power.", scope: "staging" },
 ];
 
 export const EMPTY_QA_RECORD: QARecord = {
