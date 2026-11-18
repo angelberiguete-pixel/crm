@@ -48,3 +48,23 @@ test("QA route is disabled by default and in production, with no Supabase import
   assert.match(cockpit,/localStorage/);
   assert.match(cockpit,/schemaVersion: 1/);
 });
+
+
+test("fase 2: los cinco controles críticos no se aprueban con fixtures ni CI aislada",()=>{
+  const required={
+    "QA-16":"staging",
+    "QA-17":"staging",
+    "QA-18":"integracion",
+    "QA-19":"staging",
+    "QA-20":"staging"
+  };
+  for(const [id,scope] of Object.entries(required)){
+    const item=QA_CASES.find(x=>x.id===id);
+    assert.ok(item,id+" debe existir");
+    assert.equal(item.scope,scope);
+    assert.match(validateQARecord(item,{...EMPTY_QA_RECORD,status:"aprobada",
+      observation:"Afirmación de una prueba no ejecutada"}),/Sin staging verificado/);
+  }
+  assert.equal(qaSummary({}).releaseReady,false);
+  assert.equal(qaSummary({}).approvedFixture,0);
+});
