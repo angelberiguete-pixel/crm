@@ -32,8 +32,8 @@ Los casos con ámbito "staging" o "integración" nunca se pueden marcar aprobado
 
 ## Preparación del staging verdadero (NO implementada en V1)
 
-1. Crear proyecto Supabase QA físicamente separado, sin duplicar ni consultar la base actual; dos tenants QA-A y QA-B con usuarios distintos y datos sintéticos. No usar "family-power" ni su tenant_id.
-2. Configurar un proyecto Vercel QA autónomo con entorno PREVIEW, protección de acceso y variables/endpoint hacia Supabase QA; modificar y AUDITAR la selección de backend antes de acceder a las rutas CRM, ya que hoy lib/supabase.ts codifica el endpoint principal.
+1. Preparar una **rama de base de datos Supabase QA aislada** (sin datos de producción) y comprobar primero que la creación/migraciones no estén en `MIGRATIONS_FAILED`. No cambiar el proyecto principal ni reutilizar datos/identificadores de `family-power`. Crear QA-A y QA-B con datos y cuentas sintéticos, solo cuando el aislamiento esté verificado.
+2. Reutilizar el **proyecto Vercel existente `crm`** mediante un preview protegido de la rama QA, sin crear otro proyecto. `vercel.json` hoy restringe desplegar ramas distintas de `main`: habilitar solo la rama QA cuando su configuración esté revisada. Deben auditarse frontend, servidor y Edge Functions para que todas las conexiones del preview apunten únicamente a Supabase QA; hoy `lib/supabase.ts` codifica el endpoint de producción. Hasta entonces mantener bloqueadas `/crm`, `/api` y `/family-power` en el preview y limitarlo a fixtures.
 3. Instalar RLS/migraciones desde una fuente verificada en QA. No ejecutar migraciones ni scripts SQL contra el proyecto principal.
 4. Validar por separado credenciales propietario/cliente (no compartir contraseñas), RBAC A/B, CRUD cross-tenant negado y recorridos Android de clientes/contactos/oportunidades/conversaciones/cotizaciones/pedidos.
 5. Integraciones Meta/Odoo/PayPal: solo con sandbox y autorización oficial. No disparar mensajes, compras, cobros, WhatsApp o webhook contra producción. Un plan "active" sin evento de cobro no es un pago recibido.
@@ -45,3 +45,43 @@ Los casos con ámbito "staging" o "integración" nunca se pueden marcar aprobado
 En la ruta /qa/mobile seleccione un caso, registre "pendiente", "bloqueada", "fallida" o —solo para fixtures— "aprobada"; escriba la evidencia, pulse "Guardar resultado local" y exporte el JSON para revisión. Puede importar un JSON de la misma versión y el validador rechazará intentos de inyectar aprobaciones reales.
 
 **Nunca introducir contraseñas, JWT, API keys, correos de clientes, números privados ni capturas con datos reales.** El navegador no respalda este registro en el servidor. La issue #69 sigue abierta hasta completar las verificaciones reales y el informe final.
+
+
+## Auditoría de continuidad — 18 de noviembre de 2026 (solo lectura)
+
+Referencia del repositorio: `angelberiguete-pixel/crm`. **El estado de un CI aprobado NO acredita una prueba autenticada contra staging ni un despliegue operativo del cliente.**
+
+| Área | Hallazgo comprobado | Consecuencia para la entrega |
+| --- | --- | --- |
+| Publicación | Vercel proyecto `crm` está `READY` en producción (commit `3d7a6ec`); esa etiqueta solo acredita despliegue, no E2E. | Validar SHA publicado, HTTP, login y Android desde sesión autorizada. |
+| Aislamiento | `lib/supabase.ts` referencia directamente `ygipjqgyreeahslzorik`, incluso desde código de PR; la rama QA `#203` mantiene preview aislado a fixtures y `vercel.json` bloquea auto-deploy fuera de `main`. | **QA-16 BLOQUEANTE:** no probar CRM real en preview hasta que el backend esté aislado de verdad. |
+| Supabase | Proyecto principal `ACTIVE_HEALTHY`; la rama registrada `main` informa `MIGRATIONS_FAILED`. Las últimas migraciones listadas en remoto llegan a `20261110151733`. | Revisar logs/historial y plan de migraciones **en QA**; no corregir ni aplicar SQL en producción a ciegas. |
+| ERP | Tablas `inventory_warehouses` y `inventory_stock_locations` ausentes en el esquema público de producción (consulta a `pg_tables`). Las columnas `category` y `product_id` no aparecen en `inventory_items` actual (consulta a `information_schema`). | **QA-17 BLOQUEANTE:** base actual no demuestra el ERP nativo completo. Pruebas SQL aisladas del PR `#198` no sustituyen migración/control de datos. |
+| WhatsApp | PR `#209` corrige importación Edge y su CI concluyó con éxito en SHA `76a7e349`, pero empaquetado y recepción oficial no certificados. Incidencias `#67` y `#120` abiertas. | **QA-18 BLOQUEANTE:** HMAC, webhook con ruta verificada y duplicados, Buzón y respuesta real solo con autorización y números de prueba. Sin mensajes a clientes. |
+| Seguridad | Advisors reportan 2 funciones `SECURITY DEFINER` accesibles a `anon`, 58 a `authenticated`, 17 tablas con RLS habilitado sin políticas, y advertencia de protección contra contraseñas filtradas. Son **hallazgos de revisión**, no evidencia automática de explotación; algunas funciones o tablas pueden estar restringidas intencionalmente. | **QA-19 BLOQUEANTE:** revisión de privilegios, funciones y comprobación A/B real antes de certificar. |
+| QA existente | PR `#203`: CI verde para `0cdfafda`; centro local-only, sin staging real ni preview publicado. PR `#198`: CI verde para `bf212da2`. Son ramas diferentes y todavía borradores. | No usar un verde de rama desactualizada como evidencia sobre el SHA final desplegado. |
+| Cliente | No hay certificación de extremo a extremo para Family Power: login, inventario, cotización, pedido, pago, WhatsApp, tareas, permiso cruzado y revisión física Android. | **QA-20 BLOQUEANTE:** ensayo con datos sintéticos y acta GO/NO-GO; el cliente no recibe promesas de módulos no probados. |
+
+### Próxima fase: QA-16 a QA-20
+
+La V2 añade cinco escenarios explícitos al registro local, preservando sus garantías: **nunca** acepta una aprobación de staging o integración mediante un fixture/import JSON. Estos nuevos casos no se consideran ejecutados ni aprobados por aparecer en la lista.
+
+1. **QA-16 / Entorno:** demostrar con Network/servidor/código y SHA que un preview protegido usa exclusivamente Supabase QA; error de configuración = NO-GO. Reutilizar Vercel `crm`.
+2. **QA-17 / ERP:** con Postgres QA, migraciones completas, 2 tenants ficticios, pruebas de concurrencia, reservas, entregas, PDF, cobros parciales, reintentos e idempotencia; reconciliar versiones de esquema. No usar productos o cobros de Family Power.
+3. **QA-18 / WhatsApp:** probar primero HMAC inválido/no verificado y replays sintéticos; solo con autorización oficial ensayar el circuito inbound firmado → contacto → Buzón → asignación → respuesta confirmada. Automatizaciones apagadas.
+4. **QA-19 / Seguridad:** revisar `SECURITY DEFINER` (incluida comprobación interna de roles/tenants), GRANT/REVOKE, RLS, Storage y sesiones A/B. Remediar en migraciones versionadas y ensayar con dos identidades QA.
+5. **QA-20 / Salida al cliente:** CI de SHA exacto, preview, Android real, escritorio, prueba negativa, revisión de logs, rollback y acta de aceptación. Demostrar solo los módulos que pasen; cualquier P0 abierto = NO-GO.
+
+### Dependencias y orden para no duplicar trabajo
+
+- `#203` es el centro de evidencia; extenderlo en vez de crear otro panel.
+- `#209` entrega el arreglo aislado del import Meta; debe probarse antes de moverlo a otra rama.
+- `#198` implementa la base de ERP; `#202`, `#204` y `#207` dependen de esa base y requieren validación conjunta, sin merges a `main` prematuros.
+- `#199` sigue sin ser fusionable y la IA se limita a piloto, no a Family Power.
+- Mantener `main`, producción y tenant Family Power intactos durante esta fase. No enviar WhatsApp, no activar automatizaciones, no ejecutar cobros ni migraciones reales.
+
+### Evidencia exigida por cada GO
+
+Anotar: fecha/hora, operador, objetivo y pasos, resultado esperado/observado, SHA de fuente y build, entorno y **ref de base QA**, dispositivo/viewport, enlaces a CI/logs anonimizados o capturas sin PII, condición de reversión y persona que acepta. Una pantalla cargada o un test mock `PASS` **no** sustituye E2E autenticado.
+
+**Estado al 18/11/2026: NO-GO para la presentación integral.** Este documento es diagnóstico y plan de verificación, no una certificación de que los casos se hayan ejecutado.
