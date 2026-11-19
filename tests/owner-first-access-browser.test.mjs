@@ -17,7 +17,7 @@ try{
  const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',role:'authenticated',email:'owner-qa@example.invalid',app_metadata:{},user_metadata:{},created_at:new Date().toISOString(),email_confirmed_at:new Date().toISOString()};
  const token=[Buffer.from('{}').toString('base64url'),Buffer.from(JSON.stringify({sub:user.id,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url'),'qa-signature'].join('.');
  const calls={bootstrap:0,verify:0,password:0};
- await ctx.route('https://ygipjqgyreeahslzorik.supabase.co/**',async route=>{
+ await ctx.route('https://qa-not-configured.invalid/**',async route=>{
   const req=route.request(),url=new URL(req.url());
   let status=200,payload={};
   if(url.pathname.endsWith('/owner-initial-password')){
