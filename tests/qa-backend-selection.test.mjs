@@ -103,10 +103,11 @@ test("browser and application modules never bypass the selected Supabase origin"
     for(const entry of readdirSync(join(root,folder),{withFileTypes:true})){
       const path=join(folder,entry.name);
       if(entry.isDirectory())visit(path);
-      else if(/\\.(?:tsx?|jsx?)$/.test(entry.name))sourcePaths.push(path);
+      else if(/[.](?:tsx?|jsx?)$/.test(entry.name))sourcePaths.push(path);
     }
   }
   for(const rootDir of ["app","components","lib"])visit(rootDir);
+  assert.ok(sourcePaths.length>100,"source audit must scan app and component files");
   const bypasses=sourcePaths.filter(path=>path!=="lib/qa-backend-selection.ts" &&
     /https:\/\/ygipjqgyreeahslzorik[.]supabase[.]co/.test(readFileSync(join(root,path),"utf8")));
   assert.deepEqual(bypasses,[],"hardcoded production Supabase bypasses must be reviewed and removed");
