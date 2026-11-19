@@ -46,6 +46,9 @@
 | QA-F02 | Ausencia del flag QA permitía que preview atravesara el proxy. | **Corregido en #203:** denegación 404 por defecto en Vercel preview fixture-only. |
 | QA-F03 | Pruebas antiguas interceptaban URL productiva y su token local. | **Corregido en código de #203:** fixtures de navegador actualizadas para interceptar `qa-not-configured.invalid` y sesión sintética. CI final por comprobar. |
 | QA-F04 | Contrato de prueba del proxy esperaba la condición antigua. | **Corregido en #203:** aserción adaptada al guard fail-closed. |
+| QA-F05 | La activación inicial del propietario llamaba una Edge Function por URL de producción fija. | **Corregido en #203:** ahora usa `CRM_SUPABASE_URL` seleccionado, con regresión de contrato. |
+| QA-F06 | Ruta privada de evidencias Family Power, formularios Aurevector/Empresia y centro de integraciones incluían URLs productivas fijas. | **Corregido en #203:** clientes y rutas comparten URL pública seleccionada. No habilitar staging hasta revisar todos los servicios, que aún no están certificados. |
+| QA-F07 | Comentario de la función PayPal mostraba un endpoint exclusivo de producción. | **Documentación corregida:** referencia de endpoint por entorno, sin cambiar comportamiento de la función. |
 | DB-B01 | Branch `main` con `MIGRATIONS_FAILED`. | Bloqueado: identificar paso y versión exacta con logs de la acción en Supabase, sin reset automático. |
 | ERP-B01 | No hay `inventory_warehouses` ni `inventory_stock_locations` en esquema principal, ni `inventory_items.category/product_id`. | Bloqueado: migración y pruebas PostgreSQL QA desde #198; no habilitar inventario real. |
 | WA-B01 | #209 sin empaquetado Edge ni mensaje oficial aprobado. | Bloqueado: validar primero con fixtures, luego número/cuenta oficial de prueba sin automatización. |
