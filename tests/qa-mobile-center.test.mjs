@@ -41,7 +41,7 @@ test("QA route is disabled by default and in production, with no Supabase import
   assert.match(page,/notFound\(\)/);
   const proxy=read("proxy.ts");
   assert.match(proxy,/EMPRESIA_QA_CENTER_ENABLED/);
-  assert.match(proxy,/VERCEL_ENV === "preview"/);
+  assert.match(proxy,/VERCEL_ENV !== "preview"/);
   assert.match(proxy,/path === "\/qa\/mobile"/);
   assert.match(proxy,/status: 404/);
   assert.doesNotMatch(cockpit,/from ["']@\/lib\/supabase|supabase\.|fetch\(|\.insert\(|\.update\(/);
