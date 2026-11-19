@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.116.0";
  * PayPal invoice reconciliation for Family Power (and other tracked tenants).
  * NEVER accepts a client-side "paid" flag as evidence. PayPal API is the authority.
  * Secrets: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_ENVIRONMENT.
- * Endpoint: https://ygipjqgyreeahslzorik.supabase.co/functions/v1/paypal-billing
+ * Endpoint: <project-supabase-url>/functions/v1/paypal-billing (environment-specific).
  * POST signed PayPal webhooks OR authenticated {action:"sync",invoice_id:"..."}.
  */
 const cors = {
