@@ -18,9 +18,9 @@ try{
  const conversation="dddddddd-dddd-4ddd-8ddd-dddddddddddd";
  const user={id:owner,aud:"authenticated",role:"authenticated",email:"owner@example.invalid",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
  const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:owner,role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"test-signature"].join(".");
- await ctx.addInitScript(({user,token})=>localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({access_token:token,refresh_token:"mock",expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user})),{user,token});
+ await ctx.addInitScript(({user,token})=>localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({access_token:token,refresh_token:"mock",expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user})),{user,token});
  let assignee=null,assignmentCalls=0;
- await ctx.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+ await ctx.route("https://qa-not-configured.invalid/**",async route=>{
   const req=route.request(),url=new URL(req.url());let data=[];
   if(url.pathname.endsWith("/list_my_tenants"))data=[{tenant_id:tenant,tenant_name:"Tienda QA",tenant_slug:"qa-inbox",membership_role:"owner",is_active:true}];
   else if(url.pathname.endsWith("/tenant_current_permissions"))data={all:true};
