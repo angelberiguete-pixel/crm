@@ -2,8 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import styles from "./empresia-landing.module.css";
+import {CRM_SUPABASE_URL} from "@/lib/supabase";
 
-const ENDPOINT = "https://ygipjqgyreeahslzorik.supabase.co/functions/v1/look-social-media-lead-capture";
+const ENDPOINT = `${CRM_SUPABASE_URL}/functions/v1/look-social-media-lead-capture`;
 type FormState = "idle" | "submitting" | "success" | "error";
 const sectors = ["Energía e inversores", "Servicios técnicos", "Salud y clínicas", "Inmobiliaria", "Automotriz", "Comercio", "Restaurantes", "Otro"];
 
