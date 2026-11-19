@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,readdirSync} from "node:fs";
+import {join} from "node:path";
 import {selectPublicBackend,EMPRESIA_PRODUCTION_PROJECT_REF} from "../lib/qa-backend-selection.ts";
 
 const qaRef="aaaaaaaaaaaaaaaaaaaa";
@@ -93,4 +94,20 @@ test("owner first-access Edge bootstrap cannot bypass isolated backend selection
   assert.match(source,/CRM_SUPABASE_URL/);
   assert.match(source,/functions\/v1\/owner-initial-password/);
   assert.doesNotMatch(source,/https:\/\/ygipjqgyreeahslzorik[.]supabase[.]co/);
+});
+
+test("browser and application modules never bypass the selected Supabase origin",()=>{
+  const root=new URL("../",import.meta.url).pathname;
+  const sourcePaths=[];
+  function visit(folder){
+    for(const entry of readdirSync(join(root,folder),{withFileTypes:true})){
+      const path=join(folder,entry.name);
+      if(entry.isDirectory())visit(path);
+      else if(/\\.(?:tsx?|jsx?)$/.test(entry.name))sourcePaths.push(path);
+    }
+  }
+  for(const rootDir of ["app","components","lib"])visit(rootDir);
+  const bypasses=sourcePaths.filter(path=>path!=="lib/qa-backend-selection.ts" &&
+    /https:\/\/ygipjqgyreeahslzorik[.]supabase[.]co/.test(readFileSync(join(root,path),"utf8")));
+  assert.deepEqual(bypasses,[],"hardcoded production Supabase bypasses must be reviewed and removed");
 });
