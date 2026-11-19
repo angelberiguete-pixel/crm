@@ -1,4 +1,5 @@
 import {createClient} from "@supabase/supabase-js";
+import {CRM_SUPABASE_URL,CRM_SUPABASE_PUBLISHABLE_KEY} from "@/lib/supabase";
 import {NextRequest,NextResponse} from "next/server";
 
 export const runtime="nodejs";
@@ -23,7 +24,7 @@ export async function GET(request:NextRequest){
  if(!/^Bearer [A-Za-z0-9._~+/=-]+$/.test(header)||header.length>4096)return fail(401);
  const token=header.slice(7);
  // Same canonical *publishable* public credentials as the browser CRM. Never a service key.
- const url="https://ygipjqgyreeahslzorik.supabase.co",anon="sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
+ const url=CRM_SUPABASE_URL,anon=CRM_SUPABASE_PUBLISHABLE_KEY;
  try{
   const supabase=createClient(url,anon,{
     global:{headers:{Authorization:"Bearer "+token}},

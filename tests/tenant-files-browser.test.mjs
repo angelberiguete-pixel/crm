@@ -22,12 +22,12 @@ try {
   const exp=Math.floor(Date.now()/1000)+3600;
   const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:user.id,role:"authenticated",exp})).toString("base64url"),"qa-signature"].join(".");
   await context.addInitScript(({user,token,exp})=>{
-    localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+    localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
       access_token:token,refresh_token:"qa-refresh",expires_at:exp,expires_in:3600,token_type:"bearer",user
     }));
   },{user,token,exp});
   let active=A, stored=null, uploads=0,downloads=0,deletes=0,finalizations=0,readOnly=false;
-  await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+  await context.route("https://qa-not-configured.invalid/**",async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname;
     let payload=[], status=200, contentType="application/json";
     if(path.endsWith("/list_my_tenants")) payload=[A,B].map((id,i)=>({

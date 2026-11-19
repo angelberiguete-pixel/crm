@@ -46,13 +46,13 @@ try{
  const user={id:"11111111-1111-4111-8111-111111111111",aud:"authenticated",role:"authenticated",email:"test@example.invalid",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
  const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:user.id,role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"mock-signature"].join(".");
  await disallowed.addInitScript(({user,token})=>{
-  localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+  localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
     access_token:token,refresh_token:"qa-refresh",expires_at:Math.floor(Date.now()/1000)+3600,
     expires_in:3600,token_type:"bearer",user,
   }));
  },{user,token});
  const called=[];
- await disallowed.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+ await disallowed.route("https://qa-not-configured.invalid/**",async route=>{
    const url=new URL(route.request().url()),name=url.pathname.split("/").pop();
    called.push(name);
    const data=name==="list_my_tenants"?

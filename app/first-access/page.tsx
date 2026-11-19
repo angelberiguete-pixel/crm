@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, CRM_SUPABASE_URL } from "@/lib/supabase";
 
 type ActivationPhase = "checking" | "ready" | "invalid" | "saving" | "finished";
 
@@ -30,7 +30,7 @@ export default function FirstAccessPage() {
         return;
       }
       try {
-        const result=await fetch("https://ygipjqgyreeahslzorik.supabase.co/functions/v1/owner-initial-password",{
+        const result=await fetch(`${CRM_SUPABASE_URL}/functions/v1/owner-initial-password`,{
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({ticket}),

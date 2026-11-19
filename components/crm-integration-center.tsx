@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {type FormEvent,useCallback,useEffect,useRef,useState} from "react";
 import {AtSign,Bot,CheckCircle2,ClipboardCopy,ExternalLink,Inbox,Mail,MessageCircle,PhoneCall,RefreshCw,ShieldCheck,Unplug,Workflow} from "lucide-react";
-import {supabase} from "@/lib/supabase";
+import {supabase,CRM_SUPABASE_URL} from "@/lib/supabase";
 import {useActiveTenant} from "@/components/tenant-context";
 import {useTenantBrand} from "@/components/tenant-brand-provider";
 import styles from "./crm-integration-center.module.css";
@@ -35,8 +35,8 @@ const formLabel:{[K in Provider]:{title:string;label:string;placeholder:string;d
   externalLabel:"Revisar configuración de Google OAuth"
  },
 };
-const route="https://ygipjqgyreeahslzorik.supabase.co/functions/v1/meta-whatsapp-inbound";
-const ycloudRoute="https://ygipjqgyreeahslzorik.supabase.co/functions/v1/ycloud-whatsapp-inbound";
+const route=`${CRM_SUPABASE_URL}/functions/v1/meta-whatsapp-inbound`;
+const ycloudRoute=`${CRM_SUPABASE_URL}/functions/v1/ycloud-whatsapp-inbound`;
 
 function integrationState(kind:Provider,health:Health|null,requests:RequestRow[]){
  const channels=(health?.channels??[]).filter(c=>c.provider===kind);

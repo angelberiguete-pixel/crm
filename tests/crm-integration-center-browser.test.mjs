@@ -17,12 +17,12 @@ try{
  const A="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",B="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",uid="11111111-1111-4111-8111-111111111111";
  const user={id:uid,aud:"authenticated",role:"authenticated",email:"owner@example.invalid",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
  const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:uid,role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"qa"].join(".");
- await ctx.addInitScript(({user,token})=>localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+ await ctx.addInitScript(({user,token})=>localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
    access_token:token,refresh_token:"qa",expires_at:Math.floor(Date.now()/1000)+3600,
    expires_in:3600,token_type:"bearer",user,
  })),{user,token});
  let active=A;const requests={A:[],B:[]};const writes=[];
- await ctx.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+ await ctx.route("https://qa-not-configured.invalid/**",async route=>{
    const req=route.request(),url=new URL(req.url()),p=url.pathname,body=req.postDataJSON?.()??{};
    const tenant=body.p_tenant_id??active;
    let result=[];

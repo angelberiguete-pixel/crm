@@ -27,12 +27,12 @@ try{
   const user={id:"11111111-1111-4111-8111-111111111111",aud:"authenticated",role:"authenticated",email:"qa@example.invalid",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
   const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:user.id,role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"mock-signature"].join(".");
   await context.addInitScript(({user,token})=>{
-    localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+    localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
       access_token:token,refresh_token:"qa-test-refresh",
       expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user,
     }));
   },{user,token});
-  await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+  await context.route("https://qa-not-configured.invalid/**",async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname.split("/").pop();
     let response=[];
     if(path==="list_my_tenants")response=[

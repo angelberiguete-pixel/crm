@@ -28,7 +28,7 @@ async function prepare(role){
  const calls={join:[],setActive:0,platform:0};
  if(role!=="guest"){
   await context.addInitScript(({user,token,exp})=>{
-   localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+   localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
     access_token:token,refresh_token:"qa-refresh",expires_at:exp,expires_in:3600,
     token_type:"bearer",user,
    }));
@@ -38,7 +38,7 @@ async function prepare(role){
    }
   },{user,token,exp});
  }
- await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+ await context.route("https://qa-not-configured.invalid/**",async route=>{
   const request=route.request(),url=new URL(request.url()),name=url.pathname.split("/").pop();
   let body=[];
   if(name==="user")body=user;

@@ -25,7 +25,7 @@ try{
   "test-signature"].join(".");
  const context=await browser.newContext({viewport:{width:1280,height:850}});
  await context.addInitScript(({user,token})=>{
-  localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+  localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
    access_token:token,refresh_token:"fake",expires_at:Math.floor(Date.now()/1000)+3600,
    expires_in:3600,token_type:"bearer",user
   }));
@@ -43,7 +43,7 @@ try{
    quotations_by_currency:[],opportunities_by_currency:[],sellers:[],channel_status:[],
    invoices:{state:"not_integrated",reason:"qa"},meta_pixel:{state:"not_integrated",reason:"qa"}});
  let allowed=true;
- await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+ await context.route("https://qa-not-configured.invalid/**",async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname.split("/").pop();
   let data=[];
   if(path==="user")data=user;

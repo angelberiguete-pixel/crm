@@ -15,9 +15,9 @@ try {
   const token=[Buffer.from('{}').toString('base64url'),Buffer.from(JSON.stringify({sub:user.id,role:'authenticated',exp})).toString('base64url'),'qa-signature'].join('.');
   async function fixture(ordinary=false){
     const context=await browser.newContext({viewport:{width:390,height:844}});
-    if(ordinary)await context.addInitScript(({user,token,exp})=>localStorage.setItem('sb-ygipjqgyreeahslzorik-auth-token',JSON.stringify({access_token:token,refresh_token:'qa-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user})),{user,token,exp});
+    if(ordinary)await context.addInitScript(({user,token,exp})=>localStorage.setItem('sb-qa-not-configured-auth-token',JSON.stringify({access_token:token,refresh_token:'qa-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user})),{user,token,exp});
     const calls={updates:0,logouts:0};
-    await context.route('https://ygipjqgyreeahslzorik.supabase.co/**',async route=>{
+    await context.route('https://qa-not-configured.invalid/**',async route=>{
       const req=route.request(),url=new URL(req.url());let body=user,status=200;
       if(url.pathname.endsWith('/user')&&req.method()==='PUT'){calls.updates++;body={...user};}
       if(url.pathname.endsWith('/logout')){calls.logouts++;assert.equal(url.searchParams.get('scope'),calls.logouts===3?'local':'others');if(calls.logouts===1){status=400;body={code:'qa_temporary_failure',msg:'QA logout failed'};}else{status=204;body=null;}}
