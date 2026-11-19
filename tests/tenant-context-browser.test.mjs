@@ -24,10 +24,10 @@ try {
   const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'qa@example.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
   const token = [Buffer.from('{}').toString('base64url'), Buffer.from(JSON.stringify({ sub: user.id, role: 'authenticated', exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url'), 'test-signature'].join('.');
   await context.addInitScript(({ user, token, B }) => {
-    localStorage.setItem('sb-ygipjqgyreeahslzorik-auth-token', JSON.stringify({ access_token: token, refresh_token: 'qa-refresh', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user }));
+    localStorage.setItem('sb-qa-not-configured-auth-token', JSON.stringify({ access_token: token, refresh_token: 'qa-refresh', expires_at: Math.floor(Date.now()/1000)+3600, expires_in: 3600, token_type: 'bearer', user }));
     localStorage.setItem('crm_active_tenant_id', B); // obsolete value must never win
   }, { user, token, B });
-  await context.route('https://ygipjqgyreeahslzorik.supabase.co/**', async route => {
+  await context.route('https://qa-not-configured.invalid/**', async route => {
     const request = route.request(), url = new URL(request.url());
     let response = [];
     if (url.pathname.endsWith('/list_my_tenants')) response = [A,B].map((id,i) => ({ tenant_id:id, tenant_name:i?'QA B':'QA A', tenant_slug:i?'qa-b':'qa-a', membership_role:'owner', is_active:activeId===id }));
