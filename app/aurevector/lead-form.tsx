@@ -2,8 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import styles from "./aurevector.module.css";
+import {CRM_SUPABASE_URL} from "@/lib/supabase";
 
-const ENDPOINT = "https://ygipjqgyreeahslzorik.supabase.co/functions/v1/look-social-media-lead-capture";
+const ENDPOINT = `${CRM_SUPABASE_URL}/functions/v1/look-social-media-lead-capture`;
 
 type Status = { kind: "idle" | "sending" | "success" | "error"; message?: string };
 
