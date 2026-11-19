@@ -1,13 +1,20 @@
 import { createClient, type Session } from "@supabase/supabase-js";
+import {selectPublicBackend} from "./qa-backend-selection";
 
-// Canonical production Supabase project for Look Social Media CRM.
-// Keep this explicit so stale Vercel environment variables cannot silently point
-// the production login at a different Supabase project.
-const url = "https://ygipjqgyreeahslzorik.supabase.co";
-const key = "sb_publishable_2Q7aF-M61t2OZWRrt-vebQ_t_oNK_u7";
+// Next config stamps VERCEL_ENV into both server and browser bundles. Unknown
+// build targets and incomplete preview QA configs select a disabled endpoint,
+// NEVER the production database. No credentials are read from a tenant or URL.
+const backend=selectPublicBackend(process.env.EMPRESIA_BUILD_TARGET,{
+  projectRef:process.env.NEXT_PUBLIC_EMPRESIA_QA_PROJECT_REF,
+  url:process.env.NEXT_PUBLIC_EMPRESIA_QA_SUPABASE_URL,
+  publishableKey:process.env.NEXT_PUBLIC_EMPRESIA_QA_SUPABASE_PUBLISHABLE_KEY,
+});
+const url=backend.url,key=backend.publishableKey;
 
-// Public project coordinates shared by browser and request-scoped server clients.
+// Only public coordinates may reach browser code; never use a service_role key.
 export { url as CRM_SUPABASE_URL, key as CRM_SUPABASE_PUBLISHABLE_KEY };
+export const CRM_BACKEND_MODE=backend.mode;
+export const CRM_BACKEND_READY=backend.ready;
 
 // Bump this marker whenever production data routing changes so Git/Vercel emits
 // a fresh production build instead of leaving an older frontend bundle live.
