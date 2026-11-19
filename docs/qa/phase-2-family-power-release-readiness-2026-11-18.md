@@ -6,7 +6,7 @@
 ## Alcance y fuentes
 
 - Datos de solo lectura consultados en GitHub (PR y CI), proyecto Vercel `crm` y metadatos/Advisors de Supabase principal. No se consultaron ni modificaron registros personales del cliente.
-- CI previamente aprobada en SHA `e7d30e9`: [CRM CI](https://github.com/angelberiguete-pixel/crm/actions/runs/44250300284). La certificación del **nuevo** SHA exige otro resultado verde; los fallos intermedios de CI constan en el historial de la PR.
+- CI previamente aprobada en SHA `e7d30e9`: [CRM CI](https://github.com/angelberiguete-pixel/crm/actions/runs/44250300284). La fase automatizada del código pasó seis workflows en SHA `10c166213a13f660640e0cbe58624cbebb9a6566`, incluido [CRM CI](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944723). Esta evidencia no acredita staging real.
 - Producción Vercel `READY` en SHA `3d7a6ecf8c9aaa13fdc7c1abe673645962a4eed3`. READY no acredita login, BD, ERP ni WhatsApp de extremo a extremo.
 - Supabase principal tiene 223 migraciones registradas, última `20261110151733`; rama de branching `main` informa `MIGRATIONS_FAILED` desde el 11/11, pese al proyecto principal `ACTIVE_HEALTHY`. Se necesita log de acción/migración de la rama y ensayo aislado antes de resolver; no hacer reset/rebase/migraciones de producción.
 - No se ha creado ni desplegado un staging nuevo en esta fase. `vercel.json` mantiene auto-deploy solo para `main` y el centro QA de #203 es fixture-only.
@@ -17,11 +17,11 @@
 
 | ID | Ámbito | Estado | Evidencia y condición de salida |
 |---|---|---|---|
-| QA-01 | Cambio A/B, fixtures | APROBADO (fixture anterior) | CI `44250300284`; volver a comprobar SHA nuevo; no equivale a RLS real. |
-| QA-02 | Empresas/contactos móvil, fixtures | APROBADO (fixture anterior) | CI `44250300284` / prueba navegador simulada; Android físico pendiente. |
-| QA-03 | Oportunidades, fixtures | APROBADO (fixture anterior) | CI `44250300284` / APIs simuladas. |
-| QA-04 | Buzón, fixtures | APROBADO (fixture anterior) | CI `44250300284` / lectura y estados simulados; no hay recepción oficial. |
-| QA-05 | RBAC de UI, fixtures | APROBADO (fixture anterior) | CI `44250300284` / no acredita denegación RLS del servidor. |
+| QA-01 | Cambio A/B, fixtures | APROBADO (fixture) | CI `44427944723`; rama QA actual: solo simulación, no equivale a RLS real. |
+| QA-02 | Empresas/contactos móvil, fixtures | APROBADO (fixture) | CI `44427944723` / prueba navegador simulada; Android físico pendiente. |
+| QA-03 | Oportunidades, fixtures | APROBADO (fixture) | CI `44427944723` / APIs simuladas. |
+| QA-04 | Buzón, fixtures | APROBADO (fixture) | CI `44427944723` / lectura y estados simulados; no hay recepción oficial. |
+| QA-05 | RBAC de UI, fixtures | APROBADO (fixture) | CI `44427944723` / no acredita denegación RLS del servidor. |
 | QA-06 | Login propietario/cliente | BLOQUEADO | Dos cuentas y sesiones QA reales aisladas, Android físico. |
 | QA-07 | RBAC real | BLOQUEADO | Denegar acceso A/B con identidades distintas en QA. |
 | QA-08 | RLS CRUD A/B | BLOQUEADO | SELECT/INSERT/UPDATE/DELETE autorizados/denegados en BD QA. |
@@ -42,9 +42,9 @@
 
 | Identificador | Hallazgo | Medida implementada o pendiente |
 |---|---|---|
-| QA-F01 | `lib/supabase.ts` fijaba producción incluso en preview. | **Corregido en código de #203:** selector por target sellado durante build; modo no productivo sin configuración QA usa `.invalid`. Falta CI del último SHA y preview. |
+| QA-F01 | `lib/supabase.ts` fijaba producción incluso en preview. | **Corregido en código de #203:** selector por target sellado durante build; modo no productivo sin configuración QA usa `.invalid`. CI aprobada en `10c1662`; falta preview real. |
 | QA-F02 | Ausencia del flag QA permitía que preview atravesara el proxy. | **Corregido en #203:** denegación 404 por defecto en Vercel preview fixture-only. |
-| QA-F03 | Pruebas antiguas interceptaban URL productiva y su token local. | **Corregido en código de #203:** fixtures de navegador actualizadas para interceptar `qa-not-configured.invalid` y sesión sintética. CI final por comprobar. |
+| QA-F03 | Pruebas antiguas interceptaban URL productiva y su token local. | **Corregido en código de #203:** fixtures de navegador actualizadas para interceptar `qa-not-configured.invalid` y sesión sintética. CI aprobada en `10c1662`. |
 | QA-F04 | Contrato de prueba del proxy esperaba la condición antigua. | **Corregido en #203:** aserción adaptada al guard fail-closed. |
 | QA-F05 | La activación inicial del propietario llamaba una Edge Function por URL de producción fija. | **Corregido en #203:** ahora usa `CRM_SUPABASE_URL` seleccionado, con regresión de contrato. |
 | QA-F06 | Ruta privada de evidencias Family Power, formularios Aurevector/Empresia y centro de integraciones incluían URLs productivas fijas. | **Corregido en #203:** clientes y rutas comparten URL pública seleccionada. No habilitar staging hasta revisar todos los servicios, que aún no están certificados. |
@@ -86,3 +86,15 @@ Con cuentas y registros ficticios: iniciar sesión como owner QA-A; crear contac
 - [Supabase SECURITY DEFINER autenticado](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
 - [Protección contraseñas filtradas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
 - [Branching y migraciones](https://supabase.com/docs/guides/deployment/branching/working-with-branches)
+
+## Cierre del control automatizado (18/11/2026)
+
+Commit de código evaluado: `10c166213a13f660640e0cbe58624cbebb9a6566`.
+- [CRM CI — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944723): controles contractuales, TypeScript, Next build y navegadores simulados.
+- [PayPal invoice API integration — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944608).
+- [Empresia reusable checkout — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944606).
+- [ARM shared billing — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944601).
+- [Brand migration — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944705).
+- [Production HTTP smoke — success](https://github.com/angelberiguete-pixel/crm/actions/runs/44427944609): observa publicación existente, NO desplegó esta PR.
+
+La PR #203 está **57 commits por delante y uno por detrás** de `main` según comparación del 18/11; no se rebasó ni fusionó para evitar alterar producción. Aun con CI verde, QA-06 a QA-20 siguen bloqueadas por falta de staging E2E y dependencias oficiales. Todo cambio documental posterior al SHA probado debe distinguirse del commit de código certificado.
