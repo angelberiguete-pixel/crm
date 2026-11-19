@@ -21,7 +21,7 @@ try{
   const user={id:uid,aud:"authenticated",role:"authenticated",email:"test-owner@example.invalid",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
   const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:uid,role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"test-signature"].join(".");
   await context.addInitScript(({user,token})=>{
-    localStorage.setItem("sb-ygipjqgyreeahslzorik-auth-token",JSON.stringify({
+    localStorage.setItem("sb-qa-not-configured-auth-token",JSON.stringify({
       access_token:token,refresh_token:"fake-qa-refresh",expires_at:Math.floor(Date.now()/1000)+3600,
       expires_in:3600,token_type:"bearer",user
     }));
@@ -29,7 +29,7 @@ try{
   const agents=[],requests=[];
   const pendingTrial={id:"22222222-2222-4222-8222-222222222222",agent_id:"11111111-1111-4111-8111-222222222222",status:"awaiting_approval",input:{question:"¿Qué servicios ofrecen?"},output:{draft:"Contamos con servicios verificados y podemos organizar una consulta."},created_at:new Date().toISOString()};
   const reviews=[];
-  await context.route("https://ygipjqgyreeahslzorik.supabase.co/**",async route=>{
+  await context.route("https://qa-not-configured.invalid/**",async route=>{
     const req=route.request(),url=new URL(req.url()),path=url.pathname.split("/").pop();
     let data=[];
     if(path==="list_my_tenants")data=[{tenant_id:tenant,tenant_name:"Empresa Prueba",tenant_slug:"empresa-prueba",membership_role:"owner",is_active:true}];
