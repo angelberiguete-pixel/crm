@@ -21,7 +21,7 @@ jobs:
       - name: Tenant context regression tests
         run: node --experimental-strip-types --test tests/tenant-context.test.mjs
       - name: Issue 69 mobile QA evidence validation and production gate
-        run: node --experimental-strip-types --test tests/qa-mobile-center.test.mjs
+        run: node --experimental-strip-types --test tests/qa-mobile-center.test.mjs tests/qa-backend-selection.test.mjs
       - name: Look owner global entry and customer logout routing contracts
         run: node --experimental-strip-types --test tests/look-owner-entry.test.mjs
       - name: Empresia platform dashboard responsive and owner routing contracts
