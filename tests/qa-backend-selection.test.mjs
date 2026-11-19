@@ -87,3 +87,10 @@ test("browser fixtures must not reintroduce production Supabase network or sessi
     assert.doesNotMatch(source,/sb-ygipjqgyreeahslzorik-auth-token/,name);
   }
 });
+
+test("owner first-access Edge bootstrap cannot bypass isolated backend selection",()=>{
+  const source=readFileSync(new URL("../app/first-access/page.tsx",import.meta.url),"utf8");
+  assert.match(source,/CRM_SUPABASE_URL/);
+  assert.match(source,/functions\/v1\/owner-initial-password/);
+  assert.doesNotMatch(source,/https:\/\/ygipjqgyreeahslzorik[.]supabase[.]co/);
+});
