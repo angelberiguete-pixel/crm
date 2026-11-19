@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,readdirSync} from "node:fs";
 import {selectPublicBackend,EMPRESIA_PRODUCTION_PROJECT_REF} from "../lib/qa-backend-selection.ts";
 
 const qaRef="aaaaaaaaaaaaaaaaaaaa";
@@ -74,4 +74,16 @@ test("fixture-only Vercel preview fails closed when QA feature flag is missing",
   assert.match(proxy,/if \(process[.]env[.]EMPRESIA_QA_CENTER_ENABLED !== "true"\)/);
   assert.match(proxy,/new NextResponse\("Not found", \{status:404/);
   assert.doesNotMatch(proxy,/if \(!qaPreview\) return NextResponse[.]next\(\)/);
+});
+
+test("browser fixtures must not reintroduce production Supabase network or session mocks",()=>{
+  const folder=new URL("./",import.meta.url);
+  const scripts=readdirSync(folder).filter(name=>name.endsWith("-browser.test.mjs") &&
+    name!=="qa-mobile-center-browser.test.mjs");
+  assert.ok(scripts.length>=10,"expected browser test coverage");
+  for(const name of scripts){
+    const source=readFileSync(new URL(name,folder),"utf8");
+    assert.doesNotMatch(source,/https:\/\/ygipjqgyreeahslzorik[.]supabase[.]co/,name);
+    assert.doesNotMatch(source,/sb-ygipjqgyreeahslzorik-auth-token/,name);
+  }
 });
