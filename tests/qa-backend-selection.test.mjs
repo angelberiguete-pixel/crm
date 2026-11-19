@@ -67,3 +67,11 @@ test("selected backend is wired to Vercel build target and never browser-selecte
   assert.match(next,/process[.]env[.]VERCEL_ENV==="preview"/);
   assert.match(next,/EMPRESIA_BUILD_TARGET: buildTarget/);
 });
+
+test("fixture-only Vercel preview fails closed when QA feature flag is missing",()=>{
+  const proxy=readFileSync(new URL("../proxy.ts",import.meta.url),"utf8");
+  assert.match(proxy,/if \(process[.]env[.]VERCEL_ENV !== "preview"\) return NextResponse[.]next\(\)/);
+  assert.match(proxy,/if \(process[.]env[.]EMPRESIA_QA_CENTER_ENABLED !== "true"\)/);
+  assert.match(proxy,/new NextResponse\("Not found", \{status:404/);
+  assert.doesNotMatch(proxy,/if \(!qaPreview\) return NextResponse[.]next\(\)/);
+});
