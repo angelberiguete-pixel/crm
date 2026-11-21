@@ -97,6 +97,7 @@ test('signed text reaches mock RPC with verified-style Meta routing identifiers'
   assert.equal(dbCalls.at(-1).p_body,'Hola, información de inversores');
   assert.equal(dbCalls.at(-1).p_phone_number_id,'987654321012345');
   assert.equal(dbCalls.at(-1).p_waba_id,'123456789012345');
+  assert.equal(dbCalls.at(-1).p_contact_name,'', 'Meta profile name must remain unverified');
 });
 
 test('duplicate and unverified route results do not cause direct auto-send',async()=>{
