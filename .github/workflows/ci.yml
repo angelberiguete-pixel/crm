@@ -37,7 +37,22 @@ jobs:
       - name: Digital staff validated role, human-review and provider budget tests
         run: node --experimental-strip-types --test tests/digital-employees.test.mjs tests/digital-employee-trials-reviews.test.mjs tests/ai-employee-provider.test.mjs
       - name: Verified WhatsApp inbound routing, HMAC and tenant isolation contracts
-        run: node --experimental-strip-types --test tests/meta-whatsapp-inbound.test.mjs
+        run: node --experimental-strip-types --test tests/meta-whatsapp-inbound.test.mjs tests/meta-whatsapp-inbound-runtime.test.mjs
+      - name: QA-18 disposable PostgreSQL Meta routing, idempotency and tenant A/B
+        run: |
+          # Isolated container: no host ports, no production URLs, no real customer data.
+          docker run --name empresia-wa-qa --network none -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres:17.6
+          trap 'docker rm -f empresia-wa-qa >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if docker exec empresia-wa-qa pg_isready -U postgres; then break; fi
+            sleep 1
+          done
+          {
+            cat tests/fixtures/meta-whatsapp-postgres-baseline.sql
+            cat supabase/migrations/20261029202000_verified_whatsapp_tenant_router.sql
+            cat supabase/migrations/20261029204500_whatsapp_verified_first_response_tasks.sql
+            cat tests/meta-whatsapp-postgres-qa.sql
+          } | docker exec -i empresia-wa-qa psql -U postgres -d postgres -v ON_ERROR_STOP=1
       - name: Global portfolio, evidence-based analytics and brand transparency
         run: node --test tests/platform-company-portfolio.test.mjs
       - name: Look Digital Staff commercial demo, sales logging and onboarding safety contracts

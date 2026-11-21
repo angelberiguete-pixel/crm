@@ -51,3 +51,12 @@ test("one human follow-up task is scheduled only from verified receipts",()=>{
  assert.match(migration,/after insert on public.messages/i);
  assert.doesNotMatch(migration,/graph\.facebook|openai|twilio/i);
 });
+
+test("Meta Edge receiver resolves the checked-in verified-message parser",()=>{
+ const edgeDir=new URL("../supabase/functions/meta-whatsapp-inbound/",import.meta.url);
+ const entry=readFileSync(new URL("index.ts",edgeDir),"utf8");
+ const parserPath="../../../lib/meta-whatsapp-inbound.ts";
+ assert.ok(entry.includes('from "'+parserPath+'"'),"Meta Edge must import the checked-in parser");
+ const parser=readFileSync(new URL(parserPath,edgeDir),"utf8");
+ assert.match(parser,/export function normalizeVerifiedWhatsAppTexts/);
+});
