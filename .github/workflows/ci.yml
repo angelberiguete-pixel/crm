@@ -37,7 +37,7 @@ jobs:
       - name: Digital staff validated role, human-review and provider budget tests
         run: node --experimental-strip-types --test tests/digital-employees.test.mjs tests/digital-employee-trials-reviews.test.mjs tests/ai-employee-provider.test.mjs
       - name: Verified WhatsApp inbound routing, HMAC and tenant isolation contracts
-        run: node --experimental-strip-types --test tests/meta-whatsapp-inbound.test.mjs
+        run: node --experimental-strip-types --test tests/meta-whatsapp-inbound.test.mjs tests/meta-whatsapp-inbound-runtime.test.mjs
       - name: Global portfolio, evidence-based analytics and brand transparency
         run: node --test tests/platform-company-portfolio.test.mjs
       - name: Look Digital Staff commercial demo, sales logging and onboarding safety contracts
