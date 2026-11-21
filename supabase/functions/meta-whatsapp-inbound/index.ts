@@ -59,7 +59,9 @@ Deno.serve(async request=>{
     const result=await db.rpc("ingest_verified_whatsapp_text",{
       p_phone_number_id:message.phoneNumberId,p_waba_id:message.wabaId,
       p_message_id:message.externalMessageId,p_from:message.sender,
-      p_contact_name:message.contactName,p_body:message.body,
+      // Provider profile names are NOT self-declared or verified; store a generic
+      // label until the prospect voluntarily identifies themselves in a signed inbound.
+      p_contact_name:"",p_body:message.body,
     });
     if(result.error){
       // Do not log names, numbers, body, tokens or raw event data.
